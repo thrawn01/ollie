@@ -37,6 +37,10 @@ SET(LIBRARY_OUTPUT_PATH ${OLLIE_SOURCE_DIR}/lib)
 FIND_PACKAGE(PythonInterp)
 FIND_PACKAGE(Perl)
 
+# Set to svn so Ctest doesn't 
+# complain and confuse users
+SET(UPDATE_TYPE "svn")
+
 # Include CTest framework in the makefiles
 INCLUDE (CTest)
 

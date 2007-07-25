@@ -33,13 +33,11 @@ ENDIF(PERL_FOUND)
 # --------------------------
 MACRO(ADD_CXXTEST NAME)
 
-    message("ARG ${ARGN}" )
     # Generate the parts
     # ------------------------
     FOREACH(_PART ${ARGN})
         GET_FILENAME_COMPONENT(_NAME ${_PART} NAME)
         GET_FILENAME_COMPONENT(_NAME_WE ${_PART} NAME_WE)
-        message("Yeah: ${_NAME_WE}" )
         ADD_CUSTOM_COMMAND(
                             OUTPUT ${_NAME_WE}.cpp
                             COMMAND ${CXX_INTERP} ${CXXTESTGEN}
@@ -51,7 +49,6 @@ MACRO(ADD_CXXTEST NAME)
                           )
     ENDFOREACH(_PART)
 
-    message("OK1" )
     # Generate the runner
     # ------------------------
     ADD_CUSTOM_COMMAND(
@@ -65,7 +62,6 @@ MACRO(ADD_CXXTEST NAME)
 
     # Enumerate all generated files
     # ------------------------
-    message(status "OK2" )
     SET(PARTS ${CMAKE_CURRENT_SOURCE_DIR}/${NAME}_runner.cpp)
     FOREACH(_PART ${ARGN})
         GET_FILENAME_COMPONENT(_PART_WE ${_PART} NAME_WE)

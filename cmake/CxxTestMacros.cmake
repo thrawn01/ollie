@@ -16,26 +16,30 @@ ENDIF (NOT PERL_FOUND AND NOT PYTHONINTERP_FOUND)
 # If Python Interp is found use that
 # -----------------------------------
 IF(PYTHONINTERP_FOUND)
-    SET(CXX_INTERP PYTHON_EXECUTABLE)
+    SET(CXX_INTERP ${PYTHON_EXECUTABLE})
     SET(CXXTESTGEN ${CMAKE_SOURCE_DIR}/src/cxxtest/cxxtestgen.py)
+    MESSAGE(STATUS "Python Found..")
 ENDIF(PYTHONINTERP_FOUND)
 
 # If Perl is found use that
 # ---------------------------
 IF(PERL_FOUND)
-    SET(CXX_INTERP PERL_EXECUTABLE)
+    SET(CXX_INTERP ${PERL_EXECUTABLE})
     SET(CXXTESTGEN ${CMAKE_SOURCE_DIR}/src/cxxtest/cxxtestgen.pl)
+    MESSAGE(STATUS "Perl Found..")
 ENDIF(PERL_FOUND)
 
 # Definiton of the macro
 # --------------------------
 MACRO(ADD_CXXTEST NAME)
 
+    message("ARG ${ARGN}" )
     # Generate the parts
     # ------------------------
     FOREACH(_PART ${ARGN})
         GET_FILENAME_COMPONENT(_NAME ${_PART} NAME)
         GET_FILENAME_COMPONENT(_NAME_WE ${_PART} NAME_WE)
+        message("Yeah: ${_NAME_WE}" )
         ADD_CUSTOM_COMMAND(
                             OUTPUT ${_NAME_WE}.cpp
                             COMMAND ${CXX_INTERP} ${CXXTESTGEN}
@@ -47,6 +51,7 @@ MACRO(ADD_CXXTEST NAME)
                           )
     ENDFOREACH(_PART)
 
+    message("OK1" )
     # Generate the runner
     # ------------------------
     ADD_CUSTOM_COMMAND(
@@ -60,6 +65,7 @@ MACRO(ADD_CXXTEST NAME)
 
     # Enumerate all generated files
     # ------------------------
+    message(status "OK2" )
     SET(PARTS ${CMAKE_CURRENT_SOURCE_DIR}/${NAME}_runner.cpp)
     FOREACH(_PART ${ARGN})
         GET_FILENAME_COMPONENT(_PART_WE ${_PART} NAME_WE)
@@ -72,7 +78,7 @@ MACRO(ADD_CXXTEST NAME)
     
     # Add the executable to CTest
     # ------------------------
-    ADD_TEST(${NAME} ${NAME})
+    ADD_TEST(${NAME} ${EXECUTABLE_OUTPUT_PATH}/${NAME})
 
 ENDMACRO(ADD_CXXTEST)
 

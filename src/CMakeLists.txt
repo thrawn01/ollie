@@ -6,4 +6,4 @@
 
 # Add our Tests
 # -----------------
-ADD_CXXTEST( buffertest.h )
+ADD_CXXTEST(bufferTests buffertests.h )

@@ -27,6 +27,12 @@ ENDIF(WITH_DEBUG)
 # CMake Modules for BSG build system
 SET(CMAKE_MODULE_PATH ${OLLIE_SOURCE_DIR}/cmake)
 
+# All executables go into /bin
+SET(EXECUTABLE_OUTPUT_PATH ${OLLIE_SOURCE_DIR}/bin)
+
+# All Libraries go into /lib
+SET(LIBRARY_OUTPUT_PATH ${OLLIE_SOURCE_DIR}/lib)
+
 # Find Packages Needed for Testing
 FIND_PACKAGE(PythonInterp)
 FIND_PACKAGE(Perl)
@@ -36,6 +42,9 @@ INCLUDE (CTest)
 
 # Include Macros for adding CxxTests
 INCLUDE (CxxTestMacros)
+
+# So the cxxtest headers can find the .h files
+INCLUDE_DIRECTORIES(src)
 
 # --------------------------------------------
 # Add projects to the build system here.

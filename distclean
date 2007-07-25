@@ -1,0 +1,88 @@
+#! /usr/bin/perl
+
+use Getopt::Std;
+use vars qw( %opt %ConfigList);
+
+@cmakeFiles = ('CMakeFiles', 'Makefile', 'progress.make', 'cmake_install.cmake',
+               'config-bsg.h', 'CMakeCache.txt', 'DartTestfile.txt', 'Testing',
+               'DartTestfile.txt', 'DartConfiguration.tcl');
+
+# -------------------------
+# Main
+# -------------------------
+MAIN: {
+
+    my $opt_string = 'avh';
+    getopts( "$opt_string", \%opt ) or &usage();
+    if($opt{h}){ &usage(); }
+
+    open(INPUT, "git-ls-files -o |") or die("Couldn't run git-ls-files, Do you have the latest git version?");
+
+    if( $opt{a} ) { print "Cleaning all files not under git control...\n"; }
+    else{ print "Cleaning only CMake files...\n"; }
+
+    $count=0;
+
+    # for each file git-ls-files give us
+    # -----------------------
+    while($line = <INPUT>){
+        $count++;
+        chomp($line);
+        $line =~ s/^\? *//g;
+
+
+        # clean only cmake files?
+        # -----------------------
+        unless( $opt{a} ){
+            if( &isCmake($line) ){
+                if($opt{v}){ print "Removing: $line\n"; }
+                system("rm -rf $line");
+            }
+        }
+
+        # clean all files
+        # -----------------------
+        if($opt{a}){
+            if($opt{v}){ print "Removing: $line\n"; }
+            system("rm -rf $line");
+        }
+    }
+
+    if($count > 0){ print "Build system cleaned...\n"; }
+    else{ print "No files found to clean...\n"; }
+}
+
+# -------------------------
+# Subroutines
+# -------------------------
+sub isCmake(){
+    my $file = shift; 
+    foreach $item (@cmakeFiles){
+        if( $file =~ /$item/ ){
+            return 1;
+        }
+    }
+    return 0;
+}
+
+#-------------------------------------------------------
+# Inform the un-informed
+#-------------------------------------------------------
+sub usage() {
+    print STDERR << "EOF";
+
+    Usage: $0 -a -v
+
+        Cleans the build tree of all CMake generated files
+
+    Optional
+      -a     In addition to cleaning CMake files, cleans all files 
+             that are not under git revision control
+      -v     Verbose ( Show all files removed )
+
+     Written by: Derrick J. Wippler (Thrawn01\@gmail.com)
+
+EOF
+    exit;
+}
+

@@ -39,12 +39,10 @@ MACRO(ADD_CXXTEST NAME)
         GET_FILENAME_COMPONENT(_NAME ${_PART} NAME)
         GET_FILENAME_COMPONENT(_NAME_WE ${_PART} NAME_WE)
         ADD_CUSTOM_COMMAND(
-                            OUTPUT ${_NAME_WE}.cpp
+                            OUTPUT ${CXXTEST_BUILD_DIR}/${_NAME_WE}.cpp
                             COMMAND ${CXX_INTERP} ${CXXTESTGEN}
                             --part
-                            --have-eh
-                            --abort-on-fail
-                            -o ${_NAME_WE}.cpp
+                            -o ${CXXTEST_BUILD_DIR}/${_NAME_WE}.cpp
                             ${CMAKE_CURRENT_SOURCE_DIR}/${_NAME}
                             DEPENDS ${_PART}
                             WORKING_DIRECTORY ${CXXTEST_BUILD_DIR}

@@ -20,10 +20,16 @@
 
 #include <buffer.h>
 
+//-------------------------------------------
+// Buffer Class Methods
+//-------------------------------------------
+
 /*!
  * Create an un-usable buffer
  */
 Buffer::Buffer() {
+    _strMyName     = NULL;
+    _strMyFileName = NULL;
 }
 
 /*!
@@ -31,17 +37,20 @@ Buffer::Buffer() {
  */
 Buffer::Buffer( const char* strMyName ) {
     // copy and store the name of this buffer
-    _strMyName = strdup(strMyName);
+    _strMyName     = strdup(strMyName);
+    _strMyFileName = NULL;
 }
 
 /*!
  * Construct a buffer from a file and give it a name
  */
-Buffer::Buffer( const File* file, const char* strMyName ) {
+Buffer::Buffer( File* const file, const char* strMyName ) {
     // File Loading un implemented
     
     // copy and store the name of this buffer
-    _strMyName = strdup(strMyName);
+    _strMyName     = strdup(strMyName);
+    // copy and store the name of the file this buffer represents
+    _strMyFileName = strdup(file->mGetFileName());
 }
 
 /*!
@@ -49,17 +58,91 @@ Buffer::Buffer( const File* file, const char* strMyName ) {
  */
 Buffer::~Buffer() {
     // Unallocate the name of the buffer
-    if( _strMyName ) { 
-        free (_strMyName); 
-    }
+    if( _strMyName ) { free (_strMyName); }
+    if( _strMyFileName ) { free (_strMyFileName); }
 }
 
 /*!
  * Returns true if the buffer is usable
  */
 bool Buffer::mIsUsable() {
+
+    // If no name is assigned return false
+    if( !_strMyName ) {
+        return false;
+    }
+
+    // If _strMyName is empty return false
+    if( strlen(_strMyName) == 0 ) {
+        this->mSetError("Empty string for buffer name is not allowed");
+        return false;
+    }
     return false;
 }
+
+/*!
+ * Assign a File to be represented by this buffer
+ * The file passed must be an open valid file
+ */
+bool Buffer::mAssignFile( File* const file ) {
+
+    // If we have a file name represented
+    if( _strMyFileName ) {
+        free ( _strMyFileName );
+    }
+    _strMyFileName = strdup(file->mGetFileName());
+
+    return false;
+}
+
+/*!
+ * Save the buffer to the file
+ */
+bool Buffer::mSaveBufferToFile( void ) {
+    // If we have no file name represented
+    if( !_strMyFileName ) {
+        this->mSetError("Cannot save a buffer with no file represented");
+        return false;
+    }
+    return false;
+}
+
+/*!
+ * Reload the Buffer by re-reading the file
+ */
+bool Buffer::mReloadBufferFromFile( void ) {
+    // If we have no file name applied
+    if( !_strMyFileName ) {
+        this->mSetError("Cannot re-load a buffer with no file represented");
+        return false;
+    }
+    return false;
+}
+
+/*!
+ * Returns the Id of the current buffer
+ */
+int Buffer::mGetId( void ) {
+    return _intMyId;
+}
+
+/*!
+ * Returns the Name of the current buffer
+ */
+const char* Buffer::mGetName( void ) {
+    return _strMyName;
+}
+
+/*!
+ * Returns the File Name the current buffer represents
+ */
+const char* Buffer::mGetFileName( void ) {
+    return _strMyFileName;
+}
+
+//-------------------------------------------
+// Buffer Container Class Methods
+//-------------------------------------------
 
 /*!
  * Creates a new empty buffer adds it to the container
@@ -83,6 +166,23 @@ Buffer* BufferContainer::mCreateBufferFromFile( File* const file ) {
  * Returns a buffer by name
  */
 Buffer* BufferContainer::mGetBufferByName( const char* strName ) {
+    // un implemented return NULL 
+    return NULL;
+}
+
+/*!
+ * Returns a buffer by Id
+ */
+Buffer* BufferContainer::mGetBufferById( int intId ) {
+    // un implemented return NULL 
+    return NULL;
+}
+
+/*!
+ * Returns a buffer by the File Name it was opened with
+ * strName must be the FULL PATH
+ */
+Buffer* BufferContainer::mGetBufferByFileName( const char* strName ) {
     // un implemented return NULL 
     return NULL;
 }

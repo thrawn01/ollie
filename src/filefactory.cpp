@@ -53,7 +53,7 @@ File::~File() {
 /*!
  * Return the filename of the file we loaded
  */
-const char* File::mGetFileName( ) {
+const char* File::mGetFileName( void ) {
     if( _strFileName ) {
         return _strFileName;
     }

@@ -41,7 +41,7 @@ class File : public OllieCommon {
         virtual bool mOpen( const char*, OpenMode mode ) { };
 
         // Return the file name passed when open() was called
-        const char* mGetFileName( );
+        const char* mGetFileName( void );
 
         // Private FileName
         char* _strFileName;

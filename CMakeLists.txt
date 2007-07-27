@@ -40,6 +40,7 @@ FIND_PACKAGE(Perl)
 # Set to svn so Ctest doesn't 
 # complain and confuse users
 SET(UPDATE_TYPE "svn")
+SET(CXXTEST_BUILD_DIR ${OLLIE_SOURCE_DIR}/Testing)
 
 # Include CTest framework in the makefiles
 INCLUDE (CTest)

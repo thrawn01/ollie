@@ -4,6 +4,10 @@
 # Derrick Wippler 2007 (thrawn01@gmail.com) 
 # ----------------------------------------------------------------
 
+# Add the ollie Library
+ADD_LIBRARY(ollie ollie.cpp buffer.cpp filefactory.cpp)
+
 # Add our Tests
 # -----------------
 ADD_CXXTEST(bufferTests buffertests.h )
+TARGET_LINK_LIBRARIES(bufferTests ollie )

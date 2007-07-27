@@ -18,17 +18,23 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
+#ifndef BUFFER_INCLUDE_H
+#define BUFFER_INCLUDE_H
+
+#include <ollie.h>
 #include <filefactory.h>
 
 /*!
  *  The primary buffer class, containing methods 
  *  to act on the Pages and PageContainer
  */
-class Buffer { 
+class Buffer : public OllieCommon { 
 
     public:
         // Constructor / Destructor  
+        Buffer();
         Buffer( const char* );
+        Buffer( const File* , const char* );
         ~Buffer();
 
         // Methods
@@ -46,10 +52,10 @@ class BufferContainer {
     public:
         // Creators
         Buffer* mCreateEmptyBuffer( const char* );
-        Buffer* mCreateBufferFromFile( const File* );
+        Buffer* mCreateBufferFromFile( File* const );
         
         // Accessors
-        Buffer* mGetBufferByName( const char* );
+        Buffer* mGetBufferByName( const char*);
 
         // Variables
          
@@ -75,4 +81,4 @@ class PageContainer {
          
 };
 
-
+#endif // BUFFER_INCLUDE_H

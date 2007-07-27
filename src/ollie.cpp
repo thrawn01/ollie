@@ -18,53 +18,48 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
- #include <filefactory.h>
-
-// --- Begin posixfile.cpp ---
+#include <ollie.h>
 
 /*!
- * Open a file in the requested mode
+ * Sets _strErrorMsg to NULL
  */
-bool PosixFile::mOpen( const char*, OpenMode mode ) {
-    return false;
-}
-
-// --- End posixfile.cpp ---
-
-
-/*!
- * File Constructor
- */
-File::File() {
-    _strFileName = NULL;
+OllieCommon::OllieCommon() {
+    _strErrorMsg = NULL;
 }
 
 /*!
- * File Destructor
+ * Frees _strErrorMsg
  */
-File::~File() {
-    // Free Assigned memory for _strFileName
-    if( _strFileName ) { 
-        free ( _strFileName ); 
-        _strFileName = NULL; 
+OllieCommon::~OllieCommon() {
+    if( _strErrorMsg ) { free ( _strErrorMsg ); _strErrorMsg = NULL; }
+}
+
+/*!
+ * Return the last error
+ */
+char* OllieCommon::mGetError( void ) {
+    // If the _strErrorMsg already has an assignment
+    if( _strErrorMsg ) {
+        // Return the error message
+        return _strErrorMsg;
     }
-}
-
-/*!
- * Return the filename of the file we loaded
- */
-const char* File::mGetFileName( ) {
-    if( _strFileName ) {
-        return _strFileName;
-    }
+    // Else, Return an unset message. so if some does
+    // printf("%s",mGetError()); it wont SEG fault
     return " ";
 }
 
 /*!
- * Return the default File handler for the current operating system
+ * Return the last error
  */
-File* FileFactory::mGetDefaultFileHandler( void ) {
-    // Un implemented, just return PosixFile();
-    return new PosixFile();
+void OllieCommon::mSetError( const char* strMsg ) {
+    // If the _strErrorMsg already has an assignment
+    if( _strErrorMsg ) {
+        // Free the memory allocated
+        free( _strErrorMsg );
+        // And malloc a new copy of the string
+        _strErrorMsg = strdup(strMsg);
+    }
+    // malloc a new copy of the string
+    _strErrorMsg = strdup(strMsg);
 }
 

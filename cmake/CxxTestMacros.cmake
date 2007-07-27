@@ -42,30 +42,34 @@ MACRO(ADD_CXXTEST NAME)
                             OUTPUT ${_NAME_WE}.cpp
                             COMMAND ${CXX_INTERP} ${CXXTESTGEN}
                             --part
+                            --have-eh
+                            --abort-on-fail
                             -o ${_NAME_WE}.cpp
-                            ${_NAME}
+                            ${CMAKE_CURRENT_SOURCE_DIR}/${_NAME}
                             DEPENDS ${_PART}
-                            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                            WORKING_DIRECTORY ${CXXTEST_BUILD_DIR}
                           )
     ENDFOREACH(_PART)
 
     # Generate the runner
     # ------------------------
     ADD_CUSTOM_COMMAND(
-      OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${NAME}_runner.cpp
+      OUTPUT ${CXXTEST_BUILD_DIR}/${NAME}_runner.cpp
       COMMAND
         ${CXX_INTERP} ${CXXTESTGEN}
+        --have-eh
+        --abort-on-fail
         --runner=ErrorPrinter --root
         -o ${NAME}_runner.cpp
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+      WORKING_DIRECTORY ${CXXTEST_BUILD_DIR}
     )
 
     # Enumerate all generated files
     # ------------------------
-    SET(PARTS ${CMAKE_CURRENT_SOURCE_DIR}/${NAME}_runner.cpp)
+    SET(PARTS ${CXXTEST_BUILD_DIR}/${NAME}_runner.cpp)
     FOREACH(_PART ${ARGN})
         GET_FILENAME_COMPONENT(_PART_WE ${_PART} NAME_WE)
-        SET(PARTS ${PARTS} ${_PART_WE}.cpp)
+        SET(PARTS ${PARTS} ${CXXTEST_BUILD_DIR}/${_PART_WE}.cpp)
     ENDFOREACH(_PART)
     
     # Add the executable to the build ( TODO: EXCLUDE ALL ? )

@@ -18,29 +18,32 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
+#ifndef FILEFACTORY_INCLUDE_H
+#define FILEFACTORY_INCLUDE_H
+
+#include <ollie.h>
+
 /*!
  *  An Abstract class used to 
  *  open/read/write to a IO device
  */
-class File { 
+class File : public OllieCommon { 
 
     public:
         // Constructor / Destructor
-        virtual File();
-        virtual ~File();
+        File();
+        ~File();
 
         // File Modes
         enum OpenMode { ReadWrite, ReadOnly };
 
         // Methods
-        virtual bool mOpen( const char*, OpenMode mode );
+        virtual bool mOpen( const char*, OpenMode mode ) { };
 
-        char* mGetFileName( void );
-        char* mGetError( void );
-        void  mSetError( const char* );
+        // Return the file name passed when open() was called
+        const char* mGetFileName( );
 
-        // Members
-        char* _strErrorMsg;
+        // Private FileName
         char* _strFileName;
 };
 
@@ -48,11 +51,8 @@ class File {
  *  A Class to open/read/write using posix 
  *  commands
  */
-class PosixFile : File {
+class PosixFile : public File {
     public:
-        // Constructor / Destructor
-        PosixFile();
-        ~PosixFile();
 
         // Methods
         bool mOpen( const char*, OpenMode mode );
@@ -64,7 +64,7 @@ class PosixFile : File {
  *  accessing the file system of the current
  *  operating system
  */
-class FileFactory { 
+class FileFactory : public OllieCommon { 
 
     public:
        // Methods
@@ -74,4 +74,4 @@ class FileFactory {
     
 };
 
-
+#endif // FILEFACTORY_INCLUDE_H

@@ -21,6 +21,7 @@
 #include "cxxtest/TestSuite.h"
 #include <buffer.h>
 #include <filefactory.h>
+#include <iostream>
 
 // --------------------------------
 //  Unit Test for buffer.cpp
@@ -36,12 +37,12 @@ class BufferTests : public CxxTest::TestSuite
 
             // Create a new buffer Container
             BufferContainer* bufList = new BufferContainer();
+            TS_ASSERT( bufList ); 
 
             // Creates an empty Buffer
             Buffer* buf = bufList->mCreateEmptyBuffer("buffer1");
-            if( ! buf->mIsUsable() ) {
-                std::cout << "Create buffer failed: " << buf->mGetError() << std::endl;
-            }
+            TS_ASSERT( buf ); 
+            TS_ASSERT( buf->mIsUsable() );
         }
 
         // --------------------------------
@@ -51,22 +52,20 @@ class BufferTests : public CxxTest::TestSuite
            
             // Create a new buffer Container
             BufferContainer* bufList = new BufferContainer();
+            TS_ASSERT( bufList ); 
 
             // Get the default file handler for this Operating System
             FileFactory fileFactory;
             File* file = fileFactory.mGetDefaultFileHandler();
+            TS_ASSERT( file ); 
 
             // Open The File ReadWrite
-            if( ! file->mOpen("fileToOpen.txt", File::ReadWrite ) ) {
-                std::cout << "Unable to open: " << file->mGetError() << std::endl;
-                return void;
-            }
+            TS_ASSERT( file->mOpen("fileToOpen.txt", File::ReadWrite ) );
 
             // Create the buffer with the file handler
             Buffer* buf = bufList->mCreateBufferFromFile(file);
-            if( ! buf->mIsUsable() ) {
-                std::cout << "Create buffer failed: " << buf->mGetError() << std::endl;
-            }
+            TS_ASSERT( buf ); 
+            TS_ASSERT( buf->mIsUsable() );
         }
 
         // --------------------------------
@@ -76,15 +75,16 @@ class BufferTests : public CxxTest::TestSuite
 
             // Create a new buffer Container
             BufferContainer* bufList = new BufferContainer();
+            TS_ASSERT( bufList );
             
             // Create a new Buffer Called "buffer1"
-            bufList->mCreateEmptyBuffer("buffer1");
+            TS_ASSERT( bufList->mCreateEmptyBuffer("buffer1") );
 
             // Get the buffer by name
-            buf = bufList->mGetBufferByName("buffer1");
+            Buffer* buf = bufList->mGetBufferByName("buffer1");
 
-            TS_ASSERT( buf != NULL );
-            TS_ASSERT_EQUALS( buf->mIsUsable(), true );
+            TS_ASSERT( buf );
+            TS_ASSERT( buf->mIsUsable() );
         }
 };
 

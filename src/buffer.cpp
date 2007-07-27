@@ -21,9 +21,15 @@
 #include <buffer.h>
 
 /*!
+ * Create an un-usable buffer
+ */
+Buffer::Buffer() {
+}
+
+/*!
  * Construct a empty buffer and give it a name
  */
-bool Buffer::Buffer( const char* strMyName ) {
+Buffer::Buffer( const char* strMyName ) {
     // copy and store the name of this buffer
     _strMyName = strdup(strMyName);
 }
@@ -31,7 +37,7 @@ bool Buffer::Buffer( const char* strMyName ) {
 /*!
  * Construct a buffer from a file and give it a name
  */
-bool Buffer::Buffer( const File* file, const char* strMyName ) {
+Buffer::Buffer( const File* file, const char* strMyName ) {
     // File Loading un implemented
     
     // copy and store the name of this buffer
@@ -41,9 +47,11 @@ bool Buffer::Buffer( const File* file, const char* strMyName ) {
 /*!
  * Buffer Destructor
  */
-bool Buffer::Buffer() {
+Buffer::~Buffer() {
     // Unallocate the name of the buffer
-    free (_strMyName);
+    if( _strMyName ) { 
+        free (_strMyName); 
+    }
 }
 
 /*!
@@ -66,9 +74,9 @@ Buffer* BufferContainer::mCreateEmptyBuffer( const char* ) {
  * Creates a new empty buffer adds it to the container
  * then returns a pointer to the new buffer
  */
-Buffer* BufferContainer::mCreateBufferFromFile( const File* file ) {
+Buffer* BufferContainer::mCreateBufferFromFile( File* const file ) {
     // un implemented return empty buffer
-    return new Buffer(file,file.mGetFileName());
+    return new Buffer(file, file->mGetFileName() );
 }
 
 /*!

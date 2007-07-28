@@ -41,6 +41,10 @@ class BufferTests : public CxxTest::TestSuite
 
             // Creates an empty Buffer
             Buffer* buf = bufList->mCreateEmptyBuffer("buffer1");
+                    buf = bufList->mCreateEmptyBuffer("buffer2");
+                    buf = bufList->mCreateEmptyBuffer("buffer3");
+            
+            TS_ASSERT_EQUALS( bufList->_intMaxId, 4 );
             TS_ASSERT( buf ); 
             TS_ASSERT( buf->mIsUsable() );
         }
@@ -71,7 +75,7 @@ class BufferTests : public CxxTest::TestSuite
         // --------------------------------
         // To Get a buffer in the BufferContainer by Name
         // --------------------------------
-        void testmGetBufferByName( void ) {
+        void testmGetBufferByNameAndmSetName( void ) {
 
             // Create a new buffer Container
             BufferContainer* bufList = new BufferContainer();
@@ -85,6 +89,15 @@ class BufferTests : public CxxTest::TestSuite
 
             TS_ASSERT( buf );
             TS_ASSERT( buf->mIsUsable() );
+
+            // Rename the buffer
+            buf->mSetName("buffer2");
+
+            // Get the buffer by name
+            Buffer* buf2 = bufList->mGetBufferByName("buffer2");
+            TS_ASSERT( buf2 );
+            TS_ASSERT( buf2->mIsUsable() );
+            TS_ASSERT_EQUALS( buf2, buf );
         }
 
         // --------------------------------
@@ -158,6 +171,8 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT( buf );
 
             // TODO: Change the file with system("echo 'Changed File' >> ")
+            
+
             // Reload the buffer from the file
             TS_ASSERT_EQUALS( buf->mReloadBufferFromFile(), true );
         }
@@ -191,6 +206,76 @@ class BufferTests : public CxxTest::TestSuite
 
             // Save the buffer to the file
             TS_ASSERT_EQUALS(buf->mSaveBufferToFile(), true );
+        }
+
+        // --------------------------------
+        // Test mIsModified()
+        // --------------------------------
+        void testmIsModified( void ) {
+
+            // Create a new buffer Container
+            BufferContainer* bufList = new BufferContainer();
+            TS_ASSERT( bufList );
+
+            // Create a new Buffer Called "buffer1"
+            Buffer* buf = bufList->mCreateEmptyBuffer("buffer1");
+            TS_ASSERT( buf );
+
+            // TODO: Modify the buffer somehow 
+
+            TS_ASSERT_EQUALS( buf->mIsModified(), true );
+
+        }
+
+        // --------------------------------
+        // Test mIsFileModifiedSinceOpen()
+        // --------------------------------
+        void testmIsFileModifiedSinceOpen( void ) {
+
+            // Create a new buffer Container
+            BufferContainer* bufList = new BufferContainer();
+            TS_ASSERT( bufList );
+
+            // Create a new Buffer Called "buffer1"
+            Buffer* buf = bufList->mCreateEmptyBuffer("buffer1");
+            TS_ASSERT( buf );
+
+            // TODO: Modify the file somehow 
+
+            TS_ASSERT_EQUALS( buf->mIsFileModifiedSinceOpen(), true );
+
+        }
+
+        // --------------------------------
+        // Test mIsFileModifiedSinceOpen()
+        // --------------------------------
+        void testDeleteBuffers( void ) {
+
+            // Create a new buffer Container
+            BufferContainer* bufList = new BufferContainer();
+            TS_ASSERT( bufList );
+
+            // Create a new Buffer Called "buffer1"
+            bufList->mCreateEmptyBuffer("bufferOne");
+            bufList->mCreateEmptyBuffer("bufferTwo");
+            bufList->mCreateEmptyBuffer("bufferThree");
+
+            // Delete Buffer 1
+            TS_ASSERT_EQUALS( bufList->mDeleteBufferById(1), true ); 
+            // Delete Buffer 3
+            TS_ASSERT_EQUALS( bufList->mDeleteBufferByName("bufferThree"), true ); 
+
+            // Asking for bufferOne should return NULL
+            Buffer* buf = bufList->mGetBufferByName("bufferOne");
+            TS_ASSERT( buf == NULL );
+
+            // Asking for buffer 3 should return NULL
+            buf = bufList->mGetBufferById(3);
+            TS_ASSERT( buf == NULL );
+
+            // Asking for buffer 2 should return a Buffer*
+            TS_ASSERT( bufList->mGetBufferById(2) );
+
         }
 };
 

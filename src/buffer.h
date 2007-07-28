@@ -32,24 +32,30 @@ class Buffer : public OllieCommon {
 
     public:
         // Constructor / Destructor  
-        Buffer();
-        Buffer( const char* );
-        Buffer( File* const , const char* );
-        ~Buffer();
+        Buffer( void );
+        Buffer( int, const char* );
+        Buffer( int, File* const, const char* );
+        ~Buffer( void );
 
         // Methods
         const char*  mGetName( void );
+        void         mSetName( const char* );
         const char*  mGetFileName( void );
         int          mGetId( void );
         bool         mIsUsable( void );
+        bool         mIsModified( void );
+        bool         mIsFileModifiedSinceOpen( void );
         bool         mReloadBufferFromFile( void );
         bool         mSaveBufferToFile( void );
         bool         mAssignFile( File* const );
 
+        
         // Variables
         char* _strMyName;
         char* _strMyFileName;
         int   _intMyId;
+        bool  _boolModified;
+        File* _FileMyFile;
 };
 
 /*!
@@ -58,9 +64,15 @@ class Buffer : public OllieCommon {
 class BufferContainer {
 
     public:
+        // Constructors Destructors
+        BufferContainer();
+        ~BufferContainer();
+
         // Creators
         Buffer* mCreateEmptyBuffer( const char* );
         Buffer* mCreateBufferFromFile( File* const );
+        bool mDeleteBufferById( int );
+        bool mDeleteBufferByName( const char* );
         
         // Accessors
         Buffer* mGetBufferByName( const char* );
@@ -68,6 +80,7 @@ class BufferContainer {
         Buffer* mGetBufferByFileName( const char* );
 
         // Variables
+        int _intMaxId;
          
 };
 

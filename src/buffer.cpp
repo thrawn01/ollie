@@ -25,48 +25,79 @@
 //-------------------------------------------
 
 /*!
- * Create an un-usable buffer
+ * Set default values for members
  */
-Buffer::Buffer() {
+Buffer::Buffer( void ) {
     _strMyName     = NULL;
     _strMyFileName = NULL;
+    _boolModified  = false;
+    _FileMyFile    = NULL;
+    _intMyId       = 0;
 }
 
 /*!
  * Construct a empty buffer and give it a name
  */
-Buffer::Buffer( const char* strMyName ) {
+Buffer::Buffer( int intNewId, const char* strMyName ) {
+    // Set defaults
+    Buffer();
     // copy and store the name of this buffer
     _strMyName     = strdup(strMyName);
-    _strMyFileName = NULL;
+    // Assign the new Id
+    _intMyId = intNewId;
 }
 
 /*!
  * Construct a buffer from a file and give it a name
  */
-Buffer::Buffer( File* const file, const char* strMyName ) {
-    // File Loading un implemented
-    
+Buffer::Buffer( int intNewId, File* const file, const char* strMyName ) {
+    // Set defaults
+    Buffer();
+    // Store the pointer to the file object
+    _FileMyFile    = file;
     // copy and store the name of this buffer
     _strMyName     = strdup(strMyName);
     // copy and store the name of the file this buffer represents
     _strMyFileName = strdup(file->mGetFileName());
+    // Assign the new Id
+    _intMyId = intNewId;
 }
 
 /*!
  * Buffer Destructor
  */
-Buffer::~Buffer() {
+Buffer::~Buffer( void ) {
     // Unallocate the name of the buffer
     if( _strMyName ) { free (_strMyName); }
     if( _strMyFileName ) { free (_strMyFileName); }
+    if( _FileMyFile ) { free (_FileMyFile); }
+}
+
+/*!
+ * Returns true if the buffer was modified by the user
+ */
+bool Buffer::mIsModified( void ) {
+    // un implemented
+    return false;
+}
+
+/*!
+ * Returns true if the buffer was modified by the user
+ */
+bool Buffer::mIsFileModifiedSinceOpen( void ) {
+    // un implemented
+    return false;
 }
 
 /*!
  * Returns true if the buffer is usable
  */
-bool Buffer::mIsUsable() {
+bool Buffer::mIsUsable( void ) {
 
+    // If no Id assigned
+    if( !_intMyId ) { 
+        return false;
+    }
     // If no name is assigned return false
     if( !_strMyName ) {
         return false;
@@ -134,6 +165,16 @@ const char* Buffer::mGetName( void ) {
 }
 
 /*!
+ * Sets the Name of the current buffer
+ */
+void Buffer::mSetName( const char* strMyName ) {
+    if( _strMyName ) {
+        free ( _strMyName );
+    }
+    _strMyName = strdup(strMyName);
+}
+
+/*!
  * Returns the File Name the current buffer represents
  */
 const char* Buffer::mGetFileName( void ) {
@@ -145,12 +186,26 @@ const char* Buffer::mGetFileName( void ) {
 //-------------------------------------------
 
 /*!
+ * Constructor
+ */
+BufferContainer::BufferContainer() {
+    _intMaxId = 1;
+}
+
+/*!
+ * Destructor
+ */
+BufferContainer::~BufferContainer() {
+
+}
+
+/*!
  * Creates a new empty buffer adds it to the container
  * then returns a pointer to the new buffer
  */
-Buffer* BufferContainer::mCreateEmptyBuffer( const char* ) {
+Buffer* BufferContainer::mCreateEmptyBuffer( const char* strName ) {
     // un implemented return empty buffer
-    return new Buffer();
+    return new Buffer( _intMaxId++, strName );
 }
 
 /*!
@@ -159,7 +214,7 @@ Buffer* BufferContainer::mCreateEmptyBuffer( const char* ) {
  */
 Buffer* BufferContainer::mCreateBufferFromFile( File* const file ) {
     // un implemented return empty buffer
-    return new Buffer(file, file->mGetFileName() );
+    return new Buffer( _intMaxId++, file, file->mGetFileName() );
 }
 
 /*!
@@ -187,3 +242,18 @@ Buffer* BufferContainer::mGetBufferByFileName( const char* strName ) {
     return NULL;
 }
 
+/*!
+ * Deletes a buffer from the Buffer Container by Name
+ */
+bool BufferContainer::mDeleteBufferByName( const char* strName ) {
+    // un implemented return NULL 
+    return false;
+}
+
+/*!
+ * Deletes a buffer from the Buffer Container by Name
+ */
+bool BufferContainer::mDeleteBufferById( int intId ) {
+    // un implemented return NULL 
+    return false;
+}

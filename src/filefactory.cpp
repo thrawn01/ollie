@@ -29,6 +29,13 @@ bool PosixFile::mOpen( const char*, OpenMode mode ) {
     return false;
 }
 
+/*!
+ * Does this platform support Large files with int64?
+ */
+bool PosixFile::mOffersLargeFileSupport( void ) {
+    return false;
+}
+
 // --- End posixfile.cpp ---
 
 

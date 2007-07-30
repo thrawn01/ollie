@@ -37,8 +37,10 @@ class File : public OllieCommon {
         // File Modes
         enum OpenMode { ReadWrite, ReadOnly };
 
-        // Methods
+        // Open the file
         virtual bool mOpen( const char*, OpenMode mode ) { };
+        //! Does the OS offer int64 for large files and does open support it?
+        virtual bool mOffersLargeFileSupport() { };
 
         // Return the file name passed when open() was called
         const char* mGetFileName( void );
@@ -56,6 +58,7 @@ class PosixFile : public File {
 
         // Methods
         bool mOpen( const char*, OpenMode mode );
+        bool mOffersLargeFileSupport( void );
 };
 
 

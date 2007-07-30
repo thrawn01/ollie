@@ -21,6 +21,111 @@
 #include <buffer.h>
 
 //-------------------------------------------
+// Cursor Class Methods
+//-------------------------------------------
+
+/*!
+ * Constructor
+ */
+Cursor::Cursor( void ) { }
+
+/*!
+ * Destructor
+ */
+Cursor::~Cursor( void ) { 
+    _OIntLineNum = 0;
+    _OIntPos     = 0;
+    _OIntEnd     = 0;
+    _OIntAbs     = 0;
+}
+
+/*!
+ * Return the Line number for this Cursor
+ */
+OInt Cursor::mGetLineNum( void ) {
+    return 0;
+}
+
+/*!
+ * Return the Pos on this line for this Cursor
+ */
+OInt Cursor::mGetPos( void ) {
+    return 0;
+}
+
+/*!
+ * Return the Pos of the end of bounds on this line for this Cursor
+ */
+OInt Cursor::mGetEnd( void ) {
+    return 0;
+}
+
+/*!
+ * Return the absolute position in the buffer for this Cursor 
+ */
+OInt Cursor::mGetAbsPos( void ) {
+    return 0;
+}
+
+//-------------------------------------------
+// ChangeSet Class Methods
+//-------------------------------------------
+
+/*!
+ * Constructor 
+ */
+ChangeSet::ChangeSet() {
+    _ChangeSetType = None; 
+    _strData       = NULL;
+}
+
+/*!
+ * Destructor 
+ */
+ChangeSet::~ChangeSet() {
+    // Free the data if its allocated
+    if( _strData ) {
+        free ( _strData );
+    }
+}
+
+/*!
+ * Return true if the ChangeSet represents an insert operation
+ */
+bool ChangeSet::mIsInsert( void ) {
+    if( _ChangeSetType == Insert ) {
+        return true;
+    }
+    return false;
+}
+
+/*!
+ * Return true if the ChangeSet represents a delete operation
+ */
+bool ChangeSet::mIsDelete( void ) {
+    if( _ChangeSetType == Delete ) {
+        return true;
+    }
+    return false;
+}
+/*!
+ * Returns a pointer to the Data the was Deleted or Inserted
+ */
+char* const ChangeSet::mGetData( void ) {
+    if( _strData ) {
+        return _strData;
+    }
+    return NULL;
+}
+
+/*!
+ * Returns the cursor that represents the position this operation took place
+ */
+Cursor ChangeSet::mGetBounds( void ) {
+    return _CursorPos;
+}
+
+//-------------------------------------------
 // Buffer Class Methods
 //-------------------------------------------
 
@@ -179,6 +284,21 @@ void Buffer::mSetName( const char* strMyName ) {
  */
 const char* Buffer::mGetFileName( void ) {
     return _strMyFileName;
+}
+
+/*!
+ * Starts Recording Changes to this buffer
+ */
+void Buffer::mStartRecordingChangeSet( void ) {
+    return; 
+}
+
+/*!
+ * Stops Recording Changes to this buffer and returns the change set that 
+ * represents the changes to the buffer
+ */
+ChangeSet* Buffer::mStopRecordingChangeSet( void ) {
+    return new ChangeSet(); 
 }
 
 //-------------------------------------------

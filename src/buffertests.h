@@ -277,5 +277,149 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT( bufList->mGetBufferById(2) );
 
         }
+
+        // --------------------------------
+        // Test changeset Insert recording
+        // --------------------------------
+        void testChangeSetInsertRecording( void ) {
+
+            // Create a new buffer Container
+            BufferContainer* bufList = new BufferContainer();
+            TS_ASSERT( bufList );
+
+            // Create a new Buffer Called "buffer1"
+            Buffer* buf = bufList->mCreateEmptyBuffer("bufferOne");
+            TS_ASSERT(buf);
+
+            // Start Recording the changeset
+            buf->mStartRecordingChangeSet();
+
+            // Insert "Derrick J. Wippler"
+           
+            // Stop recording the changeset
+            ChangeSet* changeSet = buf->mStopRecordingChangeSet();
+            TS_ASSERT( changeSet );
+
+            TS_ASSERT_EQUALS( changeSet->mIsDelete(), false );
+            TS_ASSERT_EQUALS( changeSet->mIsInsert(), true );
+            TS_ASSERT_SAME_DATA( changeSet->mGetData(), "Derrick J. Wippler", 18 );
+            Cursor pos = changeSet->mGetBounds();
+            TS_ASSERT_EQUALS( pos.mGetAbsPos(),  1);
+            TS_ASSERT_EQUALS( pos.mGetLineNum(), 1);
+            TS_ASSERT_EQUALS( pos.mGetPos(),     1);
+            TS_ASSERT_EQUALS( pos.mGetEnd(),     18);
+            delete changeSet;
+
+        }
+
+        // --------------------------------
+        // Test changeset Delete recording
+        // --------------------------------
+        void testChangeSetDeleteRecording( void ) {
+
+            // Create a new buffer Container
+            BufferContainer* bufList = new BufferContainer();
+            TS_ASSERT( bufList );
+
+            // Create a new Buffer Called "buffer1"
+            Buffer* buf = bufList->mCreateEmptyBuffer("bufferOne");
+            TS_ASSERT(buf);
+
+            // Insert "Derrick J. Wippler"
+            
+            // Start Recording the changeset
+            buf->mStartRecordingChangeSet();
+
+            // Delete " J. Wippler"
+           
+            // Stop recording the changeset
+            ChangeSet* changeSet = buf->mStopRecordingChangeSet();
+            TS_ASSERT( changeSet );
+
+            TS_ASSERT_EQUALS( changeSet->mIsInsert(), false );
+            TS_ASSERT_EQUALS( changeSet->mIsDelete(), true );
+            TS_ASSERT_SAME_DATA( changeSet->mGetData(), " J. Wippler", 11 );
+            Cursor pos = changeSet->mGetBounds();
+            TS_ASSERT_EQUALS( pos.mGetAbsPos(),  8);
+            TS_ASSERT_EQUALS( pos.mGetLineNum(), 1);
+            TS_ASSERT_EQUALS( pos.mGetPos(),     8);
+            TS_ASSERT_EQUALS( pos.mGetEnd(),     18);
+            delete changeSet;
+
+        }
+
+        // --------------------------------
+        // Test changeset Insert / Delete recording
+        // --------------------------------
+        void testChangeSetInsertDeleteRecording( void ) {
+
+            // Create a new buffer Container
+            BufferContainer* bufList = new BufferContainer();
+            TS_ASSERT( bufList );
+
+            // Create a new Buffer Called "buffer1"
+            Buffer* buf = bufList->mCreateEmptyBuffer("bufferOne");
+            TS_ASSERT(buf);
+
+            // Start Recording the changeset
+            buf->mStartRecordingChangeSet();
+
+            // Insert "Derrick J. Wippler"
+            
+            // Delete " J. Wippler"
+           
+            // Stop recording the changeset
+            ChangeSet* changeSet = buf->mStopRecordingChangeSet();
+            TS_ASSERT( changeSet );
+
+            TS_ASSERT_EQUALS( changeSet->mIsInsert(), true );
+            TS_ASSERT_EQUALS( changeSet->mIsDelete(), false );
+            TS_ASSERT_SAME_DATA( changeSet->mGetData(), "Derrick", 7 );
+            Cursor pos = changeSet->mGetBounds();
+            TS_ASSERT_EQUALS( pos.mGetAbsPos(),  1);
+            TS_ASSERT_EQUALS( pos.mGetLineNum(), 1);
+            TS_ASSERT_EQUALS( pos.mGetPos(),     1);
+            TS_ASSERT_EQUALS( pos.mGetEnd(),     8);
+            delete changeSet;
+
+        }
+
+        // --------------------------------
+        // Test changeset Delete / Insert recording
+        // --------------------------------
+        void testChangeSetDeleteInsertRecording( void ) {
+
+            // Create a new buffer Container
+            BufferContainer* bufList = new BufferContainer();
+            TS_ASSERT( bufList );
+
+            // Create a new Buffer Called "buffer1"
+            Buffer* buf = bufList->mCreateEmptyBuffer("bufferOne");
+            TS_ASSERT(buf);
+
+            // Insert "Derrick J. Wippler"
+            
+            // Start Recording the changeset
+            buf->mStartRecordingChangeSet();
+
+            // Append " is drunk"
+            
+            // Delete " J. Wippler is drunk"
+           
+            // Stop recording the changeset
+            ChangeSet* changeSet = buf->mStopRecordingChangeSet();
+            TS_ASSERT( changeSet );
+
+            TS_ASSERT_EQUALS( changeSet->mIsInsert(), false );
+            TS_ASSERT_EQUALS( changeSet->mIsDelete(), true );
+            TS_ASSERT_SAME_DATA( changeSet->mGetData(), " J. Wippler is drunk", 20 );
+            Cursor pos = changeSet->mGetBounds();
+            TS_ASSERT_EQUALS( pos.mGetAbsPos(),  8);
+            TS_ASSERT_EQUALS( pos.mGetLineNum(), 1);
+            TS_ASSERT_EQUALS( pos.mGetPos(),     8);
+            TS_ASSERT_EQUALS( pos.mGetEnd(),    27);
+            delete changeSet;
+
+        }
 };
 

@@ -24,6 +24,61 @@
 #include <ollie.h>
 #include <filefactory.h>
 
+//! Move this somewhere is will get set appropriately by Cmake
+typedef int OInt;
+
+/*!
+ *  This class holds the Line Number, 
+ *  Position of the cursor on the line,
+ *  End of Bound Position ( If this cursor represents a bound ),
+ *  and the Absolute Position within the buffer
+ */
+class Cursor {
+
+    public:
+        // Constructor / Destructor  
+        Cursor( void );
+        ~Cursor( void );
+
+        // Methods
+        OInt mGetLineNum( void );
+        OInt mGetPos( void );
+        OInt mGetEnd( void );
+        OInt mGetAbsPos( void );
+
+        // Members
+        OInt _OIntLineNum;
+        OInt _OIntPos;
+        OInt _OIntEnd;
+        OInt _OIntAbs;
+};
+
+/*!
+ *  This class stores 1 changeset. And change set and 
+ *  represent only 2 operations a delete or an insert
+ */
+class ChangeSet {
+
+    public:
+        // Constructor / Destructor  
+        ChangeSet( void );
+        ~ChangeSet( void );
+
+        // The ChangeSet Types
+        enum ChangeSetType { Other, None, Insert, Delete };
+
+        // Methods
+        bool mIsInsert( void );
+        bool mIsDelete( void );
+        char* const mGetData( void );
+        Cursor mGetBounds( void );
+
+        // Members
+        ChangeSetType   _ChangeSetType;
+        Cursor          _CursorPos;
+        char*           _strData;
+};
+
 /*!
  *  The primary buffer class, containing methods 
  *  to act on the Pages and PageContainer
@@ -48,6 +103,8 @@ class Buffer : public OllieCommon {
         bool         mReloadBufferFromFile( void );
         bool         mSaveBufferToFile( void );
         bool         mAssignFile( File* const );
+        void         mStartRecordingChangeSet( void );
+        ChangeSet*   mStopRecordingChangeSet( void );
 
         
         // Variables

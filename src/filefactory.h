@@ -32,7 +32,7 @@ class File : public OllieCommon {
 
     public: 
        File( IOHandle* const );
-       ~File();
+       virtual ~File();
 
        // All the methods of File 
        //read();
@@ -54,6 +54,8 @@ class File : public OllieCommon {
 class Utf8File : public File {
     
     public:
+       Utf8File( IOHandle* const );
+       ~Utf8File();
         // All the virtual methods implemented
 
 };
@@ -64,6 +66,8 @@ class Utf8File : public File {
 class GzipFile : public File {
     
     public:
+       GzipFile( IOHandle* const );
+       ~GzipFile();
         // All the virtual methods implemented
 
 };

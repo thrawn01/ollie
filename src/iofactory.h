@@ -32,7 +32,7 @@ class IOHandle : public OllieCommon {
     public:
         // Constructor / Destructor
         IOHandle();
-        ~IOHandle();
+        virtual ~IOHandle();
 
         // IOHandle Modes
         enum OpenMode { ReadWrite, ReadOnly };
@@ -55,6 +55,8 @@ class IOHandle : public OllieCommon {
  */
 class PosixIOHandle : public IOHandle {
     public:
+        PosixIOHandle();
+        virtual ~PosixIOHandle();
 
         // Methods
         bool mOpen( const char*, OpenMode mode );

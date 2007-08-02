@@ -38,7 +38,7 @@ class Cursor {
     public:
         // Constructor / Destructor  
         Cursor( void );
-        ~Cursor( void );
+        virtual ~Cursor( void );
 
         // Methods
         OffSet mGetLineNum( void );
@@ -62,7 +62,7 @@ class ChangeSet {
     public:
         // Constructor / Destructor  
         ChangeSet( void );
-        ~ChangeSet( void );
+        virtual ~ChangeSet( void );
 
         // The ChangeSet Types
         enum ChangeSetType { Other, None, Insert, Delete };
@@ -90,7 +90,7 @@ class Buffer : public OllieCommon {
         Buffer( void );
         Buffer( int, const std::string& );
         Buffer( int, File* const, const std::string& );
-        ~Buffer( void );
+        virtual ~Buffer( void );
 
         // Methods
         std::string& mGetName( void );
@@ -123,7 +123,7 @@ class BufferContainer {
     public:
         // Constructors Destructors
         BufferContainer();
-        ~BufferContainer();
+        virtual ~BufferContainer();
 
         // Creators
         Buffer* mCreateEmptyBuffer( const std::string& );

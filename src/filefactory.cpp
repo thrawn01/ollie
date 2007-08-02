@@ -37,6 +37,26 @@ File::~File() {
 }
 
 /*!
+ * Utf8File Constructor
+ */
+Utf8File::Utf8File( IOHandle* const ioHandle ) : File(ioHandle) { }
+
+/*!
+ * Utf8File Destructor
+ */
+Utf8File::~Utf8File() { }
+
+/*!
+ * GzipFile Constructor
+ */
+GzipFile::GzipFile( IOHandle* const ioHandle ) : File(ioHandle) { }
+
+/*!
+ * File Destructor
+ */
+GzipFile::~GzipFile() { }
+
+/*!
  * Returns the File name IOHandler has open
  */
 std::string& File::mGetFileName( void ) {

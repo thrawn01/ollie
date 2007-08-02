@@ -27,16 +27,17 @@
 /*!
  * Constructor
  */
-Cursor::Cursor( void ) { }
+Cursor::Cursor( void ) { 
+    _OffSetLineNum = 0;
+    _OffSetPos     = 0;
+    _OffSetEnd     = 0;
+    _OffSetAbs     = 0;
+}
 
 /*!
  * Destructor
  */
 Cursor::~Cursor( void ) { 
-    _OffSetLineNum = 0;
-    _OffSetPos     = 0;
-    _OffSetEnd     = 0;
-    _OffSetAbs     = 0;
 }
 
 /*!

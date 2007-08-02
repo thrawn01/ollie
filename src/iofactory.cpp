@@ -23,6 +23,16 @@
 // --- Begin posixfile.cpp ---
 
 /*!
+ * IOHandle Constructor
+ */
+PosixIOHandle::PosixIOHandle() { }
+
+/*!
+ * IOHandle Destructor
+ */
+PosixIOHandle::~PosixIOHandle() { }
+
+/*!
  * Open a file in the requested mode
  */
 bool PosixIOHandle::mOpen( const char*, OpenMode mode ) {

@@ -21,6 +21,7 @@
 #ifndef OLLIE_INCLUDE_H
 #define OLLIE_INCLUDE_H
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 

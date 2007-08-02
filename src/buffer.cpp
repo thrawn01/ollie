@@ -33,37 +33,37 @@ Cursor::Cursor( void ) { }
  * Destructor
  */
 Cursor::~Cursor( void ) { 
-    _OIntLineNum = 0;
-    _OIntPos     = 0;
-    _OIntEnd     = 0;
-    _OIntAbs     = 0;
+    _OffSetLineNum = 0;
+    _OffSetPos     = 0;
+    _OffSetEnd     = 0;
+    _OffSetAbs     = 0;
 }
 
 /*!
  * Return the Line number for this Cursor
  */
-OInt Cursor::mGetLineNum( void ) {
+OffSet Cursor::mGetLineNum( void ) {
     return 0;
 }
 
 /*!
  * Return the Pos on this line for this Cursor
  */
-OInt Cursor::mGetPos( void ) {
+OffSet Cursor::mGetPos( void ) {
     return 0;
 }
 
 /*!
  * Return the Pos of the end of bounds on this line for this Cursor
  */
-OInt Cursor::mGetEnd( void ) {
+OffSet Cursor::mGetEnd( void ) {
     return 0;
 }
 
 /*!
  * Return the absolute position in the buffer for this Cursor 
  */
-OInt Cursor::mGetAbsPos( void ) {
+OffSet Cursor::mGetAbsPos( void ) {
     return 0;
 }
 

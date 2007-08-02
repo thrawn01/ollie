@@ -24,8 +24,8 @@
 #include <ollie.h>
 #include <filefactory.h>
 
-//! Move this somewhere is will get set appropriately by Cmake
-typedef int OInt;
+//! The offset type for our current platform
+typedef long OffSet;
 
 /*!
  *  This class holds the Line Number, 
@@ -41,16 +41,16 @@ class Cursor {
         ~Cursor( void );
 
         // Methods
-        OInt mGetLineNum( void );
-        OInt mGetPos( void );
-        OInt mGetEnd( void );
-        OInt mGetAbsPos( void );
+        OffSet mGetLineNum( void );
+        OffSet mGetPos( void );
+        OffSet mGetEnd( void );
+        OffSet mGetAbsPos( void );
 
         // Members
-        OInt _OIntLineNum;
-        OInt _OIntPos;
-        OInt _OIntEnd;
-        OInt _OIntAbs;
+        OffSet _OffSetLineNum;
+        OffSet _OffSetPos;
+        OffSet _OffSetEnd;
+        OffSet _OffSetAbs;
 };
 
 /*!

@@ -23,43 +23,24 @@
 /*!
  * Sets _strErrorMsg to NULL
  */
-OllieCommon::OllieCommon() {
-    _strErrorMsg = NULL;
-}
+OllieCommon::OllieCommon() { }
 
 /*!
  * Frees _strErrorMsg
  */
-OllieCommon::~OllieCommon() {
-    if( _strErrorMsg ) { free ( _strErrorMsg ); _strErrorMsg = NULL; }
-}
+OllieCommon::~OllieCommon() { }
 
 /*!
  * Return the last error
  */
-char* OllieCommon::mGetError( void ) {
-    // If the _strErrorMsg already has an assignment
-    if( _strErrorMsg ) {
-        // Return the error message
-        return _strErrorMsg;
-    }
-    // Else, Return an unset message. so if some does
-    // printf("%s",mGetError()); it wont SEG fault
-    return " ";
+std::string& OllieCommon::mGetError( void ) {
+    return _strErrorMsg;
 }
 
 /*!
- * Return the last error
+ * Set the error message
  */
-void OllieCommon::mSetError( const char* strMsg ) {
-    // If the _strErrorMsg already has an assignment
-    if( _strErrorMsg ) {
-        // Free the memory allocated
-        free( _strErrorMsg );
-        // And malloc a new copy of the string
-        _strErrorMsg = strdup(strMsg);
-    }
-    // malloc a new copy of the string
-    _strErrorMsg = strdup(strMsg);
+void OllieCommon::mSetError( const std::string& msg ) {
+    _strErrorMsg = msg;
 }
 

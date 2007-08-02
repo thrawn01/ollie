@@ -29,6 +29,14 @@
 class BufferTests : public CxxTest::TestSuite
 {
     public: 
+        // --------------------------------
+        // Test the base class mSetError() and mGetError()
+        // --------------------------------
+        void testmSetErrormGetError( void ) {
+            OllieCommon ollie; 
+            ollie.mSetError("This is a test");
+            TS_ASSERT_EQUALS( ollie.mGetError(), "This is a test" );
+        }
 
         // --------------------------------
         // To Create a new empty buffer

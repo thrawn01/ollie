@@ -18,60 +18,46 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
- #include <filefactory.h>
-
-// --- Begin posixfile.cpp ---
-
-/*!
- * Open a file in the requested mode
- */
-bool PosixFile::mOpen( const char*, OpenMode mode ) {
-    return false;
-}
-
-/*!
- * Does this platform support Large files with int64?
- */
-bool PosixFile::mOffersLargeFileSupport( void ) {
-    return false;
-}
-
-// --- End posixfile.cpp ---
-
+#include<filefactory.h>
 
 /*!
  * File Constructor
  */
-File::File() {
-    _strFileName = NULL;
+File::File( IOHandle* const ioHandle ) {
+    _ioHandle = ioHandle;
 }
 
 /*!
  * File Destructor
  */
 File::~File() {
-    // Free Assigned memory for _strFileName
-    if( _strFileName ) { 
-        free ( _strFileName ); 
-        _strFileName = NULL; 
+    if( _ioHandle ) {
+        delete _ioHandle;
     }
 }
 
 /*!
- * Return the filename of the file we loaded
+ * Returns the File name IOHandler has open
  */
-const char* File::mGetFileName( void ) {
-    if( _strFileName ) {
-        return _strFileName;
-    }
-    return " ";
+std::string& File::mGetFileName( void ) {
+    assert( _ioHandle != 0 );
+    return _ioHandle->mGetIOHandleName();
 }
 
 /*!
- * Return the default File handler for the current operating system
+ * Returns the IOHandler associated with this File
  */
-File* FileFactory::mGetDefaultFileHandler( void ) {
-    // Un implemented, just return PosixFile();
-    return new PosixFile();
+IOHandle* File::mGetIOHandler( void ) {
+    if ( _ioHandle ) {
+        return _ioHandle;
+    }
+    return 0;
+}
+
+/*!
+ * Attempts to identify the file by reading parts of the file from the IOHandler.
+ */
+File* FileFactory::mIdentifyFile( IOHandle* ioHandle ) {
+    return new File( ioHandle );  
 }
 

@@ -18,29 +18,49 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
-#include <ollie.h>
+#include <iofactory.h>
+
+// --- Begin posixfile.cpp ---
 
 /*!
- * Constructor
+ * Open a file in the requested mode
  */
-OllieCommon::OllieCommon() { }
-
-/*!
- * Destructor
- */
-OllieCommon::~OllieCommon() { }
-
-/*!
- * Return the last error
- */
-std::string& OllieCommon::mGetError( void ) {
-    return _strErrorMsg;
+bool PosixIOHandle::mOpen( const char*, OpenMode mode ) {
+    return false;
 }
 
 /*!
- * Set the error message
+ * Does this platform support Large files with int64?
  */
-void OllieCommon::mSetError( const std::string& msg ) {
-    _strErrorMsg = msg;
+bool PosixIOHandle::mOffersLargeFileSupport( void ) {
+    return false;
+}
+
+// --- End posixfile.cpp ---
+
+
+/*!
+ * IOHandle Constructor
+ */
+IOHandle::IOHandle() { }
+
+/*!
+ * IOHandle Destructor
+ */
+IOHandle::~IOHandle() { }
+
+/*!
+ * Return the filename of the file we loaded
+ */
+std::string& IOHandle::mGetIOHandleName( void ) {
+    return _strIOHandleName;
+}
+
+/*!
+ * Return the default IOHandle handler for the current operating system
+ */
+IOHandle* IOHandleFactory::mGetDefaultIOHandler( void ) {
+    // Un implemented, just return PosixIOHandle();
+    return new PosixIOHandle();
 }
 

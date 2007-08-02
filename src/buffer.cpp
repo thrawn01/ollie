@@ -76,7 +76,7 @@ OffSet Cursor::mGetAbsPos( void ) {
  */
 ChangeSet::ChangeSet() {
     _ChangeSetType = None; 
-    _strData       = NULL;
+    _strData       = 0;
 }
 
 /*!
@@ -115,7 +115,7 @@ char* const ChangeSet::mGetData( void ) {
     if( _strData ) {
         return _strData;
     }
-    return NULL;
+    return 0;
 }
 
 /*!
@@ -133,21 +133,19 @@ Cursor ChangeSet::mGetBounds( void ) {
  * Set default values for members
  */
 Buffer::Buffer( void ) {
-    _strMyName     = NULL;
-    _strMyFileName = NULL;
     _boolModified  = false;
-    _FileMyFile    = NULL;
+    _FileMyFile    = 0;
     _intMyId       = 0;
 }
 
 /*!
  * Construct a empty buffer and give it a name
  */
-Buffer::Buffer( int intNewId, const char* strMyName ) {
+Buffer::Buffer( int intNewId, const std::string& strMyName ) {
     // Set defaults
     Buffer();
     // copy and store the name of this buffer
-    _strMyName     = strdup(strMyName);
+    _strMyName = strMyName;
     // Assign the new Id
     _intMyId = intNewId;
 }
@@ -155,15 +153,15 @@ Buffer::Buffer( int intNewId, const char* strMyName ) {
 /*!
  * Construct a buffer from a file and give it a name
  */
-Buffer::Buffer( int intNewId, File* const file, const char* strMyName ) {
+Buffer::Buffer( int intNewId, File* const file, const std::string& strMyName ) {
     // Set defaults
     Buffer();
     // Store the pointer to the file object
-    _FileMyFile    = file;
+    _FileMyFile = file;
     // copy and store the name of this buffer
-    _strMyName     = strdup(strMyName);
-    // copy and store the name of the file this buffer represents
-    _strMyFileName = strdup(file->mGetFileName());
+    _strMyName = strMyName;
+    // store the name of the file this buffer represents
+    _strMyFileName = file->mGetFileName();
     // Assign the new Id
     _intMyId = intNewId;
 }
@@ -173,8 +171,6 @@ Buffer::Buffer( int intNewId, File* const file, const char* strMyName ) {
  */
 Buffer::~Buffer( void ) {
     // Unallocate the name of the buffer
-    if( _strMyName ) { free (_strMyName); }
-    if( _strMyFileName ) { free (_strMyFileName); }
     if( _FileMyFile ) { free (_FileMyFile); }
 }
 
@@ -204,12 +200,7 @@ bool Buffer::mIsUsable( void ) {
         return false;
     }
     // If no name is assigned return false
-    if( !_strMyName ) {
-        return false;
-    }
-
-    // If _strMyName is empty return false
-    if( strlen(_strMyName) == 0 ) {
+    if( _strMyName.empty() ) {
         this->mSetError("Empty string for buffer name is not allowed");
         return false;
     }
@@ -222,11 +213,7 @@ bool Buffer::mIsUsable( void ) {
  */
 bool Buffer::mAssignFile( File* const file ) {
 
-    // If we have a file name represented
-    if( _strMyFileName ) {
-        free ( _strMyFileName );
-    }
-    _strMyFileName = strdup(file->mGetFileName());
+    _strMyFileName = file->mGetFileName();
 
     return false;
 }
@@ -236,7 +223,7 @@ bool Buffer::mAssignFile( File* const file ) {
  */
 bool Buffer::mSaveBufferToFile( void ) {
     // If we have no file name represented
-    if( !_strMyFileName ) {
+    if( _strMyFileName.empty() ) {
         this->mSetError("Cannot save a buffer with no file represented");
         return false;
     }
@@ -248,7 +235,7 @@ bool Buffer::mSaveBufferToFile( void ) {
  */
 bool Buffer::mReloadBufferFromFile( void ) {
     // If we have no file name applied
-    if( !_strMyFileName ) {
+    if( _strMyFileName.empty() ) {
         this->mSetError("Cannot re-load a buffer with no file represented");
         return false;
     }
@@ -265,24 +252,21 @@ int Buffer::mGetId( void ) {
 /*!
  * Returns the Name of the current buffer
  */
-const char* Buffer::mGetName( void ) {
+std::string& Buffer::mGetName( void ) {
     return _strMyName;
 }
 
 /*!
  * Sets the Name of the current buffer
  */
-void Buffer::mSetName( const char* strMyName ) {
-    if( _strMyName ) {
-        free ( _strMyName );
-    }
-    _strMyName = strdup(strMyName);
+void Buffer::mSetName( const std::string& strMyName ) {
+    _strMyName = strMyName;
 }
 
 /*!
  * Returns the File Name the current buffer represents
  */
-const char* Buffer::mGetFileName( void ) {
+std::string& Buffer::mGetFileName( void ) {
     return _strMyFileName;
 }
 
@@ -323,7 +307,7 @@ BufferContainer::~BufferContainer() {
  * Creates a new empty buffer adds it to the container
  * then returns a pointer to the new buffer
  */
-Buffer* BufferContainer::mCreateEmptyBuffer( const char* strName ) {
+Buffer* BufferContainer::mCreateEmptyBuffer( const std::string& strName ) {
     // un implemented return empty buffer
     return new Buffer( _intMaxId++, strName );
 }
@@ -340,33 +324,33 @@ Buffer* BufferContainer::mCreateBufferFromFile( File* const file ) {
 /*!
  * Returns a buffer by name
  */
-Buffer* BufferContainer::mGetBufferByName( const char* strName ) {
-    // un implemented return NULL 
-    return NULL;
+Buffer* BufferContainer::mGetBufferByName( const std::string& strName ) {
+    // un implemented return 0 
+    return 0;
 }
 
 /*!
  * Returns a buffer by Id
  */
 Buffer* BufferContainer::mGetBufferById( int intId ) {
-    // un implemented return NULL 
-    return NULL;
+    // un implemented return 0 
+    return 0;
 }
 
 /*!
  * Returns a buffer by the File Name it was opened with
  * strName must be the FULL PATH
  */
-Buffer* BufferContainer::mGetBufferByFileName( const char* strName ) {
-    // un implemented return NULL 
-    return NULL;
+Buffer* BufferContainer::mGetBufferByFileName( const std::string& strName ) {
+    // un implemented return 0 
+    return 0;
 }
 
 /*!
  * Deletes a buffer from the Buffer Container by Name
  */
-bool BufferContainer::mDeleteBufferByName( const char* strName ) {
-    // un implemented return NULL 
+bool BufferContainer::mDeleteBufferByName( const std::string& strName ) {
+    // un implemented return 0 
     return false;
 }
 
@@ -374,6 +358,6 @@ bool BufferContainer::mDeleteBufferByName( const char* strName ) {
  * Deletes a buffer from the Buffer Container by Name
  */
 bool BufferContainer::mDeleteBufferById( int intId ) {
-    // un implemented return NULL 
+    // un implemented return 0 
     return false;
 }

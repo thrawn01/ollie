@@ -21,60 +21,64 @@
 #ifndef FILEFACTORY_INCLUDE_H
 #define FILEFACTORY_INCLUDE_H
 
+#include <filefactory.h>
+#include <iofactory.h>
 #include <ollie.h>
 
-/*!
- *  An Abstract class used to 
- *  open/read/write to a IO device
+/*! 
+ * This is the base class for all files.
  */
-class File : public OllieCommon { 
+class File : public OllieCommon {
 
-    public:
-        // Constructor / Destructor
-        File();
-        ~File();
+    public: 
+       File( IOHandle* const );
+       ~File();
 
-        // File Modes
-        enum OpenMode { ReadWrite, ReadOnly };
+       // All the methods of File 
+       //read();
+       //write();
+       //seek();
 
-        // Open the file
-        virtual bool mOpen( const char*, OpenMode mode ) { };
-        //! Does the OS offer int64 for large files and does open support it?
-        virtual bool mOffersLargeFileSupport() { };
-
-        // Return the file name passed when open() was called
-        const char* mGetFileName( void );
-
-        // Private FileName
-        char* _strFileName;
-};
-
-/*!
- *  A Class to open/read/write using posix 
- *  commands
- */
-class PosixFile : public File {
-    public:
-
-        // Methods
-        bool mOpen( const char*, OpenMode mode );
-        bool mOffersLargeFileSupport( void );
-};
-
-
-/*!
- *  A Factory to create File objects for the 
- *  accessing the file system of the current
- *  operating system
- */
-class FileFactory : public OllieCommon { 
-
-    public:
        // Methods
-       File* mGetDefaultFileHandler( void );
+       IOHandle*     mGetIOHandler( void );
+       std::string&  mGetFileName( void );
 
-       // Variables
+       // Members
+       IOHandle* _ioHandle;
+
+};
+
+/*!
+ * This class reads and writes UTF-8 Files
+ */
+class Utf8File : public File {
     
+    public:
+        // All the virtual methods implemented
+
+};
+
+/*!
+ * This class reads and writes gzip files. 
+ */
+class GzipFile : public File {
+    
+    public:
+        // All the virtual methods implemented
+
+};
+
+/*!
+ * This class attempts to identify the type of file 
+ * passed to it then assigns the appropriate File class
+ * if the file cannot be identified returns an AsciiFile() 
+ * as default
+ */
+class FileFactory : public OllieCommon {
+
+    public: 
+        //! Identify the file 
+        File* mIdentifyFile( IOHandle* );
 };
 
 #endif // FILEFACTORY_INCLUDE_H

@@ -20,6 +20,7 @@
 
 #include "cxxtest/TestSuite.h"
 #include <buffer.h>
+#include <iofactory.h>
 #include <filefactory.h>
 #include <iostream>
 
@@ -66,13 +67,18 @@ class BufferTests : public CxxTest::TestSuite
             BufferContainer* bufList = new BufferContainer();
             TS_ASSERT( bufList ); 
 
-            // Get the default file handler for this Operating System
-            FileFactory fileFactory;
-            File* file = fileFactory.mGetDefaultFileHandler();
-            TS_ASSERT( file ); 
+            // Get the default IO handler for this Operating System
+            IOHandleFactory ioFactory;
+            IOHandle* ioHandle = ioFactory.mGetDefaultIOHandler();
+            TS_ASSERT( ioHandle ); 
 
             // Open The File ReadWrite
-            TS_ASSERT_EQUALS( file->mOpen("fileToOpen.txt", File::ReadWrite ), true );
+            TS_ASSERT_EQUALS( ioHandle->mOpen("fileToOpen.txt", IOHandle::ReadWrite ), true );
+           
+            // Try to identify the file using the IO handle. Return an appropriate file type for reading this file
+            FileFactory fileFactory;
+            File* file = fileFactory.mIdentifyFile( ioHandle );
+            TS_ASSERT( file );
 
             // Create the buffer with the file handler
             Buffer* buf = bufList->mCreateBufferFromFile(file);
@@ -138,13 +144,18 @@ class BufferTests : public CxxTest::TestSuite
             BufferContainer* bufList = new BufferContainer();
             TS_ASSERT( bufList );
             
-            // Get the default file handler for this Operating System
-            FileFactory fileFactory;
-            File* file = fileFactory.mGetDefaultFileHandler();
-            TS_ASSERT( file ); 
+            // Get the default IO handler for this Operating System
+            IOHandleFactory ioFactory;
+            IOHandle* ioHandle = ioFactory.mGetDefaultIOHandler();
+            TS_ASSERT( ioHandle ); 
 
             // Open The File ReadWrite
-            TS_ASSERT_EQUALS( file->mOpen("fileToOpen.txt", File::ReadWrite ), true );
+            TS_ASSERT_EQUALS( ioHandle->mOpen("fileToOpen.txt", IOHandle::ReadWrite ), true );
+           
+            // Try to identify the file using the IO handle. Return an appropriate file type for reading this file
+            FileFactory fileFactory;
+            File* file = fileFactory.mIdentifyFile( ioHandle );
+            TS_ASSERT( file );
 
             // Create the buffer with the file handler
             Buffer* bufNew = bufList->mCreateBufferFromFile(file);
@@ -166,13 +177,18 @@ class BufferTests : public CxxTest::TestSuite
             BufferContainer* bufList = new BufferContainer();
             TS_ASSERT( bufList );
             
-            // Get the default file handler for this Operating System
-            FileFactory fileFactory;
-            File* file = fileFactory.mGetDefaultFileHandler();
-            TS_ASSERT( file ); 
+            // Get the default IO handler for this Operating System
+            IOHandleFactory ioFactory;
+            IOHandle* ioHandle = ioFactory.mGetDefaultIOHandler();
+            TS_ASSERT( ioHandle ); 
 
             // Open The File ReadWrite
-            TS_ASSERT_EQUALS( file->mOpen("fileToOpen.txt", File::ReadWrite ), true );
+            TS_ASSERT_EQUALS( ioHandle->mOpen("fileToOpen.txt", IOHandle::ReadWrite ), true );
+           
+            // Try to identify the file using the IO handle. Return an appropriate file type for reading this file
+            FileFactory fileFactory;
+            File* file = fileFactory.mIdentifyFile( ioHandle );
+            TS_ASSERT( file );
 
             // Create the buffer with the file handler
             Buffer* buf = bufList->mCreateBufferFromFile(file);
@@ -194,23 +210,26 @@ class BufferTests : public CxxTest::TestSuite
             BufferContainer* bufList = new BufferContainer();
             TS_ASSERT( bufList );
 
-            // Get the default file handler for this Operating System
-            FileFactory fileFactory;
-            File* file = fileFactory.mGetDefaultFileHandler();
-            TS_ASSERT( file ); 
-            
             // Create a new Buffer Called "buffer1"
             Buffer* buf = bufList->mCreateEmptyBuffer("buffer1");
             TS_ASSERT( buf );
 
+            // Get the default IO handler for this Operating System
+            IOHandleFactory ioFactory;
+            IOHandle* ioHandle = ioFactory.mGetDefaultIOHandler();
+            TS_ASSERT( ioHandle ); 
+
             // Open The File ReadWrite
-            TS_ASSERT_EQUALS( file->mOpen("fileToOpen.txt", File::ReadWrite ), true );
+            TS_ASSERT_EQUALS( ioHandle->mOpen("fileToOpen.txt", IOHandle::ReadWrite ), true );
+            
+            File* file = new File( ioHandle );
+            TS_ASSERT( file ); 
 
             // Assign a file to the buffer
             TS_ASSERT_EQUALS(buf->mAssignFile(file), true );
             
             // The Assignment updated the 
-            TS_ASSERT_SAME_DATA(buf->_strMyFileName, "fileToOpen.txt", 14 ); 
+            TS_ASSERT_EQUALS(buf->_strMyFileName, "fileToOpen.txt" ); 
 
             // Save the buffer to the file
             TS_ASSERT_EQUALS(buf->mSaveBufferToFile(), true );
@@ -244,9 +263,23 @@ class BufferTests : public CxxTest::TestSuite
             BufferContainer* bufList = new BufferContainer();
             TS_ASSERT( bufList );
 
-            // Create a new Buffer Called "buffer1"
-            Buffer* buf = bufList->mCreateEmptyBuffer("buffer1");
-            TS_ASSERT( buf );
+            // Get the default IO handler for this Operating System
+            IOHandleFactory ioFactory;
+            IOHandle* ioHandle = ioFactory.mGetDefaultIOHandler();
+            TS_ASSERT( ioHandle ); 
+
+            // Open The File ReadWrite
+            TS_ASSERT_EQUALS( ioHandle->mOpen("fileToOpen.txt", IOHandle::ReadWrite ), true );
+           
+            // Try to identify the file using the IO handle. Return an appropriate file type for reading this file
+            FileFactory fileFactory;
+            File* file = fileFactory.mIdentifyFile( ioHandle );
+            TS_ASSERT( file );
+
+            // Create the buffer with the file handler
+            Buffer* buf = bufList->mCreateBufferFromFile(file);
+            TS_ASSERT( buf ); 
+            TS_ASSERT( buf->mIsUsable() );
 
             // TODO: Modify the file somehow 
 
@@ -273,13 +306,13 @@ class BufferTests : public CxxTest::TestSuite
             // Delete Buffer 3
             TS_ASSERT_EQUALS( bufList->mDeleteBufferByName("bufferThree"), true ); 
 
-            // Asking for bufferOne should return NULL
+            // Asking for bufferOne should return 0
             Buffer* buf = bufList->mGetBufferByName("bufferOne");
-            TS_ASSERT( buf == NULL );
+            TS_ASSERT( buf == 0 );
 
-            // Asking for buffer 3 should return NULL
+            // Asking for buffer 3 should return 0
             buf = bufList->mGetBufferById(3);
-            TS_ASSERT( buf == NULL );
+            TS_ASSERT( buf == 0 );
 
             // Asking for buffer 2 should return a Buffer*
             TS_ASSERT( bufList->mGetBufferById(2) );

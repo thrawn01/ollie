@@ -5,7 +5,7 @@
 # ----------------------------------------------------------------
 
 # Add the ollie Library
-ADD_LIBRARY(ollie ollie.cpp buffer.cpp filefactory.cpp)
+ADD_LIBRARY(ollie ollie.cpp buffer.cpp filefactory.cpp iofactory.cpp)
 
 # Add our Tests
 # -----------------

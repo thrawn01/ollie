@@ -88,14 +88,14 @@ class Buffer : public OllieCommon {
     public:
         // Constructor / Destructor  
         Buffer( void );
-        Buffer( int, const char* );
-        Buffer( int, File* const, const char* );
+        Buffer( int, const std::string& );
+        Buffer( int, File* const, const std::string& );
         ~Buffer( void );
 
         // Methods
-        const char*  mGetName( void );
-        void         mSetName( const char* );
-        const char*  mGetFileName( void );
+        std::string& mGetName( void );
+        void         mSetName( const std::string& );
+        std::string& mGetFileName( void );
         int          mGetId( void );
         bool         mIsUsable( void );
         bool         mIsModified( void );
@@ -108,8 +108,8 @@ class Buffer : public OllieCommon {
 
         
         // Variables
-        char* _strMyName;
-        char* _strMyFileName;
+        std::string _strMyName;
+        std::string _strMyFileName;
         int   _intMyId;
         bool  _boolModified;
         File* _FileMyFile;
@@ -126,15 +126,15 @@ class BufferContainer {
         ~BufferContainer();
 
         // Creators
-        Buffer* mCreateEmptyBuffer( const char* );
+        Buffer* mCreateEmptyBuffer( const std::string& );
         Buffer* mCreateBufferFromFile( File* const );
         bool mDeleteBufferById( int );
-        bool mDeleteBufferByName( const char* );
+        bool mDeleteBufferByName( const std::string& );
         
         // Accessors
-        Buffer* mGetBufferByName( const char* );
+        Buffer* mGetBufferByName( const std::string& );
         Buffer* mGetBufferById( int );
-        Buffer* mGetBufferByFileName( const char* );
+        Buffer* mGetBufferByFileName( const std::string& );
 
         // Variables
         int _intMaxId;

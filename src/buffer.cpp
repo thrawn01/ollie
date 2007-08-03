@@ -21,64 +21,9 @@
 #include <buffer.h>
 
 //-------------------------------------------
-// Cursor Class Methods
-//-------------------------------------------
-
-/*!
- * Constructor
- */
-Cursor::Cursor( void ) { 
-    _OffSetLineNum = 0;
-    _OffSetPos     = 0;
-    _OffSetEnd     = 0;
-    _OffSetAbs     = 0;
-}
-
-/*!
- * Destructor
- */
-Cursor::~Cursor( void ) { 
-}
-
-/*!
- * Return the Line number for this Cursor
- */
-OffSet Cursor::mGetLineNum( void ) {
-    return 0;
-}
-
-/*!
- * Return the Pos on this line for this Cursor
- */
-OffSet Cursor::mGetPos( void ) {
-    return 0;
-}
-
-/*!
- * Return the Pos of the end of bounds on this line for this Cursor
- */
-OffSet Cursor::mGetEnd( void ) {
-    return 0;
-}
-
-/*!
- * Return the absolute position in the buffer for this Cursor 
- */
-OffSet Cursor::mGetAbsPos( void ) {
-    return 0;
-}
-
-//-------------------------------------------
 // ChangeSet Class Methods
 //-------------------------------------------
 
-/*!
- * Constructor 
- */
-ChangeSet::ChangeSet() {
-    _ChangeSetType = None; 
-    _strData       = 0;
-}
 
 /*!
  * Destructor 
@@ -88,6 +33,14 @@ ChangeSet::~ChangeSet() {
     if( _strData ) {
         free ( _strData );
     }
+}
+
+/*!
+ * Constructor 
+ */
+ChangeSet::ChangeSet( Buffer* _buf ) : _CursorPos(_buf) {
+    _ChangeSetType = None; 
+    _strData       = 0;
 }
 
 /*!
@@ -283,7 +236,14 @@ void Buffer::mStartRecordingChangeSet( void ) {
  * represents the changes to the buffer
  */
 ChangeSet* Buffer::mStopRecordingChangeSet( void ) {
-    return new ChangeSet(); 
+    return new ChangeSet( this ); 
+}
+
+/*!
+ * Returns a Cursor assigned to this buffer
+ */
+Cursor Buffer::mGetCursor( void ) {
+    return Utf8Cursor( this ); 
 }
 
 //-------------------------------------------

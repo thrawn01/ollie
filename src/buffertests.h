@@ -30,6 +30,7 @@
 class BufferTests : public CxxTest::TestSuite
 {
     public: 
+
         // --------------------------------
         // Test the base class mSetError() and mGetError()
         // --------------------------------
@@ -344,11 +345,12 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( changeSet->mIsDelete(), false );
             TS_ASSERT_EQUALS( changeSet->mIsInsert(), true );
             TS_ASSERT_SAME_DATA( changeSet->mGetData(), "Derrick J. Wippler", 18 );
-            Cursor pos = changeSet->mGetBounds();
-            TS_ASSERT_EQUALS( pos.mGetAbsPos(),  1);
-            TS_ASSERT_EQUALS( pos.mGetLineNum(), 1);
-            TS_ASSERT_EQUALS( pos.mGetPos(),     1);
-            TS_ASSERT_EQUALS( pos.mGetEnd(),     18);
+            Cursor bounds = changeSet->mGetBounds();
+            TS_ASSERT_EQUALS( bounds.mGetAbsPosition(),  1);
+            TS_ASSERT_EQUALS( bounds.mGetLineNum(),      1);
+            TS_ASSERT_EQUALS( bounds.mGetPosition(),     1);
+            TS_ASSERT_EQUALS( bounds.mIsSelection(),     true);
+            TS_ASSERT_EQUALS( bounds.mGetSelectionEnd(), 18);
             delete changeSet;
 
         }
@@ -380,11 +382,12 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( changeSet->mIsInsert(), false );
             TS_ASSERT_EQUALS( changeSet->mIsDelete(), true );
             TS_ASSERT_SAME_DATA( changeSet->mGetData(), " J. Wippler", 11 );
-            Cursor pos = changeSet->mGetBounds();
-            TS_ASSERT_EQUALS( pos.mGetAbsPos(),  8);
-            TS_ASSERT_EQUALS( pos.mGetLineNum(), 1);
-            TS_ASSERT_EQUALS( pos.mGetPos(),     8);
-            TS_ASSERT_EQUALS( pos.mGetEnd(),     18);
+            Cursor bounds = changeSet->mGetBounds();
+            TS_ASSERT_EQUALS( bounds.mGetAbsPosition(),  8);
+            TS_ASSERT_EQUALS( bounds.mGetLineNum(),      1);
+            TS_ASSERT_EQUALS( bounds.mGetPosition(),     8);
+            TS_ASSERT_EQUALS( bounds.mIsSelection(),     true);
+            TS_ASSERT_EQUALS( bounds.mGetSelectionEnd(), 18);
             delete changeSet;
 
         }
@@ -416,11 +419,12 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( changeSet->mIsInsert(), true );
             TS_ASSERT_EQUALS( changeSet->mIsDelete(), false );
             TS_ASSERT_SAME_DATA( changeSet->mGetData(), "Derrick", 7 );
-            Cursor pos = changeSet->mGetBounds();
-            TS_ASSERT_EQUALS( pos.mGetAbsPos(),  1);
-            TS_ASSERT_EQUALS( pos.mGetLineNum(), 1);
-            TS_ASSERT_EQUALS( pos.mGetPos(),     1);
-            TS_ASSERT_EQUALS( pos.mGetEnd(),     8);
+            Cursor bounds = changeSet->mGetBounds();
+            TS_ASSERT_EQUALS( bounds.mGetAbsPosition(),   1);
+            TS_ASSERT_EQUALS( bounds.mGetLineNum(),       1);
+            TS_ASSERT_EQUALS( bounds.mGetPosition(),      1);
+            TS_ASSERT_EQUALS( bounds.mIsSelection(),      true);
+            TS_ASSERT_EQUALS( bounds.mGetSelectionEnd(),  8);
             delete changeSet;
 
         }
@@ -437,15 +441,26 @@ class BufferTests : public CxxTest::TestSuite
             // Create a new Buffer Called "buffer1"
             Buffer* buf = bufList->mCreateEmptyBuffer("bufferOne");
             TS_ASSERT(buf);
+            
+            Cursor pos = buf->mGetCursor();
+            TS_ASSERT_EQUALS(pos.mGetCursorType(), Cursor::Utf8 );
+            TS_ASSERT_EQUALS(pos.mGetAbsPosition(), 1);
+            TS_ASSERT_EQUALS(pos.mGetPosition(), 1);
+            TS_ASSERT_EQUALS(pos.mGetLineNum(), 1);
 
             // Insert "Derrick J. Wippler"
+            pos.mInsertText( "Derrick J. Wippler" );
+            TS_ASSERT_EQUALS(pos.mGetPosition(), 19);
             
             // Start Recording the changeset
             buf->mStartRecordingChangeSet();
 
             // Append " is drunk"
+            pos.mInsertText( " is drunk" );
             
             // Delete " J. Wippler is drunk"
+            pos.mMoveToPosition((OffSet)8);
+            pos.mDeleteTo(pos.mEndOfLine());
            
             // Stop recording the changeset
             ChangeSet* changeSet = buf->mStopRecordingChangeSet();
@@ -454,11 +469,12 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( changeSet->mIsInsert(), false );
             TS_ASSERT_EQUALS( changeSet->mIsDelete(), true );
             TS_ASSERT_SAME_DATA( changeSet->mGetData(), " J. Wippler is drunk", 20 );
-            Cursor pos = changeSet->mGetBounds();
-            TS_ASSERT_EQUALS( pos.mGetAbsPos(),  8);
-            TS_ASSERT_EQUALS( pos.mGetLineNum(), 1);
-            TS_ASSERT_EQUALS( pos.mGetPos(),     8);
-            TS_ASSERT_EQUALS( pos.mGetEnd(),    27);
+            Cursor bounds = changeSet->mGetBounds();
+            TS_ASSERT_EQUALS( bounds.mGetAbsPosition(),  8);
+            TS_ASSERT_EQUALS( bounds.mGetLineNum(),      1);
+            TS_ASSERT_EQUALS( bounds.mGetPosition(),     8);
+            TS_ASSERT_EQUALS( bounds.mIsSelection(),     true);
+            TS_ASSERT_EQUALS( bounds.mGetSelectionEnd(), 27);
             delete changeSet;
 
         }

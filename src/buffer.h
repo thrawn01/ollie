@@ -22,37 +22,10 @@
 #define BUFFER_INCLUDE_H
 
 #include <ollie.h>
+#include <cursor.h>
 #include <filefactory.h>
 
-//! The offset type for our current platform
-typedef long OffSet;
-
-/*!
- *  This class holds the Line Number, 
- *  Position of the cursor on the line,
- *  End of Bound Position ( If this cursor represents a bound ),
- *  and the Absolute Position within the buffer
- */
-class Cursor {
-
-    public:
-        // Constructor / Destructor  
-        Cursor( void );
-        virtual ~Cursor( void );
-
-        // Methods
-        OffSet mGetLineNum( void );
-        OffSet mGetPos( void );
-        OffSet mGetEnd( void );
-        OffSet mGetAbsPos( void );
-
-        // Members
-        OffSet _OffSetLineNum;
-        OffSet _OffSetPos;
-        OffSet _OffSetEnd;
-        OffSet _OffSetAbs;
-};
-
+class Cursor;
 /*!
  *  This class stores 1 changeset. And change set and 
  *  represent only 2 operations a delete or an insert
@@ -61,7 +34,7 @@ class ChangeSet {
 
     public:
         // Constructor / Destructor  
-        ChangeSet( void );
+        ChangeSet( Buffer* );
         virtual ~ChangeSet( void );
 
         // The ChangeSet Types
@@ -105,6 +78,7 @@ class Buffer : public OllieCommon {
         bool         mAssignFile( File* const );
         void         mStartRecordingChangeSet( void );
         ChangeSet*   mStopRecordingChangeSet( void );
+        Cursor       mGetCursor( void );
 
         
         // Variables

@@ -21,26 +21,49 @@
 #include <buffer.h>
 
 //-------------------------------------------
-// ChangeSet Class Methods
+// TextContainer Class Methods
 //-------------------------------------------
+
+/*!
+ * Destructor 
+ */
+TextContainer::~TextContainer() {
+}
+
+/*!
+ * Constructor 
+ */
+TextContainer::TextContainer( Buffer* _buf ) : _CursorPos(_buf) {
+    _myBuffer = _buf; 
+}
+
+/*!
+ * Returns a pointer to the Data the was Deleted or Inserted
+ */
+char* const TextContainer::mGetText( void ) {
+    return 0;
+}
+
+/*!
+ * Returns the cursor that represents the position this 
+ * TextContiner contains
+ */
+Cursor TextContainer::mGetBounds( void ) {
+    return _CursorPos;
+}
 
 
 /*!
  * Destructor 
  */
 ChangeSet::~ChangeSet() {
-    // Free the data if its allocated
-    if( _strData ) {
-        free ( _strData );
-    }
 }
 
 /*!
  * Constructor 
  */
-ChangeSet::ChangeSet( Buffer* _buf ) : _CursorPos(_buf) {
+ChangeSet::ChangeSet( Buffer* _buf ) : TextContainer(_buf) {
     _ChangeSetType = None; 
-    _strData       = 0;
 }
 
 /*!
@@ -61,22 +84,6 @@ bool ChangeSet::mIsDelete( void ) {
         return true;
     }
     return false;
-}
-/*!
- * Returns a pointer to the Data the was Deleted or Inserted
- */
-char* const ChangeSet::mGetData( void ) {
-    if( _strData ) {
-        return _strData;
-    }
-    return 0;
-}
-
-/*!
- * Returns the cursor that represents the position this operation took place
- */
-Cursor ChangeSet::mGetBounds( void ) {
-    return _CursorPos;
 }
 
 //-------------------------------------------
@@ -243,7 +250,7 @@ ChangeSet* Buffer::mStopRecordingChangeSet( void ) {
  * Returns a Cursor assigned to this buffer
  */
 Cursor Buffer::mGetCursor( void ) {
-    return Utf8Cursor( this ); 
+    return Cursor( this ); 
 }
 
 //-------------------------------------------

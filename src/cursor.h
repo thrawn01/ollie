@@ -32,7 +32,8 @@ class Buffer;
  *  This class holds the Line Number, 
  *  Position of the cursor on the line,
  *  End of Bound Position ( If this cursor represents a bound ),
- *  and the Absolute Position within the buffer
+ *  and the Absolute Position within the buffer. This class also provides 
+ *  access to the Text Objects that make up the buffer
  */
 class Cursor {
 
@@ -41,21 +42,19 @@ class Cursor {
         Cursor( Buffer* );
         virtual ~Cursor( void );
 
-        enum CursorType { Utf8, Binary };
-
         // Methods
-        CursorType mGetCursorType( void );
         OffSet mGetLineNum( void );
         OffSet mGetPosition( void );
         OffSet mGetSelectionEnd( void );
         OffSet mGetAbsPosition( void );
         OffSet mEndOfLine( void );
+        bool mMoveToAbsPosition( OffSet off );
         bool mIsSelection( void );
-        virtual bool mInsertText( const std::string& ) { };
-        virtual bool mInsertChar( char ) { };
-        virtual bool mMoveToPosition( OffSet ) { };
-        virtual bool mDeleteTo( OffSet ) { };
-        virtual bool mDeleteFrom( OffSet ) { };
+        bool mInsertText( const std::string& );
+        bool mInsertChar( char );
+        bool mMoveToPosition( OffSet );
+        bool mDeleteTo( OffSet );
+        bool mDeleteFrom( OffSet );
 
         // Members
         OffSet _OffSetLineNum;
@@ -63,23 +62,6 @@ class Cursor {
         OffSet _OffSetEnd;
         OffSet _OffSetAbs;
         Buffer* _BufMyBuffer;
-};
-
-/*!
- * This class is the cursor for utf8 character access
- */
-class Utf8Cursor : public Cursor {
-
-    public:
-        // Constructor / Destructor  
-        Utf8Cursor( Buffer* );
-        virtual ~Utf8Cursor( void );
-        bool mInsertText( const std::string& );
-        bool mInsertChar( char );
-        bool mMoveToPosition( OffSet );
-        bool mMoveToAbsPosition( OffSet );
-        bool mDeleteTo( OffSet );
-
 };
 
 #endif // CURSOR_INCLUDE_H

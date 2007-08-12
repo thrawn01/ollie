@@ -344,7 +344,7 @@ class BufferTests : public CxxTest::TestSuite
 
             TS_ASSERT_EQUALS( changeSet->mIsDelete(), false );
             TS_ASSERT_EQUALS( changeSet->mIsInsert(), true );
-            TS_ASSERT_SAME_DATA( changeSet->mGetData(), "Derrick J. Wippler", 18 );
+            TS_ASSERT_SAME_DATA( changeSet->mGetText(), "Derrick J. Wippler", 18 );
             Cursor bounds = changeSet->mGetBounds();
             TS_ASSERT_EQUALS( bounds.mGetAbsPosition(),  1);
             TS_ASSERT_EQUALS( bounds.mGetLineNum(),      1);
@@ -381,7 +381,7 @@ class BufferTests : public CxxTest::TestSuite
 
             TS_ASSERT_EQUALS( changeSet->mIsInsert(), false );
             TS_ASSERT_EQUALS( changeSet->mIsDelete(), true );
-            TS_ASSERT_SAME_DATA( changeSet->mGetData(), " J. Wippler", 11 );
+            TS_ASSERT_SAME_DATA( changeSet->mGetText(), " J. Wippler", 11 );
             Cursor bounds = changeSet->mGetBounds();
             TS_ASSERT_EQUALS( bounds.mGetAbsPosition(),  8);
             TS_ASSERT_EQUALS( bounds.mGetLineNum(),      1);
@@ -418,7 +418,7 @@ class BufferTests : public CxxTest::TestSuite
 
             TS_ASSERT_EQUALS( changeSet->mIsInsert(), true );
             TS_ASSERT_EQUALS( changeSet->mIsDelete(), false );
-            TS_ASSERT_SAME_DATA( changeSet->mGetData(), "Derrick", 7 );
+            TS_ASSERT_SAME_DATA( changeSet->mGetText(), "Derrick", 7 );
             Cursor bounds = changeSet->mGetBounds();
             TS_ASSERT_EQUALS( bounds.mGetAbsPosition(),   1);
             TS_ASSERT_EQUALS( bounds.mGetLineNum(),       1);
@@ -443,7 +443,6 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT(buf);
             
             Cursor pos = buf->mGetCursor();
-            TS_ASSERT_EQUALS(pos.mGetCursorType(), Cursor::Utf8 );
             TS_ASSERT_EQUALS(pos.mGetAbsPosition(), 1);
             TS_ASSERT_EQUALS(pos.mGetPosition(), 1);
             TS_ASSERT_EQUALS(pos.mGetLineNum(), 1);
@@ -468,7 +467,7 @@ class BufferTests : public CxxTest::TestSuite
 
             TS_ASSERT_EQUALS( changeSet->mIsInsert(), false );
             TS_ASSERT_EQUALS( changeSet->mIsDelete(), true );
-            TS_ASSERT_SAME_DATA( changeSet->mGetData(), " J. Wippler is drunk", 20 );
+            TS_ASSERT_SAME_DATA( changeSet->mGetText(), " J. Wippler is drunk", 20 );
             Cursor bounds = changeSet->mGetBounds();
             TS_ASSERT_EQUALS( bounds.mGetAbsPosition(),  8);
             TS_ASSERT_EQUALS( bounds.mGetLineNum(),      1);

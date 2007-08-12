@@ -26,15 +26,34 @@
 #include <filefactory.h>
 
 class Cursor;
+class Buffer;
+
+/*!
+ * This class holds Text Objects. 
+ * Provides add and delete operations for Text Objects
+ */
+class TextContainer {
+
+    public:
+        TextContainer( Buffer* );
+        virtual ~TextContainer( void );
+
+        char* const mGetText( void );
+        Cursor mGetBounds( void );
+        Cursor  _CursorPos;
+        Buffer* _myBuffer;
+
+};
+
 /*!
  *  This class stores 1 changeset. And change set and 
  *  represent only 2 operations a delete or an insert
  */
-class ChangeSet {
+class ChangeSet : public TextContainer {
 
     public:
         // Constructor / Destructor  
-        ChangeSet( Buffer* );
+        ChangeSet( Buffer* ) ;
         virtual ~ChangeSet( void );
 
         // The ChangeSet Types
@@ -43,13 +62,9 @@ class ChangeSet {
         // Methods
         bool mIsInsert( void );
         bool mIsDelete( void );
-        char* const mGetData( void );
-        Cursor mGetBounds( void );
 
         // Members
         ChangeSetType   _ChangeSetType;
-        Cursor          _CursorPos;
-        char*           _strData;
 };
 
 /*!

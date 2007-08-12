@@ -85,53 +85,30 @@ OffSet Cursor::mEndOfLine( void ) {
 }
 
 /*!
- * Returns the type of Cursor this is 
- */
-Cursor::CursorType Cursor::mGetCursorType( void ) {
-    return Cursor::Utf8;
-}
-
-//-------------------------------------------
-// Utf8Cursor Class Methods
-//-------------------------------------------
-
-/*!
- * Constructor
- */
-Utf8Cursor::Utf8Cursor( Buffer* _buf ) : Cursor(_buf) { 
-}
-
-/*!
- * Destructor
- */
-Utf8Cursor::~Utf8Cursor( void ) { 
-}
-
-/*!
  * Inserts a string from std::string at the current cursor position
  */
-bool Utf8Cursor::mInsertText( const std::string& ) {
+bool Cursor::mInsertText( const std::string& ) {
     return false;
 }
 
 /*!
  * Inserts a character at the current cursor position
  */
-bool Utf8Cursor::mInsertChar( char chr ) {
+bool Cursor::mInsertChar( char chr ) {
     return false;
 }
 
 /*!
  * Move the cursor to this position on this current line
  */
-bool Utf8Cursor::mMoveToPosition( OffSet off ) {
+bool Cursor::mMoveToPosition( OffSet off ) {
     return false;
 }
 
 /*!
  * Move the cursor to an absolute position in the buffer
  */
-bool Utf8Cursor::mMoveToAbsPosition( OffSet off ) {
+bool Cursor::mMoveToAbsPosition( OffSet off ) {
     return false;
 }
 
@@ -139,7 +116,7 @@ bool Utf8Cursor::mMoveToAbsPosition( OffSet off ) {
  * Delete all characters from Cursors current position to the absolute position passed.
  * This value can be a Position before or after the current Cursor location
  */
-bool Utf8Cursor::mDeleteTo( OffSet off ) {
+bool Cursor::mDeleteTo( OffSet off ) {
     return false;
 }
 

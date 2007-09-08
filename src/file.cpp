@@ -18,7 +18,7 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
-#include<filefactory.h>
+#include<file.h>
 
 /*!
  * File Constructor
@@ -77,7 +77,7 @@ IOHandle* File::mGetIOHandler( void ) {
 /*!
  * Attempts to identify the file by reading parts of the file from the IOHandler.
  */
-File* FileFactory::mIdentifyFile( IOHandle* ioHandle ) {
+File* File::mIdentifyFile( IOHandle* ioHandle ) {
     return new File( ioHandle );  
 }
 

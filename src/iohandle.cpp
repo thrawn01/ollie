@@ -18,7 +18,7 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
-#include <iofactory.h>
+#include <iohandle.h>
 
 // --- Begin posixfile.cpp ---
 
@@ -69,7 +69,7 @@ std::string& IOHandle::mGetIOHandleName( void ) {
 /*!
  * Return the default IOHandle handler for the current operating system
  */
-IOHandle* IOHandleFactory::mGetDefaultIOHandler( void ) {
+IOHandle* IOHandle::mGetDefaultIOHandler( void ) {
     // Un implemented, just return PosixIOHandle();
     return new PosixIOHandle();
 }

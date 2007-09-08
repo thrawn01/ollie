@@ -18,8 +18,8 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
-#ifndef IOFACTORY_INCLUDE_H
-#define IOFACTORY_INCLUDE_H
+#ifndef IOHANDLE_INCLUDE_H
+#define IOHANDLE_INCLUDE_H
 
 #include <ollie.h>
 
@@ -33,6 +33,7 @@ class IOHandle : public OllieCommon {
         // Constructor / Destructor
         IOHandle();
         virtual ~IOHandle();
+        static IOHandle* mGetDefaultIOHandler( void );
 
         // IOHandle Modes
         enum OpenMode { ReadWrite, ReadOnly };
@@ -63,20 +64,5 @@ class PosixIOHandle : public IOHandle {
         bool mOffersLargeFileSupport( void );
 };
 
-
-/*!
- *  A Factory to create IOHandle objects for the 
- *  accessing the file system of the current
- *  operating system
- */
-class IOHandleFactory : public OllieCommon { 
-
-    public:
-       // Methods
-       IOHandle* mGetDefaultIOHandler( void );
-
-       // Variables
-    
-};
-
-#endif // IOFACTORY_INCLUDE_H
+/*
+#endif // IOHANDLE_INCLUDE_H

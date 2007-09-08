@@ -18,11 +18,10 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
-#ifndef FILEFACTORY_INCLUDE_H
-#define FILEFACTORY_INCLUDE_H
+#ifndef FILE_INCLUDE_H
+#define FILE_INCLUDE_H
 
-#include <filefactory.h>
-#include <iofactory.h>
+#include <iohandle.h>
 #include <ollie.h>
 
 /*! 
@@ -33,6 +32,7 @@ class File : public OllieCommon {
     public: 
        File( IOHandle* const );
        virtual ~File();
+       static File* mIdentifyFile( IOHandle* );
 
        // All the methods of File 
        //read();
@@ -72,17 +72,4 @@ class GzipFile : public File {
 
 };
 
-/*!
- * This class attempts to identify the type of file 
- * passed to it then assigns the appropriate File class
- * if the file cannot be identified returns an AsciiFile() 
- * as default
- */
-class FileFactory : public OllieCommon {
-
-    public: 
-        //! Identify the file 
-        File* mIdentifyFile( IOHandle* );
-};
-
-#endif // FILEFACTORY_INCLUDE_H
+#endif // FILE_INCLUDE_H

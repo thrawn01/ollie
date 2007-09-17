@@ -27,42 +27,13 @@
 /*!
  * Destructor 
  */
-TextContainer::~TextContainer() {
-}
-
-/*!
- * Constructor 
- */
-TextContainer::TextContainer( Buffer* _buf ) : _CursorPos(_buf) {
-    _myBuffer = _buf; 
-}
-
-/*!
- * Returns a pointer to the Data the was Deleted or Inserted
- */
-char* const TextContainer::mGetText( void ) {
-    return 0;
-}
-
-/*!
- * Returns the cursor that represents the position this 
- * TextContiner contains
- */
-Cursor TextContainer::mGetBounds( void ) {
-    return _CursorPos;
-}
-
-
-/*!
- * Destructor 
- */
 ChangeSet::~ChangeSet() {
 }
 
 /*!
  * Constructor 
  */
-ChangeSet::ChangeSet( Buffer* _buf ) : TextContainer(_buf) {
+ChangeSet::ChangeSet( Buffer* _buf ) {
     _ChangeSetType = None; 
 }
 
@@ -96,35 +67,27 @@ bool ChangeSet::mIsDelete( void ) {
 Buffer::Buffer( void ) {
     _boolModified  = false;
     _FileMyFile    = 0;
-    _intMyId       = 0;
 }
 
 /*!
  * Construct a empty buffer and give it a name
  */
-Buffer::Buffer( int intNewId, const std::string& strMyName ) {
-    // Set defaults
+Buffer::Buffer( const std::string& strMyName ) {
     Buffer();
-    // copy and store the name of this buffer
     _strMyName = strMyName;
-    // Assign the new Id
-    _intMyId = intNewId;
 }
 
 /*!
  * Construct a buffer from a file and give it a name
  */
-Buffer::Buffer( int intNewId, File* const file, const std::string& strMyName ) {
-    // Set defaults
+Buffer::Buffer( File* const file ) {
     Buffer();
-    // Store the pointer to the file object
     _FileMyFile = file;
-    // copy and store the name of this buffer
-    _strMyName = strMyName;
-    // store the name of the file this buffer represents
-    _strMyFileName = file->mGetFileName();
-    // Assign the new Id
-    _intMyId = intNewId;
+    if( ! file ) {
+        mSetError("Can not create buffer from null file pointer");
+    }else {
+        _strMyName = file->mGetFileName();
+    }
 }
 
 /*!
@@ -132,7 +95,9 @@ Buffer::Buffer( int intNewId, File* const file, const std::string& strMyName ) {
  */
 Buffer::~Buffer( void ) {
     // Unallocate the name of the buffer
-    if( _FileMyFile ) { free (_FileMyFile); }
+    if( _FileMyFile ) { 
+        delete (_FileMyFile); 
+    }
 }
 
 /*!
@@ -144,22 +109,10 @@ bool Buffer::mIsModified( void ) {
 }
 
 /*!
- * Returns true if the buffer was modified by the user
- */
-bool Buffer::mIsFileModifiedSinceOpen( void ) {
-    // un implemented
-    return false;
-}
-
-/*!
  * Returns true if the buffer is usable
  */
 bool Buffer::mIsUsable( void ) {
 
-    // If no Id assigned
-    if( !_intMyId ) { 
-        return false;
-    }
     // If no name is assigned return false
     if( _strMyName.empty() ) {
         this->mSetError("Empty string for buffer name is not allowed");
@@ -174,40 +127,29 @@ bool Buffer::mIsUsable( void ) {
  */
 bool Buffer::mAssignFile( File* const file ) {
 
-    _strMyFileName = file->mGetFileName();
+    _strMyName = file->mGetFileName();
 
     return false;
+}
+
+/*!
+ * Returns the changeset associated with 
+ * the last change made to the buffer
+ */
+ChangeSet* Buffer::mGetChangeSet() {
+    return new ChangeSet( this );
 }
 
 /*!
  * Save the buffer to the file
  */
-bool Buffer::mSaveBufferToFile( void ) {
+bool Buffer::mSaveBuffer( void ) {
     // If we have no file name represented
-    if( _strMyFileName.empty() ) {
+    if( ! _FileMyFile ) {
         this->mSetError("Cannot save a buffer with no file represented");
         return false;
     }
     return false;
-}
-
-/*!
- * Reload the Buffer by re-reading the file
- */
-bool Buffer::mReloadBufferFromFile( void ) {
-    // If we have no file name applied
-    if( _strMyFileName.empty() ) {
-        this->mSetError("Cannot re-load a buffer with no file represented");
-        return false;
-    }
-    return false;
-}
-
-/*!
- * Returns the Id of the current buffer
- */
-int Buffer::mGetId( void ) {
-    return _intMyId;
 }
 
 /*!
@@ -225,32 +167,27 @@ void Buffer::mSetName( const std::string& strMyName ) {
 }
 
 /*!
+ * Inserts some text into the buffer
+ */
+bool Buffer::mInsert( const std::string& strTxt ) {
+   // un-implemented 
+}
+
+/*!
+ * Deletes some text from the buffer
+ */
+bool Buffer::mDelete( OffSet from, OffSet to ) {
+   // un-implemented 
+}
+
+/*!
  * Returns the File Name the current buffer represents
  */
 std::string& Buffer::mGetFileName( void ) {
-    return _strMyFileName;
-}
-
-/*!
- * Starts Recording Changes to this buffer
- */
-void Buffer::mStartRecordingChangeSet( void ) {
-    return; 
-}
-
-/*!
- * Stops Recording Changes to this buffer and returns the change set that 
- * represents the changes to the buffer
- */
-ChangeSet* Buffer::mStopRecordingChangeSet( void ) {
-    return new ChangeSet( this ); 
-}
-
-/*!
- * Returns a Cursor assigned to this buffer
- */
-Cursor Buffer::mGetCursor( void ) {
-    return Cursor( this ); 
+    if( _FileMyFile ) {
+        return _FileMyFile->mGetFileName();
+    }
+    return _strMyName;
 }
 
 //-------------------------------------------
@@ -261,46 +198,18 @@ Cursor Buffer::mGetCursor( void ) {
  * Constructor
  */
 BufferContainer::BufferContainer() {
-    _intMaxId = 1;
 }
 
 /*!
  * Destructor
  */
 BufferContainer::~BufferContainer() {
-
-}
-
-/*!
- * Creates a new empty buffer adds it to the container
- * then returns a pointer to the new buffer
- */
-Buffer* BufferContainer::mCreateEmptyBuffer( const std::string& strName ) {
-    // un implemented return empty buffer
-    return new Buffer( _intMaxId++, strName );
-}
-
-/*!
- * Creates a new empty buffer adds it to the container
- * then returns a pointer to the new buffer
- */
-Buffer* BufferContainer::mCreateBufferFromFile( File* const file ) {
-    // un implemented return empty buffer
-    return new Buffer( _intMaxId++, file, file->mGetFileName() );
 }
 
 /*!
  * Returns a buffer by name
  */
 Buffer* BufferContainer::mGetBufferByName( const std::string& strName ) {
-    // un implemented return 0 
-    return 0;
-}
-
-/*!
- * Returns a buffer by Id
- */
-Buffer* BufferContainer::mGetBufferById( int intId ) {
     // un implemented return 0 
     return 0;
 }
@@ -325,7 +234,8 @@ bool BufferContainer::mDeleteBufferByName( const std::string& strName ) {
 /*!
  * Deletes a buffer from the Buffer Container by Name
  */
-bool BufferContainer::mDeleteBufferById( int intId ) {
+bool BufferContainer::add( Buffer* ) {
     // un implemented return 0 
     return false;
 }
+

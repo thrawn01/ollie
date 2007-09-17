@@ -25,6 +25,9 @@
 #include <stdlib.h>
 #include <string>
 
+//! The offset type for our current platform
+typedef long OffSet;
+
 /*!
  * A Base Class that provides common 
  * functionality for all Ollie classes

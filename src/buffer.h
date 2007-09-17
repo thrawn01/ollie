@@ -22,34 +22,15 @@
 #define BUFFER_INCLUDE_H
 
 #include <ollie.h>
-#include <cursor.h>
-#include <filefactory.h>
+#include <file.h>
 
-class Cursor;
 class Buffer;
 
 /*!
- * This class holds Text Objects. 
- * Provides add and delete operations for Text Objects
+ *  Abstract base class stores 1 changeset. A change set 
+ *  represents eather a delete or an insert
  */
-class TextContainer {
-
-    public:
-        TextContainer( Buffer* );
-        virtual ~TextContainer( void );
-
-        char* const mGetText( void );
-        Cursor mGetBounds( void );
-        Cursor  _CursorPos;
-        Buffer* _myBuffer;
-
-};
-
-/*!
- *  This class stores 1 changeset. And change set and 
- *  represent only 2 operations a delete or an insert
- */
-class ChangeSet : public TextContainer {
+class ChangeSet {
 
     public:
         // Constructor / Destructor  
@@ -62,44 +43,42 @@ class ChangeSet : public TextContainer {
         // Methods
         bool mIsInsert( void );
         bool mIsDelete( void );
+        virtual std::string mGetText()   { } 
+        virtual OffSet mGetAbsPosition() { }
+        virtual OffSet mGetLineNum()     { }
+        virtual OffSet mGetStartPos()    { }
+        virtual OffSet mGetEndPos()      { }
 
         // Members
         ChangeSetType   _ChangeSetType;
 };
 
 /*!
- *  The primary buffer class, containing methods 
- *  to act on the Pages and PageContainer
+ *  Abstract base class of all buffers
  */
 class Buffer : public OllieCommon { 
 
     public:
         // Constructor / Destructor  
         Buffer( void );
-        Buffer( int, const std::string& );
-        Buffer( int, File* const, const std::string& );
+        Buffer( const std::string& );
+        Buffer( File* const );
         virtual ~Buffer( void );
 
         // Methods
-        std::string& mGetName( void );
-        void         mSetName( const std::string& );
-        std::string& mGetFileName( void );
-        int          mGetId( void );
-        bool         mIsUsable( void );
-        bool         mIsModified( void );
-        bool         mIsFileModifiedSinceOpen( void );
-        bool         mReloadBufferFromFile( void );
-        bool         mSaveBufferToFile( void );
-        bool         mAssignFile( File* const );
-        void         mStartRecordingChangeSet( void );
-        ChangeSet*   mStopRecordingChangeSet( void );
-        Cursor       mGetCursor( void );
-
+        virtual std::string& mGetName( void );
+        virtual void         mSetName( const std::string& );
+        virtual std::string& mGetFileName( void );
+        virtual bool         mIsUsable( void );
+        virtual bool         mIsModified( void );
+        virtual bool         mSaveBuffer( void );
+        virtual bool         mAssignFile( File* const );
+        virtual bool         mInsert( const std::string& );
+        virtual bool         mDelete( OffSet , OffSet );
+        virtual ChangeSet*   mGetChangeSet();
         
         // Variables
         std::string _strMyName;
-        std::string _strMyFileName;
-        int   _intMyId;
         bool  _boolModified;
         File* _FileMyFile;
 };
@@ -114,20 +93,11 @@ class BufferContainer {
         BufferContainer();
         virtual ~BufferContainer();
 
-        // Creators
-        Buffer* mCreateEmptyBuffer( const std::string& );
-        Buffer* mCreateBufferFromFile( File* const );
-        bool mDeleteBufferById( int );
-        bool mDeleteBufferByName( const std::string& );
-        
-        // Accessors
         Buffer* mGetBufferByName( const std::string& );
-        Buffer* mGetBufferById( int );
         Buffer* mGetBufferByFileName( const std::string& );
+        bool mDeleteBufferByName( const std::string& );
+        bool add( Buffer* );
 
-        // Variables
-        int _intMaxId;
-         
 };
 
 /*!

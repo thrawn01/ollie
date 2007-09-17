@@ -64,5 +64,4 @@ class PosixIOHandle : public IOHandle {
         bool mOffersLargeFileSupport( void );
 };
 
-/*
 #endif // IOHANDLE_INCLUDE_H

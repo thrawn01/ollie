@@ -38,10 +38,12 @@ class File : public OllieCommon {
        //read();
        //write();
        //seek();
+       virtual bool mCanReadFile( void ) { return false; }
 
        // Methods
        IOHandle*     mGetIOHandler( void );
        std::string&  mGetFileName( void );
+       OffSet mGetFileSize( void ) { return _ioHandle->mGetFileSize(); }
 
        // Members
        IOHandle* _ioHandle;
@@ -56,7 +58,8 @@ class Utf8File : public File {
     public:
        Utf8File( IOHandle* const );
        ~Utf8File();
-        // All the virtual methods implemented
+       // All the virtual methods implemented
+       virtual bool mCanReadFile( void );
 
 };
 

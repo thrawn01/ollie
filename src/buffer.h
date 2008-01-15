@@ -63,6 +63,7 @@ class Buffer : public OllieCommon {
         Buffer( void );
         Buffer( const std::string& );
         Buffer( File* const );
+        void init( void );
         virtual ~Buffer( void );
 
         // Methods
@@ -76,11 +77,22 @@ class Buffer : public OllieCommon {
         virtual bool         mInsert( const std::string& );
         virtual bool         mDelete( OffSet , OffSet );
         virtual ChangeSet*   mGetChangeSet();
+
+        // Non virtual methods
+        void         mSetMaxBufferSize( OffSet size ) { _offMaxBufferSize = size; }
+        OffSet       mGetMaxBufferSize( void ) { return _offMaxBufferSize; }
+        bool         mBufferFull( void );
+        bool         mCanLoadBuffer( void );
+        bool         mEntireFileLoaded( void ) { return _boolEntireFileLoaded; }
         
         // Variables
         std::string _strMyName;
         bool  _boolModified;
         File* _FileMyFile;
+        bool  _boolUsable;
+        bool  _boolEntireFileLoaded;
+        OffSet _offMaxBufferSize;
+        OffSet _offBufferSize;
 };
 
 /*!
@@ -98,26 +110,6 @@ class BufferContainer {
         bool mDeleteBufferByName( const std::string& );
         bool add( Buffer* );
 
-};
-
-/*!
- * A Class that holds 1 page of data
- */
-class Page {
-
-    public:
-        // Variables
-         
-};
-
-/*!
- * A Container class to hold the pages that make up the buffer
- */
-class PageContainer {
-
-    public:
-        // Variables
-         
 };
 
 #endif // BUFFER_INCLUDE_H

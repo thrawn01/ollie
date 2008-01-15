@@ -1,4 +1,4 @@
-/*  This file is part of the Ollie libraries
+/*  This file is part of the Ollie Library 
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Library General Public
@@ -18,16 +18,13 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
-#include <ollie.h>
+//! The offset type for our current platform
+typedef double long OffSet;
 
-/*!
- * Constructor
- */
-OllieCommon::OllieCommon() { }
+// File used in the test suite
+#define TEST_FILE "/tmp/OllieTestFile.txt"
 
-/*!
- * Destructor
- */
-OllieCommon::~OllieCommon() { }
-
+// Max size the buffer hold in memory 
+// ( Not the maximum size a buffer can open )
+#define DEFAULT_MAX_BUF_SIZE 800000000L
 

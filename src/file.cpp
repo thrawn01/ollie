@@ -42,6 +42,14 @@ File::~File() {
 Utf8File::Utf8File( IOHandle* const ioHandle ) : File(ioHandle) { }
 
 /*!
+ * Return true if there is more to read from the file
+ */
+bool Utf8File::mCanReadFile( void ) {
+    // Not yet implemented
+    return false;
+}
+
+/*!
  * Utf8File Destructor
  */
 Utf8File::~Utf8File() { }
@@ -78,6 +86,8 @@ IOHandle* File::mGetIOHandler( void ) {
  * Attempts to identify the file by reading parts of the file from the IOHandler.
  */
 File* File::mIdentifyFile( IOHandle* ioHandle ) {
-    return new File( ioHandle );  
+
+    // No Other file handlers defined yet, Always load the Utf8File()
+    return new Utf8File( ioHandle );  
 }
 

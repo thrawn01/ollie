@@ -35,16 +35,26 @@ std::string AsciiChangeSet::mGetText( ) {
    // un-implemented 
 }
 
+/*!
+ * Create an empty buffer with no name
+ */
 AsciiBuffer::AsciiBuffer( void ) : Buffer() {
-
+    _vecPages.add();
 }
 
+/*!
+ * Create a named empty buffer
+ */
 AsciiBuffer::AsciiBuffer( const std::string& strMyName ) : Buffer( strMyName ) {
-
+    AsciiBuffer();
+    _boolUsable = true;
 }
 
+/*!
+ * Create a buffer with a file associated with it
+ */
 AsciiBuffer::AsciiBuffer( File* const file ) : Buffer( file ) {
-
+    
 }
 
 /*!
@@ -79,4 +89,20 @@ ChangeSet* AsciiBuffer::mGetChangeSet() {
     return new AsciiChangeSet( this );
 }
 
+/*! 
+ * Add an empty page to the container
+ */
+bool PageContainer::add( void ) { 
+    Page page;
+    _vecContainer.push_back( page );
+
+}
+
+/*! 
+ * Add an data page to the container
+ */
+bool PageContainer::add( std::string &strData ) { 
+    Page page(strData);
+    _vecContainer.push_back( page ); 
+}
 

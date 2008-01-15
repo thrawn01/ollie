@@ -23,6 +23,9 @@
 #include <iohandle.h>
 #include <file.h>
 #include <iostream>
+#include <fstream>
+
+using namespace std;
 
 // --------------------------------
 //  Unit Test for buffer.cpp
@@ -57,6 +60,40 @@ class BufferTests : public CxxTest::TestSuite
         }
 
         // --------------------------------
+        // Test fail on open
+        // --------------------------------
+        void testmCreateBufferFromFileError( void ) {
+           
+            // Get the default IO handler for this Operating System
+            IOHandle* ioHandle = IOHandle::mGetDefaultIOHandler();
+            TS_ASSERT( ioHandle ); 
+
+            // Open The File ReadWrite
+            TS_ASSERT_EQUALS( ioHandle->mOpen("fileToOpen.txt", IOHandle::ReadWrite ), false );
+
+            // Ensure mGetError() is set properly
+            TS_ASSERT_EQUALS( ioHandle->mGetError().substr(0,31), "Unable to open 'fileToOpen.txt'" );
+            
+        }
+
+        // --------------------------------
+        // Create a valid test file in /tmp 
+        // --------------------------------
+        void testCreateFileForTests( void ) {
+
+            fstream ioFile;
+            ioFile.open(TEST_FILE, fstream::out);
+            if( ( ! ioFile.is_open() ) || ( ! ioFile.good() ) ) { 
+                TS_FAIL( "Unable to create test file '" TEST_FILE  "'");
+            }
+
+            // Add some Text to the file
+            ioFile << "This is a test file for Ollie unittests\n";
+
+            ioFile.close();
+        }
+
+        // --------------------------------
         // To Create a new buffer from a file
         // --------------------------------
         void testmCreateBufferFromFile( void ) {
@@ -66,7 +103,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT( ioHandle ); 
 
             // Open The File ReadWrite
-            TS_ASSERT_EQUALS( ioHandle->mOpen("fileToOpen.txt", IOHandle::ReadWrite ), true );
+            TS_ASSERT_EQUALS( ioHandle->mOpen(TEST_FILE, IOHandle::ReadWrite ), true );
            
             // Try to identify the file using the IO handle. Return an appropriate file type for reading this file
             File* file = File::mIdentifyFile( ioHandle );
@@ -75,7 +112,15 @@ class BufferTests : public CxxTest::TestSuite
             // Create the buffer with the file handler
             Buffer* buf = new AsciiBuffer(file);
             TS_ASSERT( buf ); 
-            TS_ASSERT_EQUALS( buf->mGetName() , "fileToOpen.txt" );
+            TS_ASSERT_EQUALS( buf->mGetName() , TEST_FILE );
+
+            TS_ASSERT_EQUALS( buf->mBufferFull(), false );
+
+            // Load the file into the buffer
+            while( buf->mCanLoadBuffer() ) {
+                //TS_ASSERT( buf->mLoadNextPage() );
+            }
+
             TS_ASSERT( buf->mIsUsable() );
 
             delete buf;
@@ -118,7 +163,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT( ioHandle ); 
 
             // Open The File ReadWrite
-            TS_ASSERT_EQUALS( ioHandle->mOpen("fileToOpen.txt", IOHandle::ReadWrite ), true );
+            TS_ASSERT_EQUALS( ioHandle->mOpen(TEST_FILE, IOHandle::ReadWrite ), true );
            
             // Try to identify the file using the IO handle. Return an appropriate file type for reading this file
             File* file = File::mIdentifyFile( ioHandle );
@@ -152,7 +197,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT( ioHandle ); 
 
             // Open The File ReadWrite
-            TS_ASSERT_EQUALS( ioHandle->mOpen("fileToOpen.txt", IOHandle::ReadWrite ), true );
+            TS_ASSERT_EQUALS( ioHandle->mOpen(TEST_FILE, IOHandle::ReadWrite ), true );
             
             File* file = File::mIdentifyFile( ioHandle );
             TS_ASSERT( file ); 
@@ -161,7 +206,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS(buf->mAssignFile(file), true );
             
             // The Assignment updated the 
-            TS_ASSERT_EQUALS(buf->_strMyName, "fileToOpen.txt" ); 
+            TS_ASSERT_EQUALS(buf->_strMyName, TEST_FILE ); 
 
             // Save the buffer to the file
             TS_ASSERT_EQUALS(buf->mSaveBuffer(), true );

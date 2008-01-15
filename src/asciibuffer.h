@@ -23,8 +23,47 @@
 
 #include <ollie.h>
 #include <buffer.h>
+#include <vector>
 
 class AsciiBuffer;
+
+/*!
+ * A Class that holds 1 page of data
+ */
+class Page {
+
+    public:
+        Page() { }; 
+        Page( std::string &strPage ){ strData = strPage; }
+        ~Page( ) { };
+        
+        // Variables
+        std::string strData;
+         
+};
+
+/*!
+ * A Container class to hold the pages that make up the buffer
+ */
+class PageContainer {
+
+    public:
+        PageContainer() {  };
+        ~PageContainer() {  };
+
+        typedef std::vector<Page>::iterator PageIterator;  
+
+        PageIterator begin() { return _vecContainer.begin(); }
+        PageIterator end()   { return _vecContainer.end();   }
+
+        Page back()  { return _vecContainer.back();  }
+        bool add( std::string &strData );
+        bool add( void );
+        
+    protected:
+        std::vector<Page> _vecContainer;
+         
+};
 
 /*!
  *  The Ascii ChangeSet object.
@@ -58,10 +97,9 @@ class AsciiBuffer : public Buffer {
         virtual bool mInsert( const std::string& );
         virtual bool mDelete( OffSet from, OffSet to );
 
-        // Variables
-        std::string _strMyName;
-        bool  _boolModified;
-        File* _FileMyFile;
+        PageContainer _vecPages;
+
 };
+
 
 #endif // ASCIIBUFFER_INCLUDE_H

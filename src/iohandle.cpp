@@ -22,6 +22,9 @@
 
 // --- Begin posixfile.cpp ---
 
+#include <errno.h>
+#include <string.h>
+
 /*!
  * IOHandle Constructor
  */
@@ -35,8 +38,34 @@ PosixIOHandle::~PosixIOHandle() { }
 /*!
  * Open a file in the requested mode
  */
-bool PosixIOHandle::mOpen( const char*, OpenMode mode ) {
-    return false;
+bool PosixIOHandle::mOpen( const char* strFileName , OpenMode mode ) {
+    std::ios_base::openmode ioMode;
+    std::fstream ioFile;
+
+    if( mode = ReadWrite ) { ioMode = std::fstream::in | std::fstream::out; }
+    if( mode = ReadOnly )  { ioMode = std::fstream::in; }
+
+    // If a file is already open, close it 
+    // FIXME: Should this return false, asking the user to close the file first?
+    if( ioFile.is_open() ) { ioFile.close(); }
+
+    // Open the file in the specifed mode
+    ioFile.open(strFileName, ioMode );
+    if( ( ! ioFile.is_open() ) || ( ! ioFile.good() ) ) { 
+        mSetError() << "Unable to open '" << strFileName << "' " <<  strerror( errno );
+        return false;
+    }
+
+    // Record the total size of the file
+    ioFile.seekg(0, std::ios::end);
+    _offFileSize = ioFile.tellg();
+    ioFile.seekg(0, std::ios::beg);
+
+    // TODO: Record the last time this file was modified
+
+    _strIOHandleName = strFileName;
+
+    return true;
 }
 
 /*!
@@ -73,4 +102,12 @@ IOHandle* IOHandle::mGetDefaultIOHandler( void ) {
     // Un implemented, just return PosixIOHandle();
     return new PosixIOHandle();
 }
+
+/*!
+ * Provided for convenience
+ */
+bool IOHandle::mOpen( std::string &strFileName , OpenMode mode ) {
+    return mOpen(strFileName.c_str(), mode );
+}
+
 

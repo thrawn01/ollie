@@ -64,16 +64,27 @@ bool ChangeSet::mIsDelete( void ) {
 /*!
  * Set default values for members
  */
+void Buffer::init( void ) {
+    _boolModified         = false;
+    _FileMyFile           = 0;
+    _boolUsable           = false;
+    _boolEntireFileLoaded = false;
+    _offMaxBufferSize     = DEFAULT_MAX_BUF_SIZE;
+    _offBufferSize        = 0;
+}
+
+/*!
+ * Construct a empty buffer 
+ */
 Buffer::Buffer( void ) {
-    _boolModified  = false;
-    _FileMyFile    = 0;
+    init();
 }
 
 /*!
  * Construct a empty buffer and give it a name
  */
 Buffer::Buffer( const std::string& strMyName ) {
-    Buffer();
+    init();
     _strMyName = strMyName;
 }
 
@@ -81,10 +92,10 @@ Buffer::Buffer( const std::string& strMyName ) {
  * Construct a buffer from a file and give it a name
  */
 Buffer::Buffer( File* const file ) {
-    Buffer();
+    init();
     _FileMyFile = file;
     if( ! file ) {
-        mSetError("Can not create buffer from null file pointer");
+        mSetError("Internal Error: Can not create buffer from null file pointer");
     }else {
         _strMyName = file->mGetFileName();
     }
@@ -109,7 +120,8 @@ bool Buffer::mIsModified( void ) {
 }
 
 /*!
- * Returns true if the buffer is usable
+ * Returns true if the buffer is usable, This may return false
+ * if a buffer was created but the file was not loaded
  */
 bool Buffer::mIsUsable( void ) {
 
@@ -118,7 +130,8 @@ bool Buffer::mIsUsable( void ) {
         this->mSetError("Empty string for buffer name is not allowed");
         return false;
     }
-    return false;
+
+    return _boolUsable;
 }
 
 /*!
@@ -188,6 +201,52 @@ std::string& Buffer::mGetFileName( void ) {
         return _FileMyFile->mGetFileName();
     }
     return _strMyName;
+}
+
+/*!
+ * Return true if the buffer has room to add data
+ */
+bool Buffer::mBufferFull( void ) {
+
+    // If the buffer size is not greater than the Max Buffer size
+    if( _offBufferSize >= _offMaxBufferSize ) {
+        return true;
+    }
+    return false;
+}
+
+/*!
+ * Convienience function for loading the file 
+ * into the buffer for the first time
+ */
+bool Buffer::mCanLoadBuffer( void ) {
+
+    // If the entire file loaded ( All fits into memory )
+    if( _offBufferSize == _FileMyFile->mGetFileSize() ) {
+        _boolEntireFileLoaded = true;
+        _boolUsable = true;
+        return false;
+    }
+
+    // If the buffer is full 
+    if( mBufferFull() ) {
+        _boolUsable = true;
+        return false;
+    }
+
+    // Can we read more of the file
+    if( _FileMyFile->mCanReadFile() ) {
+        if( _offBufferSize > _FileMyFile->mGetFileSize() ) {
+            mSetWarning("Read in a larger file than was expected, File changed during read?");
+        }
+
+        // TODO: Check the modification time on the file ( If available )
+        // Doing this on each read might not be good for networked files
+        
+        return true;
+    }
+
+    return false;    
 }
 
 //-------------------------------------------

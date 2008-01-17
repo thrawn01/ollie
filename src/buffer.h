@@ -76,15 +76,22 @@ class Buffer : public OllieCommon {
         virtual bool         mAssignFile( File* const );
         virtual bool         mInsert( const std::string& );
         virtual bool         mDelete( OffSet , OffSet );
-        virtual ChangeSet*   mGetChangeSet();
+        virtual ChangeSet*   mGetChangeSet( void );
 
         // Non virtual methods
-        void         mSetMaxBufferSize( OffSet size ) { _offMaxBufferSize = size; }
-        OffSet       mGetMaxBufferSize( void ) { return _offMaxBufferSize; }
-        bool         mBufferFull( void );
-        bool         mCanLoadBuffer( void );
-        bool         mEntireFileLoaded( void ) { return _boolEntireFileLoaded; }
-        
+        std::stringstream&  mSetTaskStatus( void ) { _streamStatusMsg.str(""); return _streamStatusMsg; }
+        std::string         mGetTaskStatus( void ) { return _streamStatusMsg.str(); }
+        void                mSetMaxBufferSize( OffSet size ) { _offMaxBufferSize = size; }
+        OffSet              mGetMaxBufferSize( void ) { return _offMaxBufferSize; }
+        bool                mEntireFileLoaded( void ) { return _boolEntireFileLoaded; }
+        bool                mBufferFull( void );
+        bool                mIsBufferReady( void );
+        bool                mPreformTask( void );
+        bool                mLoadPage( void );
+        bool                mGetProgress( int* );
+
+        //void                mSetCurrentTask(bool (Buffer::*Method)(void) ); 
+
         // Variables
         std::string _strMyName;
         bool  _boolModified;
@@ -93,6 +100,12 @@ class Buffer : public OllieCommon {
         bool  _boolEntireFileLoaded;
         OffSet _offMaxBufferSize;
         OffSet _offBufferSize;
+        std::stringstream _streamStatusMsg;
+
+        // A pointer to the method that preforms the current task
+        bool (Buffer::*_currentTask)(void);
+
+        //FIXME MethodPointer<Buffer,bool,void> *_currentTask;
 };
 
 /*!

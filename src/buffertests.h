@@ -51,12 +51,14 @@ class BufferTests : public CxxTest::TestSuite
 
             // Create a new buffer Container
             Buffer* buf = new AsciiBuffer("buffer1");
-
             TS_ASSERT( buf ); 
-            TS_ASSERT_EQUALS( buf->mGetName() , "buffer1" );
-            TS_ASSERT( buf->mIsUsable() );
 
-            delete buf;
+            // Buffer should have correct name
+            TS_ASSERT_EQUALS( buf->mGetName() , "buffer1" );
+
+            // Buffer should be ready
+            TS_ASSERT_EQUALS( buf->mIsBufferReady(), true );
+
         }
 
         // --------------------------------
@@ -97,6 +99,7 @@ class BufferTests : public CxxTest::TestSuite
         // To Create a new buffer from a file
         // --------------------------------
         void testmCreateBufferFromFile( void ) {
+            int intPrecent = 0; 
            
             // Get the default IO handler for this Operating System
             IOHandle* ioHandle = IOHandle::mGetDefaultIOHandler();
@@ -112,18 +115,40 @@ class BufferTests : public CxxTest::TestSuite
             // Create the buffer with the file handler
             Buffer* buf = new AsciiBuffer(file);
             TS_ASSERT( buf ); 
+
+            // The name should be the same as the file name 
             TS_ASSERT_EQUALS( buf->mGetName() , TEST_FILE );
 
+            // The Buffer should not be full
             TS_ASSERT_EQUALS( buf->mBufferFull(), false );
 
-            // Load the file into the buffer
-            while( buf->mCanLoadBuffer() ) {
-                //TS_ASSERT( buf->mLoadNextPage() );
+            // The Buffer should not be ready
+            TS_ASSERT_EQUALS( buf->mIsBufferReady(), false );
+          
+            // Status should be "Loading TEST_FILE..."
+            TS_ASSERT_EQUALS( buf->mGetTaskStatus(), "Loading " TEST_FILE "..." ); 
+           
+            // Preform tasks until the buffer is ready
+            // Since we just created the buffer, the current task
+            // is to load the file into the buffer
+            while( ! buf->mIsBufferReady() ) {
+
+                // Preform task should return true
+                TS_ASSERT_EQUALS( buf->mPreformTask(), true );
+
+                // Get the progress of the current task
+                buf->mGetProgress(&intPrecent);
+
             }
 
-            TS_ASSERT( buf->mIsUsable() );
+            // Buffer should be ready
+            TS_ASSERT_EQUALS( buf->mIsBufferReady(), true );
 
-            delete buf;
+            // Progress should return false, when there is nothing left to do
+            TS_ASSERT_EQUALS( buf->mGetProgress( &intPrecent ), false );
+
+            // Precent should be at 100%
+            TS_ASSERT_EQUALS( intPrecent, 100 );
         }
 
         // --------------------------------

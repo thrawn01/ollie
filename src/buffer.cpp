@@ -62,7 +62,7 @@ bool ChangeSet::mIsDelete( void ) {
 //-------------------------------------------
 
 /*!
- * Set default values for members
+ * Initalize class variables
  */
 void Buffer::init( void ) {
     _boolModified         = false;
@@ -71,41 +71,64 @@ void Buffer::init( void ) {
     _boolEntireFileLoaded = false;
     _offMaxBufferSize     = DEFAULT_MAX_BUF_SIZE;
     _offBufferSize        = 0;
+    _currentTask          = 0;
 }
 
 /*!
  * Construct a empty buffer 
  */
 Buffer::Buffer( void ) {
+
+    // Initialize class variables
     init();
+
+    // TODO: Add the first page to the pageContainer
 }
 
 /*!
  * Construct a empty buffer and give it a name
  */
 Buffer::Buffer( const std::string& strMyName ) {
+
+    // Initialize class variables
     init();
+
+    // Record our name
     _strMyName = strMyName;
+
+    // TODO: Add the first page to the pageContainer
 }
 
 /*!
  * Construct a buffer from a file and give it a name
  */
 Buffer::Buffer( File* const file ) {
+    
+    // Initialize class variables
     init();
-    _FileMyFile = file;
+
+    // Check for valid handle
     if( ! file ) {
-        mSetError("Internal Error: Can not create buffer from null file pointer");
-    }else {
-        _strMyName = file->mGetFileName();
+        mFatalError("Internal Error: Cannot create buffer from null file pointer");
     }
+
+    // Assign the file handler
+    _FileMyFile = file;
+
+    // Set the buffer name from the filename
+    _strMyName = file->mGetFileName();
+
+    // Assign the load Page task and set the status message
+    mSetTaskStatus() << "Loading " << file->mGetFileName() << "..." ;
+    _currentTask = &Buffer::mLoadPage;
+
 }
 
 /*!
  * Buffer Destructor
  */
 Buffer::~Buffer( void ) {
-    // Unallocate the name of the buffer
+    // Unallocate the file
     if( _FileMyFile ) { 
         delete (_FileMyFile); 
     }
@@ -120,11 +143,11 @@ bool Buffer::mIsModified( void ) {
 }
 
 /*!
- * Returns true if the buffer is usable, This may return false
- * if a buffer was created but the file was not loaded
+ *  DEPRICATED REMOVE!
  */
 bool Buffer::mIsUsable( void ) {
 
+    return false; 
     // If no name is assigned return false
     if( _strMyName.empty() ) {
         this->mSetError("Empty string for buffer name is not allowed");
@@ -219,34 +242,70 @@ bool Buffer::mBufferFull( void ) {
  * Convienience function for loading the file 
  * into the buffer for the first time
  */
-bool Buffer::mCanLoadBuffer( void ) {
+bool Buffer::mIsBufferReady( void ) {
 
-    // If the entire file loaded ( All fits into memory )
+    // Are there any active tasks?
+    if( _currentTask ) {
+        return false;
+    }
+
+    // TODO Implement garbage collection
+    // Do we have any pages we can remove from memory?
+    //if( pageContainer->mCanRunGarbageCollection() ) {
+        //pageContainer->mRunGarbageCollection();
+    //}
+    
+    return true;
+}
+
+/*!
+ * Call the Task method, Returns true if the operation was a success
+ * false if there was an error
+ */
+bool Buffer::mPreformTask( void ) {
+    return (this->*_currentTask)();
+}
+
+
+/*
+ * Load 1 Page of data from the file
+ */
+bool Buffer::mLoadPage( void ) {
+
+    if( ! _FileMyFile ) {
+        mSetError("Internal Error: file handle is NULL, can not load file");
+        return false;
+    }
+
+    // Is the file loaded completely?
     if( _offBufferSize == _FileMyFile->mGetFileSize() ) {
+
+        // Report the entire file loaded into memory
         _boolEntireFileLoaded = true;
-        _boolUsable = true;
-        return false;
-    }
 
-    // If the buffer is full 
-    if( mBufferFull() ) {
-        _boolUsable = true;
-        return false;
-    }
+        // Clear our task
+        mSetTaskStatus(); 
+        _currentTask = 0;
 
-    // Can we read more of the file
-    if( _FileMyFile->mCanReadFile() ) {
-        if( _offBufferSize > _FileMyFile->mGetFileSize() ) {
-            mSetWarning("Read in a larger file than was expected, File changed during read?");
-        }
-
-        // TODO: Check the modification time on the file ( If available )
-        // Doing this on each read might not be good for networked files
-        
         return true;
     }
 
+    // Can we read more of the file
+    //if( ! _FileMyFile->mCanReadFile() ) { 
+        //return false; 
+    //}
+
+    // TODO: Check the modification time on the file ( If available )
+    // Doing this on each read might not be good for networked files
+        
     return false;    
+}
+
+/*
+ * Sets the current progress of the current task
+ */
+bool Buffer::mGetProgress( int* intPrecent ) {
+    return false;
 }
 
 //-------------------------------------------

@@ -43,17 +43,20 @@ class OllieCommon {
         std::string mGetError( void ) { return _streamErrorMsg.str(); }
         std::string mGetWarning( void ) { return _streamWarningMsg.str(); }
 
+        // Set Error messages for this class or subclass
+        void mFatalError( const std::string& msg ) { std::cerr << msg << std::endl; exit(255); }
+
         // Set Warning messages for this class or subclass
         void mSetWarning( const std::string& msg ) { _streamWarningMsg.str(msg); }
 
         // Set Error messages for this class or subclass
         void mSetError( const std::string& msg ) { _streamErrorMsg.str(msg); }
 
-        // Return a reference to the error stream 
-        std::stringstream& mSetError() { return _streamErrorMsg; }
+        // Clear the stream then return a reference to it so we can set it
+        std::stringstream& mSetError() { _streamErrorMsg.str(""); return _streamErrorMsg; }
 
-        // Return a reference to the warning stream 
-        std::stringstream& mSetWarning() { return _streamWarningMsg; }
+        // Clear the stream then return a reference to it so we can set it
+        std::stringstream& mSetWarning() { _streamWarningMsg.str(""); return _streamWarningMsg; }
 
         // The Error String
         std::stringstream _streamErrorMsg;
@@ -61,5 +64,26 @@ class OllieCommon {
         // The warning message
         std::stringstream _streamWarningMsg;
 };
+
+/*template< class ClassName, typename ReturnType, typename Parameter >
+class MethodPointer {
+
+    public: 
+        typedef ReturnType (ClassName::*Method)(Parameter);
+
+        MethodPointer( ClassName *instance, Method method ) {
+            _classInstance = instance;
+            _classMethod   = method;
+        }
+
+        ReturnType execute( Parameter e ) {
+            _classInstance->*_classMethod(e);
+        }
+
+    protected:
+        Method    _classMethod;
+        ClassName _classInstance;
+
+};*/
 
 #endif // OLLIE_INCLUDE_H

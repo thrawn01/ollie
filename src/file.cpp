@@ -24,7 +24,10 @@
  * File Constructor
  */
 File::File( IOHandle* const ioHandle ) {
-    _ioHandle = ioHandle;
+    _ioHandle       = ioHandle;
+    _offBlockSize   = 0;
+    _offReadOffSet  = 0;
+    _offWriteOffSet = 0;
 }
 
 /*!
@@ -42,17 +45,54 @@ File::~File() {
 Utf8File::Utf8File( IOHandle* const ioHandle ) : File(ioHandle) { }
 
 /*!
- * Return true if there is more to read from the file
- */
-bool Utf8File::mCanReadFile( void ) {
-    // Not yet implemented
-    return false;
-}
-
-/*!
  * Utf8File Destructor
  */
 Utf8File::~Utf8File() { }
+
+/*
+ * Read in the next block of text starting at the last read offset
+ */
+bool Utf8File::mReadNextBlock( std::string& strBuffer ) {
+
+    return mReadBlock( _offReadOffSet, strBuffer );
+
+}
+
+/*
+ * Read in the next block of text
+ */
+bool Utf8File::mReadBlock( OffSet offset, std::string& strBuffer ) {
+    OffSet offLen = 0;
+
+    // If the IO handle we are using does not offer Seek
+    if( ! _ioHandle->mOffersSeek() ) {
+        mSetError("Current IO Device does not support file seeks");
+        return false;
+    }
+    
+    // If the io handle can read without blocking
+    if( _ioHandle->mCanRead() ) {
+
+        // Attempt to seek to the correct offset
+        if( ! _ioHandle->mSeek(offset) ) {
+            mSetError( _ioHandle->mGetError() );
+            return false;
+        }
+
+        // Read in the block from the IO
+        if( ( offLen = _ioHandle->mRead(strBuffer, _offBlockSize) ) < 0 ) {
+            mSetError( _ioHandle->mGetError() );
+            return false;
+        }
+       
+        // Keep track of where in the file we are
+        _offReadOffSet += offLen;
+
+        return true;
+    }    
+    return false;
+}
+
 
 /*!
  * GzipFile Constructor

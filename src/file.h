@@ -34,19 +34,28 @@ class File : public OllieCommon {
        virtual ~File();
        static File* mIdentifyFile( IOHandle* );
 
-       // All the methods of File 
-       //read();
-       //write();
-       //seek();
-       virtual bool mCanReadFile( void ) { return false; }
+       // Virtual Methods
+       virtual bool         mReadBlock( OffSet offset, std::string& ) { return false; }
+       virtual bool         mReadNextBlock( std::string& ) { return false; }
+       virtual bool         mWriteBlock( OffSet offset, std::string& ) { return false; }
+       virtual bool         mWriteNextBlock( std::string& ) { return false; }
+
+       //virtual bool         mWriteBlobk( &std::string, Attributes *attr ); TODO: Add Attributes Support
+       //virtual Attributes   mGetPageAttributes( void ) { }  TODO: Add Attribute Support
 
        // Methods
+       void          setMaxBlockSize( OffSet offSize ) { _offBlockSize = offSize; }
+       OffSet        getMaxBlockSize( void ) { return _offBlockSize; }
+       void          setTimeOut( int seconds );
        IOHandle*     mGetIOHandler( void );
        std::string&  mGetFileName( void );
-       OffSet mGetFileSize( void ) { return _ioHandle->mGetFileSize(); }
+       OffSet        mGetFileSize( void ) { return _ioHandle->mGetFileSize(); }
 
        // Members
-       IOHandle* _ioHandle;
+       IOHandle*    _ioHandle;
+       OffSet       _offBlockSize;
+       OffSet       _offReadOffSet;
+       OffSet       _offWriteOffSet;
 
 };
 
@@ -58,8 +67,11 @@ class Utf8File : public File {
     public:
        Utf8File( IOHandle* const );
        ~Utf8File();
-       // All the virtual methods implemented
-       virtual bool mCanReadFile( void );
+       // Implemented virtual methods
+       bool         mReadBlock( OffSet offset, std::string& );
+       bool         mReadNextBlock( std::string& );
+       bool         mWriteBlock( OffSet offset, std::string& ) { return false; }
+       bool         mWriteNextBlock( std::string& ) { return false; }
 
 };
 

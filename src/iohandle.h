@@ -40,10 +40,16 @@ class IOHandle : public OllieCommon {
         enum OpenMode { ReadWrite, ReadOnly };
 
         // Open the file
-        virtual bool mOpen( std::string &strFileName , OpenMode mode );
-        virtual bool mOpen( const char*, OpenMode mode ) { };
+        virtual bool        mOpen( std::string &strFileName , OpenMode mode );
+        virtual bool        mOpen( const char*, OpenMode mode ) { };
+
         //! Does the OS offer int64 for large files and does open support it?
-        virtual bool mOffersLargeFileSupport() { };
+        virtual bool        mOffersLargeFileSupport() { return false; }
+
+        virtual bool        mOffersSeek() { return false; }
+        virtual bool        mCanRead() { return false; }
+        virtual bool        mSeek( OffSet ) { return false; }
+        virtual bool        mRead( std::string&, OffSet ) { return false; }
 
         // Return the file name passed when open() was called
         std::string& mGetIOHandleName( void );

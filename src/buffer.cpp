@@ -272,11 +272,6 @@ bool Buffer::mPreformTask( void ) {
  */
 bool Buffer::mLoadPage( void ) {
 
-    if( ! _FileMyFile ) {
-        mSetError("Internal Error: file handle is NULL, can not load file");
-        return false;
-    }
-
     // Is the file loaded completely?
     if( _offBufferSize == _FileMyFile->mGetFileSize() ) {
 
@@ -289,11 +284,6 @@ bool Buffer::mLoadPage( void ) {
 
         return true;
     }
-
-    // Can we read more of the file
-    //if( ! _FileMyFile->mCanReadFile() ) { 
-        //return false; 
-    //}
 
     // TODO: Check the modification time on the file ( If available )
     // Doing this on each read might not be good for networked files

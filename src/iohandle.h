@@ -44,10 +44,10 @@ class IOHandle : public OllieCommon {
         virtual bool        mOpen( const char*, OpenMode mode ) { };
 
         //! Does the IO offer int64 for large files?
-        virtual bool        mOffersLargeFileSupport() { return false; }
+        virtual bool        mOffersLargeFileSupport( void ) { return false; }
 
         //! Does the IO offer seek()?
-        virtual bool        mOffersSeek() { return false; }
+        virtual bool        mOffersSeek( void ) { return false; }
 
         // Read Methods
         virtual bool        mWaitForClearToRead( int ) { return false; }
@@ -71,11 +71,15 @@ class IOHandle : public OllieCommon {
 class PosixIOHandle : public IOHandle {
     public:
         PosixIOHandle();
-        virtual ~PosixIOHandle();
+        virtual ~PosixIOHandle( void );
 
         // Methods
-        bool mOpen( const char*, OpenMode mode );
-        bool mOffersLargeFileSupport( void );
+        bool    mOpen( const char*, OpenMode mode );
+        bool    mOffersLargeFileSupport( void ) { return true; }
+        bool    mOffersSeek( void ) { return true; }
+        bool    mWaitForClearToRead( int );
+        bool    mSeek( OffSet );
+        bool    mRead( std::string&, OffSet );
 };
 
 #endif // IOHANDLE_INCLUDE_H

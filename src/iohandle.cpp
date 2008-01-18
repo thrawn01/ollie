@@ -68,11 +68,21 @@ bool PosixIOHandle::mOpen( const char* strFileName , OpenMode mode ) {
     return true;
 }
 
-/*!
- * Does this platform support Large files with int64?
- */
-bool PosixIOHandle::mOffersLargeFileSupport( void ) {
-    return false;
+bool PosixIOHandle::mWaitForClearToRead( int intSeconds ) {
+
+
+
+}
+
+bool PosixIOHandle::mSeek( OffSet offset ) {
+
+
+}
+
+bool PosixIOHandle::mRead( std::string& strBuffer, OffSet offset ) {
+
+
+
 }
 
 // --- End posixfile.cpp ---

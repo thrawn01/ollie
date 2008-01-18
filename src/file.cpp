@@ -54,34 +54,13 @@ Utf8File::~Utf8File() { }
  * Read in the next block of text starting at the last read offset
  */
 bool Utf8File::mReadNextBlock( std::string& strBuffer ) {
-
-    return mReadBlock( _offReadOffSet, strBuffer );
-
-}
-
-/*
- * Read in the next block of text
- */
-bool Utf8File::mReadBlock( OffSet offset, std::string& strBuffer ) {
     assert( _ioHandle != 0 );
 
     OffSet offLen = 0;
 
-    // If the IO handle we are using does not offer Seek
-    if( ! _ioHandle->mOffersSeek() ) {
-        mSetError("Current IO Device does not support file seeks");
-        return false;
-    }
-    
     // If we timeout waiting on clear to read
     if( ! _ioHandle->mWaitForClearToRead( _intTimeout ) ) {
         mSetError("Timeout waiting to read from file");
-        return false;
-    }
-
-    // Attempt to seek to the correct offset
-    if( ! _ioHandle->mSeek(offset) ) {
-        mSetError( _ioHandle->mGetError() );
         return false;
     }
 
@@ -95,6 +74,28 @@ bool Utf8File::mReadBlock( OffSet offset, std::string& strBuffer ) {
     _offReadOffSet += offLen;
 
     return true;
+
+}
+
+/*
+ * Read in the next block of text
+ */
+bool Utf8File::mReadBlock( OffSet offset, std::string& strBuffer ) {
+    assert( _ioHandle != 0 );
+
+    // If the IO handle we are using does not offer Seek
+    if( ! _ioHandle->mOffersSeek() ) {
+        mSetError("Current IO Device does not support file seeks");
+        return false;
+    }
+
+    // Attempt to seek to the correct offset
+    if( ! _ioHandle->mSeek(offset) ) {
+        mSetError( _ioHandle->mGetError() );
+        return false;
+    }
+
+    return mReadNextBlock( strBuffer );
 }
 
 

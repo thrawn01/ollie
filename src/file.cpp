@@ -28,6 +28,7 @@ File::File( IOHandle* const ioHandle ) {
     _offBlockSize   = 0;
     _offReadOffSet  = 0;
     _offWriteOffSet = 0;
+    _intTimeout     = 0;
 }
 
 /*!
@@ -62,6 +63,8 @@ bool Utf8File::mReadNextBlock( std::string& strBuffer ) {
  * Read in the next block of text
  */
 bool Utf8File::mReadBlock( OffSet offset, std::string& strBuffer ) {
+    assert( _ioHandle != 0 );
+
     OffSet offLen = 0;
 
     // If the IO handle we are using does not offer Seek
@@ -70,27 +73,28 @@ bool Utf8File::mReadBlock( OffSet offset, std::string& strBuffer ) {
         return false;
     }
     
-    // If the io handle can read without blocking
-    if( _ioHandle->mCanRead() ) {
+    // If we timeout waiting on clear to read
+    if( ! _ioHandle->mWaitForClearToRead( _intTimeout ) ) {
+        mSetError("Timeout waiting to read from file");
+        return false;
+    }
 
-        // Attempt to seek to the correct offset
-        if( ! _ioHandle->mSeek(offset) ) {
-            mSetError( _ioHandle->mGetError() );
-            return false;
-        }
+    // Attempt to seek to the correct offset
+    if( ! _ioHandle->mSeek(offset) ) {
+        mSetError( _ioHandle->mGetError() );
+        return false;
+    }
 
-        // Read in the block from the IO
-        if( ( offLen = _ioHandle->mRead(strBuffer, _offBlockSize) ) < 0 ) {
-            mSetError( _ioHandle->mGetError() );
-            return false;
-        }
-       
-        // Keep track of where in the file we are
-        _offReadOffSet += offLen;
+    // Read in the block from the IO
+    if( ( offLen = _ioHandle->mRead(strBuffer, _offBlockSize) ) < 0 ) {
+        mSetError( _ioHandle->mGetError() );
+        return false;
+    }
+   
+    // Keep track of where in the file we are
+    _offReadOffSet += offLen;
 
-        return true;
-    }    
-    return false;
+    return true;
 }
 
 
@@ -109,7 +113,7 @@ GzipFile::~GzipFile() { }
  */
 std::string& File::mGetFileName( void ) {
     assert( _ioHandle != 0 );
-    return _ioHandle->mGetIOHandleName();
+    return _ioHandle->mGetName();
 }
 
 /*!

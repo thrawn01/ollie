@@ -164,7 +164,7 @@ class BufferTests : public CxxTest::TestSuite
             Buffer* buf = bufList.mGetBufferByName("buffer1");
 
             TS_ASSERT( buf );
-            TS_ASSERT( buf->mIsUsable() );
+            TS_ASSERT( buf->mIsBufferReady() );
 
             // Rename the buffer
             buf->mSetName("buffer2");
@@ -172,7 +172,7 @@ class BufferTests : public CxxTest::TestSuite
             // Get the buffer by name
             Buffer* buf2 = bufList.mGetBufferByName("buffer2");
             TS_ASSERT( buf2 );
-            TS_ASSERT( buf2->mIsUsable() );
+            TS_ASSERT( buf2->mIsBufferReady() );
             TS_ASSERT_EQUALS( buf2, buf );
         }
 

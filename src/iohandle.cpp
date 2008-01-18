@@ -63,7 +63,7 @@ bool PosixIOHandle::mOpen( const char* strFileName , OpenMode mode ) {
 
     // TODO: Record the last time this file was modified
 
-    _strIOHandleName = strFileName;
+    _strName = strFileName;
 
     return true;
 }
@@ -87,13 +87,6 @@ IOHandle::IOHandle() { }
  * IOHandle Destructor
  */
 IOHandle::~IOHandle() { }
-
-/*!
- * Return the filename of the file we loaded
- */
-std::string& IOHandle::mGetIOHandleName( void ) {
-    return _strIOHandleName;
-}
 
 /*!
  * Return the default IOHandle handler for the current operating system

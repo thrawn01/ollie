@@ -65,25 +65,4 @@ class OllieCommon {
         std::stringstream _streamWarningMsg;
 };
 
-/*template< class ClassName, typename ReturnType, typename Parameter >
-class MethodPointer {
-
-    public: 
-        typedef ReturnType (ClassName::*Method)(Parameter);
-
-        MethodPointer( ClassName *instance, Method method ) {
-            _classInstance = instance;
-            _classMethod   = method;
-        }
-
-        ReturnType execute( Parameter e ) {
-            _classInstance->*_classMethod(e);
-        }
-
-    protected:
-        Method    _classMethod;
-        ClassName _classInstance;
-
-};*/
-
 #endif // OLLIE_INCLUDE_H

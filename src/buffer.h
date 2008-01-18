@@ -70,7 +70,6 @@ class Buffer : public OllieCommon {
         virtual std::string& mGetName( void );
         virtual void         mSetName( const std::string& );
         virtual std::string& mGetFileName( void );
-        virtual bool         mIsUsable( void );
         virtual bool         mIsModified( void );
         virtual bool         mSaveBuffer( void );
         virtual bool         mAssignFile( File* const );
@@ -96,7 +95,6 @@ class Buffer : public OllieCommon {
         std::string _strMyName;
         bool  _boolModified;
         File* _FileMyFile;
-        bool  _boolUsable;
         bool  _boolEntireFileLoaded;
         OffSet _offMaxBufferSize;
         OffSet _offBufferSize;

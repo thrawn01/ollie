@@ -67,7 +67,6 @@ bool ChangeSet::mIsDelete( void ) {
 void Buffer::init( void ) {
     _boolModified         = false;
     _FileMyFile           = 0;
-    _boolUsable           = false;
     _boolEntireFileLoaded = false;
     _offMaxBufferSize     = DEFAULT_MAX_BUF_SIZE;
     _offBufferSize        = 0;
@@ -143,25 +142,11 @@ bool Buffer::mIsModified( void ) {
 }
 
 /*!
- *  DEPRICATED REMOVE!
- */
-bool Buffer::mIsUsable( void ) {
-
-    return false; 
-    // If no name is assigned return false
-    if( _strMyName.empty() ) {
-        this->mSetError("Empty string for buffer name is not allowed");
-        return false;
-    }
-
-    return _boolUsable;
-}
-
-/*!
  * Assign a File to be represented by this buffer
  * The file passed must be an open valid file
  */
 bool Buffer::mAssignFile( File* const file ) {
+    assert( file != 0 );
 
     _strMyName = file->mGetFileName();
 
@@ -180,11 +165,8 @@ ChangeSet* Buffer::mGetChangeSet() {
  * Save the buffer to the file
  */
 bool Buffer::mSaveBuffer( void ) {
-    // If we have no file name represented
-    if( ! _FileMyFile ) {
-        this->mSetError("Cannot save a buffer with no file represented");
-        return false;
-    }
+    assert( _FileMyFile != 0 );
+
     return false;
 }
 
@@ -220,6 +202,7 @@ bool Buffer::mDelete( OffSet from, OffSet to ) {
  * Returns the File Name the current buffer represents
  */
 std::string& Buffer::mGetFileName( void ) {
+
     if( _FileMyFile ) {
         return _FileMyFile->mGetFileName();
     }
@@ -263,6 +246,8 @@ bool Buffer::mIsBufferReady( void ) {
  * false if there was an error
  */
 bool Buffer::mPreformTask( void ) {
+    assert( _currentTask != 0 );
+
     return (this->*_currentTask)();
 }
 
@@ -271,6 +256,7 @@ bool Buffer::mPreformTask( void ) {
  * Load 1 Page of data from the file
  */
 bool Buffer::mLoadPage( void ) {
+    assert( _FileMyFile != 0 );
 
     // Is the file loaded completely?
     if( _offBufferSize == _FileMyFile->mGetFileSize() ) {

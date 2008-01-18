@@ -47,7 +47,6 @@ AsciiBuffer::AsciiBuffer( void ) : Buffer() {
  */
 AsciiBuffer::AsciiBuffer( const std::string& strMyName ) : Buffer( strMyName ) {
     AsciiBuffer();
-    _boolUsable = true;
 }
 
 /*!

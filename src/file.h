@@ -46,7 +46,7 @@ class File : public OllieCommon {
        // Methods
        void          setMaxBlockSize( OffSet offSize ) { _offBlockSize = offSize; }
        OffSet        getMaxBlockSize( void ) { return _offBlockSize; }
-       void          setTimeOut( int seconds );
+       void          setTimeOut( int seconds ) { _intTimeout = seconds; }
        IOHandle*     mGetIOHandler( void );
        std::string&  mGetFileName( void );
        OffSet        mGetFileSize( void ) { return _ioHandle->mGetFileSize(); }
@@ -56,6 +56,7 @@ class File : public OllieCommon {
        OffSet       _offBlockSize;
        OffSet       _offReadOffSet;
        OffSet       _offWriteOffSet;
+       int          _intTimeout;
 
 };
 

@@ -19,7 +19,7 @@
  **/
 
 //! The offset type for our current platform
-typedef double long OffSet;
+typedef __off_t OffSet;
 
 // File used in the test suite
 #define TEST_FILE "/tmp/OllieTestFile.txt"

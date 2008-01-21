@@ -24,6 +24,8 @@
 
 #include <errno.h>
 #include <string.h>
+#include <stdio.h>
+#include <fcntl.h>
 
 /*!
  * IOHandle Constructor
@@ -38,51 +40,115 @@ PosixIOHandle::~PosixIOHandle() { }
 /*!
  * Open a file in the requested mode
  */
+bool PosixIOHandle::mClose( void ) {
+    
+    if( ioFile ) {
+        close(ioFile); 
+        ioFile = 0;
+        return true;
+    }
+
+    // Just fail silently?
+    mSetError() << "IO Error: Can not close un-open file";
+
+    return false;
+}
+
+/*!
+ * Open a file in the requested mode
+ */
 bool PosixIOHandle::mOpen( const char* strFileName , OpenMode mode ) {
-    std::ios_base::openmode ioMode;
-    std::fstream ioFile;
+    int ioMode = 0; 
 
-    if( mode = ReadWrite ) { ioMode = std::fstream::in | std::fstream::out; }
-    if( mode = ReadOnly )  { ioMode = std::fstream::in; }
+    if( mode = ReadWrite ) { ioMode = O_RDWR; }
+    if( mode = ReadOnly )  { ioMode = O_RDONLY; }
 
-    // If a file is already open, close it 
-    // FIXME: Should this return false, asking the user to close the file first?
-    if( ioFile.is_open() ) { ioFile.close(); }
+    // if a file is already open, close it 
+    // fixme: should this return false, asking the user to close the file first?
+    if( ioFile ) { close(ioFile); }
 
     // Open the file in the specifed mode
-    ioFile.open(strFileName, ioMode );
-    if( ( ! ioFile.is_open() ) || ( ! ioFile.good() ) ) { 
-        mSetError() << "Unable to open '" << strFileName << "' " <<  strerror( errno );
+    if( ( ioFile = open(strFileName, ioMode, 0 ) ) == -1 ) {
+        mSetError() << "IO Error: Unable to open '" << strFileName << "' " <<  strerror( errno );
         return false;
     }
 
     // Record the total size of the file
-    ioFile.seekg(0, std::ios::end);
-    _offFileSize = ioFile.tellg();
-    ioFile.seekg(0, std::ios::beg);
+    if( ( _offFileSize = lseek(ioFile, 0, SEEK_END) ) == -1 ) { 
+        mSetError() << "IO Error: Unable to seek the EOF '" << strFileName << "' " <<  strerror( errno );
+        return false;
+    }
+
+    // Return to the begining of the file
+    if( lseek(ioFile, 0, SEEK_SET)  == -1 ) { 
+        mSetError() << "IO Error: Unable to seek to offset 0 '" << strFileName << "' " <<  strerror( errno );
+        return false;
+    }
 
     // TODO: Record the last time this file was modified
-
+    
     _strName = strFileName;
 
     return true;
 }
 
+/*! 
+ * Return true if the read will not block, 
+ *
+ * This should never be an issue on local filesystems, However there 
+ * is no way of knowing if the filesystem is a remote mount, in which case 
+ * the read might block in case of network outage. 
+ * However this check creates a penalty when reading very large files. If performance 
+ * becomes an issue this method could always return true and ignore the block check.
+ *
+ */
 bool PosixIOHandle::mWaitForClearToRead( int intSeconds ) {
+    struct timeval tv;
+    fd_set readfds;
+    int intVal = 0;
 
+    tv.tv_sec   = intSeconds;
+    tv.tv_usec  = 0;
 
+    FD_ZERO(&readfds);
+    FD_SET(0, &readfds);
 
+    if( ( intVal = select(ioFile + 1, &readfds, NULL, NULL, &tv) ) == -1 ) {
+        mSetError() << "IO Error: Timeout while waiting to read '" << _strName << "' - " <<  strerror( errno );
+        return false; 
+    }
+
+    // select timed out TODO: Should we check FD_ISSET instead?
+    if( intVal == 0 ) { return false; }
+
+    return true;
 }
 
 bool PosixIOHandle::mSeek( OffSet offset ) {
 
+    // Seek the to required offset in the file
+    if( lseek(ioFile, offset, SEEK_SET)  == -1 ) { 
+        mSetError() << "IO Error: Unable to seek to offset " << offset << " - " <<  strerror( errno );
+        return false;
+    }
 
+    return true;
 }
 
-bool PosixIOHandle::mRead( std::string& strBuffer, OffSet offset ) {
+/*!
+ * Reads in data from the file handle
+ */
+bool PosixIOHandle::mRead( std::string& strBuffer, OffSet offSize ) {
 
-
-
+    // Pre allocate enough memory to hold the data
+    strBuffer.reserve(offSize);
+   
+    // Read the data directly into the string data structure
+    if( read( ioFile, (void*)strBuffer.data(), offSize ) == -1 ) { 
+        mSetError() << "IO Error: Unable to read " << offSize << " bytes from '" << _strName << "' - " <<  strerror( errno );
+        return false;
+    }
+    return true;
 }
 
 // --- End posixfile.cpp ---

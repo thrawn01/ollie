@@ -11,3 +11,6 @@ ADD_LIBRARY(ollie ollie.cpp buffer.cpp file.cpp iohandle.cpp asciibuffer.cpp )
 # -----------------
 ADD_CXXTEST(bufferTests buffertests.h )
 TARGET_LINK_LIBRARIES(bufferTests ollie )
+
+ADD_CXXTEST(ioTests iotests.h )
+TARGET_LINK_LIBRARIES(ioTests ollie )

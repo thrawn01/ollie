@@ -22,7 +22,6 @@
 #define IOHANDLE_INCLUDE_H
 
 #include <ollie.h>
-#include <fstream>
 
 /*!
  *  An Abstract class used to 
@@ -39,9 +38,10 @@ class IOHandle : public OllieCommon {
         // IOHandle Modes
         enum OpenMode { ReadWrite, ReadOnly };
 
-        // Open the file
+        // Open / Close 
         virtual bool        mOpen( std::string &strFileName , OpenMode mode );
-        virtual bool        mOpen( const char*, OpenMode mode ) { };
+        virtual bool        mOpen( const char*, OpenMode mode ) { return false; }
+        virtual bool        mClose( void ) { return false; }
 
         //! Does the IO offer int64 for large files?
         virtual bool        mOffersLargeFileSupport( void ) { return false; }
@@ -60,8 +60,8 @@ class IOHandle : public OllieCommon {
 
         // Private IOHandleName
         std::string _strName;
-        std::fstream ioFile;
         OffSet _offFileSize;
+        int ioFile;
 };
 
 /*!
@@ -75,6 +75,7 @@ class PosixIOHandle : public IOHandle {
 
         // Methods
         bool    mOpen( const char*, OpenMode mode );
+        bool    mClose( void );
         bool    mOffersLargeFileSupport( void ) { return true; }
         bool    mOffersSeek( void ) { return true; }
         bool    mWaitForClearToRead( int );

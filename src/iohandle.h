@@ -51,8 +51,8 @@ class IOHandle : public OllieCommon {
 
         // Read Methods
         virtual bool        mWaitForClearToRead( int ) { return false; }
-        virtual bool        mSeek( OffSet ) { return false; }
-        virtual bool        mRead( std::string&, OffSet ) { return false; }
+        virtual OffSet      mSeek( OffSet ) { return false; }
+        virtual OffSet      mRead( std::string&, OffSet ) { return false; }
 
         //! Return the name of the iohandle ( IE: filename, network address )
         std::string& mGetName( void ) { return _strName; }
@@ -61,7 +61,7 @@ class IOHandle : public OllieCommon {
         // Private IOHandleName
         std::string _strName;
         OffSet _offFileSize;
-        int ioFile;
+        int _ioFile;
 };
 
 /*!
@@ -79,8 +79,8 @@ class PosixIOHandle : public IOHandle {
         bool    mOffersLargeFileSupport( void ) { return true; }
         bool    mOffersSeek( void ) { return true; }
         bool    mWaitForClearToRead( int );
-        bool    mSeek( OffSet );
-        bool    mRead( std::string&, OffSet );
+        OffSet  mSeek( OffSet );
+        OffSet  mRead( std::string&, OffSet );
 };
 
 #endif // IOHANDLE_INCLUDE_H

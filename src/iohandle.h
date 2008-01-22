@@ -50,23 +50,25 @@ class IOHandle : public OllieCommon {
         virtual bool        mOffersSeek( void ) { return false; }
 
         // Read Methods
-        virtual bool        mWaitForClearToRead( int ) { return false; }
+        virtual int         mWaitForClearToRead( int ) { return false; }
         virtual OffSet      mSeek( OffSet ) { return false; }
-        virtual OffSet      mRead( std::string&, OffSet ) { return false; }
+        virtual OffSet      mRead( char*, OffSet ) { return false; }
+        virtual OffSet      mWrite( const char*, OffSet  ) { return false; }
+        OffSet              mRead( std::string&, OffSet );
+        OffSet              mWrite( std::string&, OffSet );
 
         //! Return the name of the iohandle ( IE: filename, network address )
         std::string& mGetName( void ) { return _strName; }
         OffSet mGetFileSize( void ) { return _offFileSize; }
 
         // Private IOHandleName
-        std::string _strName;
-        OffSet _offFileSize;
-        int _ioFile;
+        std::string     _strName;
+        OffSet          _offFileSize;
+        int             _ioFile;
 };
 
 /*!
- *  A Class to open/read/write using posix 
- *  commands
+ *  A Class to open/read/write using posix commands
  */
 class PosixIOHandle : public IOHandle {
     public:
@@ -78,9 +80,10 @@ class PosixIOHandle : public IOHandle {
         bool    mClose( void );
         bool    mOffersLargeFileSupport( void ) { return true; }
         bool    mOffersSeek( void ) { return true; }
-        bool    mWaitForClearToRead( int );
+        int     mWaitForClearToRead( int );
         OffSet  mSeek( OffSet );
-        OffSet  mRead( std::string&, OffSet );
+        OffSet  mRead( char*, OffSet );
+        OffSet  mWrite( const char*, OffSet );
 };
 
 #endif // IOHANDLE_INCLUDE_H

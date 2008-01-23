@@ -51,6 +51,7 @@ class IOHandle : public OllieCommon {
 
         // Read Methods
         virtual int         mWaitForClearToRead( int ) { return false; }
+        virtual int         mWaitForClearToWrite( int ) { return false; }
         virtual OffSet      mSeek( OffSet ) { return false; }
         virtual OffSet      mRead( char*, OffSet ) { return false; }
         virtual OffSet      mWrite( const char*, OffSet  ) { return false; }
@@ -81,6 +82,7 @@ class PosixIOHandle : public IOHandle {
         bool    mOffersLargeFileSupport( void ) { return true; }
         bool    mOffersSeek( void ) { return true; }
         int     mWaitForClearToRead( int );
+        int     mWaitForClearToWrite( int );
         OffSet  mSeek( OffSet );
         OffSet  mRead( char*, OffSet );
         OffSet  mWrite( const char*, OffSet );

@@ -119,7 +119,7 @@ Buffer::Buffer( File* const file ) {
 
     // Assign the load Page task and set the status message
     mSetTaskStatus() << "Loading " << file->mGetFileName() << "..." ;
-    _currentTask = &Buffer::mLoadPage;
+    _currentTask = &Buffer::mCallLoadPage;
 
 }
 
@@ -131,14 +131,6 @@ Buffer::~Buffer( void ) {
     if( _FileMyFile ) { 
         delete (_FileMyFile); 
     }
-}
-
-/*!
- * Returns true if the buffer was modified by the user
- */
-bool Buffer::mIsModified( void ) {
-    // un implemented
-    return false;
 }
 
 /*!
@@ -159,43 +151,6 @@ bool Buffer::mAssignFile( File* const file ) {
  */
 ChangeSet* Buffer::mGetChangeSet() {
     return new ChangeSet( this );
-}
-
-/*!
- * Save the buffer to the file
- */
-bool Buffer::mSaveBuffer( void ) {
-    assert( _FileMyFile != 0 );
-
-    return false;
-}
-
-/*!
- * Returns the Name of the current buffer
- */
-std::string& Buffer::mGetName( void ) {
-    return _strMyName;
-}
-
-/*!
- * Sets the Name of the current buffer
- */
-void Buffer::mSetName( const std::string& strMyName ) {
-    _strMyName = strMyName;
-}
-
-/*!
- * Inserts some text into the buffer
- */
-bool Buffer::mInsert( const std::string& strTxt ) {
-   // un-implemented 
-}
-
-/*!
- * Deletes some text from the buffer
- */
-bool Buffer::mDelete( OffSet from, OffSet to ) {
-   // un-implemented 
 }
 
 /*!
@@ -255,7 +210,7 @@ bool Buffer::mPreformTask( void ) {
 /*
  * Load 1 Page of data from the file
  */
-bool Buffer::mLoadPage( void ) {
+bool Buffer::mCallLoadPage( void ) {
     assert( _FileMyFile != 0 );
 
     // Is the file loaded completely?
@@ -271,10 +226,7 @@ bool Buffer::mLoadPage( void ) {
         return true;
     }
 
-    // TODO: Check the modification time on the file ( If available )
-    // Doing this on each read might not be good for networked files
-        
-    return false;    
+    return mLoadPage();
 }
 
 /*

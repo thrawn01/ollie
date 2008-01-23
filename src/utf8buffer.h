@@ -18,24 +18,23 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
-#ifndef ASCIIBUFFER_INCLUDE_H
-#define ASCIIBUFFER_INCLUDE_H
+#ifndef UTF8BUFFER_INCLUDE_H
+#define UTF8BUFFER_INCLUDE_H
 
 #include <ollie.h>
 #include <buffer.h>
-#include <vector>
 
-class AsciiBuffer;
+class Utf8Buffer;
 
 /*!
  * A Class that holds 1 page of data
  */
-class Page {
+class Utf8Page : public Page {
 
     public:
-        Page() { }; 
-        Page( std::string &strPage ){ strData = strPage; }
-        ~Page( ) { };
+        Utf8Page( ) { } 
+        Utf8Page( std::string &strPage ){ strData = strPage; }
+        virtual ~Utf8Page( ) { }
         
         // Variables
         std::string strData;
@@ -43,37 +42,14 @@ class Page {
 };
 
 /*!
- * A Container class to hold the pages that make up the buffer
+ *  The Utf8 ChangeSet object.
  */
-class PageContainer {
-
-    public:
-        PageContainer() {  };
-        ~PageContainer() {  };
-
-        typedef std::vector<Page>::iterator PageIterator;  
-
-        PageIterator begin() { return _vecContainer.begin(); }
-        PageIterator end()   { return _vecContainer.end();   }
-
-        Page back()  { return _vecContainer.back();  }
-        bool add( std::string &strData );
-        bool add( void );
-        
-    protected:
-        std::vector<Page> _vecContainer;
-         
-};
-
-/*!
- *  The Ascii ChangeSet object.
- */
-class AsciiChangeSet : public ChangeSet {
+class Utf8ChangeSet : public ChangeSet {
 
     public:
         // Constructor / Destructor  
-        AsciiChangeSet( AsciiBuffer* ) ;
-        virtual ~AsciiChangeSet( void );
+        Utf8ChangeSet( Utf8Buffer* ) ;
+        virtual ~Utf8ChangeSet( void );
         virtual std::string mGetText();
         virtual OffSet mGetAbsPosition() { }
         virtual OffSet mGetLineNum()     { }
@@ -83,23 +59,25 @@ class AsciiChangeSet : public ChangeSet {
 };
 
 /*!
- *  AsciiBuffer class
+ *  Utf8Buffer class
  */
-class AsciiBuffer : public Buffer { 
+class Utf8Buffer : public Buffer { 
 
     public:
         // Constructor / Destructor  
-        AsciiBuffer( void );
-        AsciiBuffer( const std::string& );
-        AsciiBuffer( File* const );
-        virtual              ~AsciiBuffer( void );
-        virtual ChangeSet*   mGetChangeSet();
-        virtual bool mInsert( const std::string& );
-        virtual bool mDelete( OffSet from, OffSet to );
+        Utf8Buffer( void );
+        Utf8Buffer( const std::string& );
+        Utf8Buffer( File* const );
+        virtual ~Utf8Buffer( void );
+
+        // Methods
+        ChangeSet*  mGetChangeSet();
+        bool        mInsert( const std::string& );
+        bool        mDelete( OffSet from, OffSet to );
+        bool        mLoadPage( void );
 
         PageContainer _vecPages;
 
 };
 
-
-#endif // ASCIIBUFFER_INCLUDE_H
+#endif // UTF8BUFFER_INCLUDE_H

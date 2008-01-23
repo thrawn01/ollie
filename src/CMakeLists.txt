@@ -5,7 +5,7 @@
 # ----------------------------------------------------------------
 
 # Add the ollie Library
-ADD_LIBRARY(ollie ollie.cpp buffer.cpp file.cpp iohandle.cpp asciibuffer.cpp )
+ADD_LIBRARY(ollie ollie.cpp buffer.cpp file.cpp iohandle.cpp utf8buffer.cpp )
 
 # Add our Tests
 # -----------------
@@ -14,3 +14,6 @@ TARGET_LINK_LIBRARIES(bufferTests ollie )
 
 ADD_CXXTEST(ioTests iotests.h )
 TARGET_LINK_LIBRARIES(ioTests ollie )
+
+ADD_CXXTEST(fileTests filetests.h )
+TARGET_LINK_LIBRARIES(fileTests ollie )

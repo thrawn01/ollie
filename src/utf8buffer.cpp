@@ -18,48 +18,49 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
- #include<asciibuffer.h>
+ #include<utf8buffer.h>
 
-AsciiChangeSet::AsciiChangeSet( AsciiBuffer* buffer ) : ChangeSet( buffer ) {
+Utf8ChangeSet::Utf8ChangeSet( Utf8Buffer* buffer ) : ChangeSet( buffer ) {
     
 }
 
-AsciiChangeSet::~AsciiChangeSet( ) {
+Utf8ChangeSet::~Utf8ChangeSet( ) {
     
 }
 
 /*!
  * Returns utf-8 encoded text of the change
  */
-std::string AsciiChangeSet::mGetText( ) {
+std::string Utf8ChangeSet::mGetText( ) {
    // un-implemented 
 }
 
 /*!
  * Create an empty buffer with no name
  */
-AsciiBuffer::AsciiBuffer( void ) : Buffer() {
-    _vecPages.add();
+Utf8Buffer::Utf8Buffer( void ) : Buffer() {
+    Utf8Page page;
+    //_vecPages.push_back( page );
 }
 
 /*!
  * Create a named empty buffer
  */
-AsciiBuffer::AsciiBuffer( const std::string& strMyName ) : Buffer( strMyName ) {
-    AsciiBuffer();
+Utf8Buffer::Utf8Buffer( const std::string& strMyName ) : Buffer( strMyName ) {
+    Utf8Buffer();
 }
 
 /*!
  * Create a buffer with a file associated with it
  */
-AsciiBuffer::AsciiBuffer( File* const file ) : Buffer( file ) {
+Utf8Buffer::Utf8Buffer( File* const file ) : Buffer( file ) {
     
 }
 
 /*!
  * Buffer Destructor
  */
-AsciiBuffer::~AsciiBuffer( void ) {
+Utf8Buffer::~Utf8Buffer( void ) {
     // Unallocate the name of the buffer
     if( _FileMyFile ) { 
         delete (_FileMyFile); 
@@ -69,39 +70,29 @@ AsciiBuffer::~AsciiBuffer( void ) {
 /*!
  * Inserts some text into the buffer
  */
-bool AsciiBuffer::mInsert( const std::string& strTxt ) {
+bool Utf8Buffer::mInsert( const std::string& strTxt ) {
    // un-implemented 
 }
 
 /*!
  * Deletes some text from the buffer
  */
-bool AsciiBuffer::mDelete( OffSet from, OffSet to ) {
+bool Utf8Buffer::mDelete( OffSet from, OffSet to ) {
    // un-implemented 
 }
 
 /*!
+ * 
+ */
+bool Utf8Buffer::mLoadPage( void ) {
+   // un-implemented 
+   return false;
+}
+/*!
  * Returns the changeset associated with 
  * the last change made to the buffer
  */
-ChangeSet* AsciiBuffer::mGetChangeSet() {
-    return new AsciiChangeSet( this );
-}
-
-/*! 
- * Add an empty page to the container
- */
-bool PageContainer::add( void ) { 
-    Page page;
-    _vecContainer.push_back( page );
-
-}
-
-/*! 
- * Add an data page to the container
- */
-bool PageContainer::add( std::string &strData ) { 
-    Page page(strData);
-    _vecContainer.push_back( page ); 
+ChangeSet* Utf8Buffer::mGetChangeSet() {
+    return new Utf8ChangeSet( this );
 }
 

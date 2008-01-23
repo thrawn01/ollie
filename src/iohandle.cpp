@@ -126,6 +126,33 @@ int PosixIOHandle::mWaitForClearToRead( int intSeconds ) {
     return 0;
 }
 
+/*! 
+ * Return 0 if the read will not block
+ * Return -1 if there was an error
+ * Return 1 if we timed out
+ */
+int PosixIOHandle::mWaitForClearToWrite( int intSeconds ) {
+    struct timeval tv;
+    fd_set writefds;
+    int intVal = 0;
+
+    tv.tv_sec   = intSeconds;
+    tv.tv_usec  = 0;
+
+    FD_ZERO(&writefds);
+    FD_SET(_ioFile, &writefds);
+
+    if( ( intVal = select(_ioFile+1, NULL, &writefds, NULL, &tv) ) == -1 ) {
+        mSetError() << "IO Error: select error while waiting to write '" << _strName << "' - " <<  strerror( errno );
+        return -1; 
+    }
+
+    // select timed out TODO: Should we check FD_ISSET instead?
+    if( intVal == 0 ) { return 1; }
+
+    return 0;
+}
+
 /*!
  * Seeks to a location in the file specified by offset
  */

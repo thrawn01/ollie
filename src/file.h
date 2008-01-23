@@ -24,6 +24,8 @@
 #include <iohandle.h>
 #include <ollie.h>
 
+class Page;
+
 /*! 
  * This is the base class for all files.
  */
@@ -35,18 +37,18 @@ class File : public OllieCommon {
        static File* mIdentifyFile( IOHandle* );
 
        // Virtual Methods
-       virtual bool         mReadBlock( OffSet offset, std::string& ) { return false; }
-       virtual bool         mReadNextBlock( std::string& ) { return false; }
-       virtual bool         mWriteBlock( OffSet offset, std::string& ) { return false; }
-       virtual bool         mWriteNextBlock( std::string& ) { return false; }
+       virtual bool         mReadBlock( OffSet, Page& ) { return false; }
+       virtual bool         mReadNextBlock( Page& ) { return false; }
+       virtual bool         mWriteBlock( OffSet, Page& ) { return false; }
+       virtual bool         mWriteNextBlock( Page& ) { return false; }
 
        //virtual bool         mWriteBlobk( &std::string, Attributes *attr ); TODO: Add Attributes Support
        //virtual Attributes   mGetPageAttributes( void ) { }  TODO: Add Attribute Support
 
        // Methods
-       void          setMaxBlockSize( OffSet offSize ) { _offBlockSize = offSize; }
-       OffSet        getMaxBlockSize( void ) { return _offBlockSize; }
-       void          setTimeOut( int seconds ) { _intTimeout = seconds; }
+       void          mSetMaxBlockSize( OffSet offSize ) { _offBlockSize = offSize; }
+       OffSet        mGetMaxBlockSize( void ) { return _offBlockSize; }
+       void          mSetTimeOut( int seconds ) { _intTimeout = seconds; }
        IOHandle*     mGetIOHandler( void );
        std::string&  mGetFileName( void );
        OffSet        mGetFileSize( void ) { return _ioHandle->mGetFileSize(); }
@@ -69,10 +71,10 @@ class Utf8File : public File {
        Utf8File( IOHandle* const );
        ~Utf8File();
        // Implemented virtual methods
-       bool         mReadBlock( OffSet offset, std::string& );
-       bool         mReadNextBlock( std::string& );
-       bool         mWriteBlock( OffSet offset, std::string& ) { return false; }
-       bool         mWriteNextBlock( std::string& ) { return false; }
+       bool         mReadBlock( OffSet offset, Page& );
+       bool         mReadNextBlock( Page& );
+       bool         mWriteBlock( OffSet offset, Page& ) { return false; }
+       bool         mWriteNextBlock( Page& ) { return false; }
 
 };
 

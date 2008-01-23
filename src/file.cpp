@@ -53,8 +53,10 @@ Utf8File::~Utf8File() { }
 /*
  * Read in the next block of text starting at the last read offset
  */
-bool Utf8File::mReadNextBlock( std::string& strBuffer ) {
+bool Utf8File::mReadNextBlock( Page& page ) {
     assert( _ioHandle != 0 );
+
+    char* cstrBuffer = new char[mGetMaxBlockSize()]; 
 
     OffSet offLen = 0;
 
@@ -65,13 +67,17 @@ bool Utf8File::mReadNextBlock( std::string& strBuffer ) {
     }
 
     // Read in the block from the IO
-    if( ( offLen = _ioHandle->mRead(strBuffer, _offBlockSize) ) < 0 ) {
+    if( ( offLen = _ioHandle->mRead(cstrBuffer, _offBlockSize) ) < 0 ) {
         mSetError( _ioHandle->mGetError() );
         return false;
     }
    
     // Keep track of where in the file we are
     _offReadOffSet += offLen;
+
+    //page.mAssignData( cstrBuffer ); 
+
+    delete cstrBuffer;
 
     return true;
 
@@ -80,7 +86,7 @@ bool Utf8File::mReadNextBlock( std::string& strBuffer ) {
 /*
  * Read in the next block of text
  */
-bool Utf8File::mReadBlock( OffSet offset, std::string& strBuffer ) {
+bool Utf8File::mReadBlock( OffSet offset, Page& page ) {
     assert( _ioHandle != 0 );
 
     // If the IO handle we are using does not offer Seek
@@ -95,7 +101,7 @@ bool Utf8File::mReadBlock( OffSet offset, std::string& strBuffer ) {
         return false;
     }
 
-    return mReadNextBlock( strBuffer );
+    return mReadNextBlock( page );
 }
 
 

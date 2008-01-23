@@ -19,7 +19,7 @@
  **/
 
 #include "cxxtest/TestSuite.h"
-#include <asciibuffer.h>
+#include <utf8buffer.h>
 #include <iohandle.h>
 #include <file.h>
 #include <iostream>
@@ -46,11 +46,11 @@ class BufferTests : public CxxTest::TestSuite
         // --------------------------------
         // To Create a new empty buffer
         // --------------------------------
-        void testmCreateEmptyAsciiBuffer( void ) {
+        void testmCreateEmptyUtf8Buffer( void ) {
             BufferContainer bufList;
 
-            // Create a new buffer Container
-            Buffer* buf = new AsciiBuffer("buffer1");
+            // Create a new buffer 
+            Buffer* buf = new Utf8Buffer("buffer1");
             TS_ASSERT( buf ); 
 
             // Buffer should have correct name
@@ -108,12 +108,12 @@ class BufferTests : public CxxTest::TestSuite
             // Open The File ReadWrite
             TS_ASSERT_EQUALS( ioHandle->mOpen(TEST_FILE, IOHandle::ReadWrite ), true );
            
-            // Try to identify the file using the IO handle. Return an appropriate file type for reading this file
-            File* file = File::mIdentifyFile( ioHandle );
+            // Create file handler for utf8 files
+            File* file = new Utf8File( ioHandle );
             TS_ASSERT( file );
 
             // Create the buffer with the file handler
-            Buffer* buf = new AsciiBuffer(file);
+            Buffer* buf = new Utf8Buffer(file);
             TS_ASSERT( buf ); 
 
             // The name should be the same as the file name 
@@ -158,7 +158,7 @@ class BufferTests : public CxxTest::TestSuite
             BufferContainer bufList;
 
             // Create a new Buffer Called "buffer1"
-            bufList.add( new AsciiBuffer("buffer1") );
+            bufList.add( new Utf8Buffer("buffer1") );
             
             // Get the buffer by name
             Buffer* buf = bufList.mGetBufferByName("buffer1");
@@ -195,7 +195,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT( file );
 
             // Create the buffer with the file handler
-            Buffer* bufNew = new AsciiBuffer(file);
+            Buffer* bufNew = new Utf8Buffer(file);
 
             // Add the buffer to the container
             bufList.add(bufNew);
@@ -214,7 +214,7 @@ class BufferTests : public CxxTest::TestSuite
             BufferContainer bufList;
 
             // Create a new Buffer Called "buffer1"
-            Buffer* buf = new AsciiBuffer("buffer1");
+            Buffer* buf = new Utf8Buffer("buffer1");
             TS_ASSERT( buf );
 
             // Get the default IO handler for this Operating System
@@ -243,7 +243,7 @@ class BufferTests : public CxxTest::TestSuite
         void testmIsModified( void ) {
 
             // Create a new Buffer Called "buffer1"
-            Buffer* buf = new AsciiBuffer("buffer1");
+            Buffer* buf = new Utf8Buffer("buffer1");
             TS_ASSERT( buf );
 
             // Modify the buffer 
@@ -259,7 +259,7 @@ class BufferTests : public CxxTest::TestSuite
         void testChangeSetInsertRecording( void ) {
 
             // Create a new Buffer Called "buffer1"
-            Buffer* buf = new AsciiBuffer("bufferOne");
+            Buffer* buf = new Utf8Buffer("bufferOne");
             TS_ASSERT(buf);
 
             // Insert "Derrick J. Wippler"
@@ -285,7 +285,7 @@ class BufferTests : public CxxTest::TestSuite
         void testChangeSetDeleteRecording( void ) {
 
             // Create a new Buffer Called "buffer1"
-            Buffer* buf = new AsciiBuffer("bufferOne");
+            Buffer* buf = new Utf8Buffer("bufferOne");
             TS_ASSERT(buf);
 
             // Insert "Derrick J. Wippler" without returning a change set

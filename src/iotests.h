@@ -89,7 +89,7 @@ class IOTests : public CxxTest::TestSuite
             IOHandle* ioHandle = new PosixIOHandle();
             TS_ASSERT( ioHandle ); 
 
-            // Open should return false, if not report the error
+            // Open should return false
             TS_ASSERT_EQUALS( ioHandle->mOpen(READ_ONLY_TEST_FILE, IOHandle::ReadWrite ), false );
 
         } 
@@ -142,6 +142,8 @@ class IOTests : public CxxTest::TestSuite
 
         }
 
+        // --------------------------------
+        // --------------------------------
         void testPosixIOHandleReadWrite( void ) {
             string strBuffer;
 
@@ -169,10 +171,9 @@ class IOTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( ioHandle->mSeek( 8 ), 8 );
 
             // Will the next write to the IO block?
-            //TS_ASSERT_EQUALS( ioHandle->mWaitForClearToWrite( 2 ), 0 );
+            TS_ASSERT_EQUALS( ioHandle->mWaitForClearToWrite( 2 ), 0 );
 
-            //ioHandle->mWrite(strBuffer, 4 );
-
+            // No Errors should have occured
             TS_ASSERT_EQUALS( ioHandle->mGetError(), "" );
 
             // Write 4 bytes to the file
@@ -183,7 +184,7 @@ class IOTests : public CxxTest::TestSuite
 
             // Read 4 bytes after the write location
             TS_ASSERT_EQUALS( ioHandle->mRead(strBuffer, 4 ), 4 );
-            
+           
             TS_ASSERT_EQUALS( strBuffer, "DDDD" );
         }
 

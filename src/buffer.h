@@ -23,8 +23,40 @@
 
 #include <ollie.h>
 #include <file.h>
+#include <vector>
 
 class Buffer;
+
+/*!
+ * A Class that holds 1 page of data
+ */
+class Page {
+
+    public:
+        Page() { }
+        virtual ~Page() { }
+};
+
+/*!
+ * A Container class to hold the pages that make up the buffer
+ */
+class PageContainer {
+
+    public:
+        PageContainer() {  };
+        ~PageContainer() {  };
+
+        typedef std::vector<Page>::iterator PageIterator;  
+
+        PageIterator begin() { return _vecContainer.begin(); }
+        PageIterator end()   { return _vecContainer.end();   }
+
+        Page back()  { return _vecContainer.back();  }
+        
+    protected:
+        std::vector<Page> _vecContainer;
+         
+};
 
 /*!
  *  Abstract base class stores 1 changeset. A change set 
@@ -67,15 +99,15 @@ class Buffer : public OllieCommon {
         virtual ~Buffer( void );
 
         // Methods
-        virtual std::string& mGetName( void );
-        virtual void         mSetName( const std::string& );
+        virtual std::string& mGetName( void ) { return _strMyName; }
+        virtual void         mSetName( const std::string& strName ) { _strMyName = strName; }
+        virtual bool         mIsModified( void ) { return false; }
+        virtual bool         mSaveBuffer( void ) { return false; }
+        virtual bool         mInsert( const std::string& ) { return false; }
+        virtual bool         mDelete( OffSet , OffSet ) { return false; }
         virtual std::string& mGetFileName( void );
-        virtual bool         mIsModified( void );
-        virtual bool         mSaveBuffer( void );
-        virtual bool         mAssignFile( File* const );
-        virtual bool         mInsert( const std::string& );
-        virtual bool         mDelete( OffSet , OffSet );
         virtual ChangeSet*   mGetChangeSet( void );
+        virtual bool         mLoadPage( void ) { return false; }
 
         // Non virtual methods
         std::stringstream&  mSetTaskStatus( void ) { _streamStatusMsg.str(""); return _streamStatusMsg; }
@@ -86,8 +118,9 @@ class Buffer : public OllieCommon {
         bool                mBufferFull( void );
         bool                mIsBufferReady( void );
         bool                mPreformTask( void );
-        bool                mLoadPage( void );
         bool                mGetProgress( int* );
+        bool                mAssignFile( File* const );
+        bool                mCallLoadPage( void );
 
         //void                mSetCurrentTask(bool (Buffer::*Method)(void) ); 
 

@@ -19,6 +19,7 @@
  **/
 
 #include<file.h>
+#include<buffer.h>
 
 /*!
  * File Constructor
@@ -56,28 +57,34 @@ Utf8File::~Utf8File() { }
 bool Utf8File::mReadNextBlock( Page& page ) {
     assert( _ioHandle != 0 );
 
-    char* cstrBuffer = new char[mGetMaxBlockSize()]; 
-
-    OffSet offLen = 0;
-
     // If we timeout waiting on clear to read
     if( ! _ioHandle->mWaitForClearToRead( _intTimeout ) ) {
         mSetError("Timeout waiting to read from file");
         return false;
     }
 
+    char* arrBlockData = new char[_offBlockSize]; 
+    OffSet offLen = 0;
+
     // Read in the block from the IO
-    if( ( offLen = _ioHandle->mRead(cstrBuffer, _offBlockSize) ) < 0 ) {
+    if( ( offLen = _ioHandle->mRead( arrBlockData, _offBlockSize ) ) < 0 ) {
         mSetError( _ioHandle->mGetError() );
+        delete arrBlockData;
         return false;
     }
-   
+
+    // Since utf8 files have no additional attributes we load the entire
+    // block of data as 1 page, Other file handlers might process the input from the 
+    // file and form blocks with attributes appropriate to the file format.
+    
+    // mAppendBlock() is resposible for deleting the allocated 
+    // cstrBuffer if nessary. Some implementations of the Block class could 
+    // use the char* for it's internal storage instead of copying and destroying it
+    
+    page.mAppendBlock( _offReadOffSet, arrBlockData, offLen );
+    
     // Keep track of where in the file we are
     _offReadOffSet += offLen;
-
-    //page.mAssignData( cstrBuffer ); 
-
-    delete cstrBuffer;
 
     return true;
 

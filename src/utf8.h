@@ -18,28 +18,42 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
-#ifndef UTF8BUFFER_INCLUDE_H
-#define UTF8BUFFER_INCLUDE_H
+#ifndef UTF8_INCLUDE_H
+#define UTF8_INCLUDE_H
 
 #include <ollie.h>
 #include <buffer.h>
 
-class Utf8Buffer;
+/*!
+ * Class for handling Utf8 Blocks ( Text Blocks )
+ */
+class Utf8Block : public Block {
+
+    public:
+        Utf8Block( ) { } 
+        virtual ~Utf8Block( ) { }
+
+        bool mSetBlockData( char* cstrData ) { _strBlockData.assign( cstrData ); delete cstrData; }
+
+        // members
+        std::string _strBlockData;
+};
 
 /*!
- * A Class that holds 1 page of data
+ * Class for handling Utf8 pages 
  */
 class Utf8Page : public Page {
 
     public:
-        Utf8Page( ) { } 
-        Utf8Page( std::string &strPage ){ strData = strPage; }
-        virtual ~Utf8Page( ) { }
-        
-        // Variables
-        std::string strData;
-         
+        Utf8Page() { }
+        virtual ~Utf8Page() { }
+
+        Iterator    mAppendBlock( OffSet, char*, OffSet ) { return Iterator(); }
+        Iterator    mAppendBlock( OffSet offSet, char* blockData, OffSet offLen, Attributes attr  ) { return Iterator(); }
+        Iterator    mAppendBlock( Utf8Block &block ) { return Iterator(); }
+
 };
+
 
 /*!
  *  The Utf8 ChangeSet object.
@@ -47,9 +61,9 @@ class Utf8Page : public Page {
 class Utf8ChangeSet : public ChangeSet {
 
     public:
-        // Constructor / Destructor  
-        Utf8ChangeSet( Utf8Buffer* ) ;
-        virtual ~Utf8ChangeSet( void );
+        Utf8ChangeSet( ) { };
+        virtual ~Utf8ChangeSet( void ) { };
+
         virtual std::string mGetText();
         virtual OffSet mGetAbsPosition() { }
         virtual OffSet mGetLineNum()     { }
@@ -58,26 +72,6 @@ class Utf8ChangeSet : public ChangeSet {
 
 };
 
-/*!
- *  Utf8Buffer class
- */
-class Utf8Buffer : public Buffer { 
+typedef Utf8Page Utf8;
 
-    public:
-        // Constructor / Destructor  
-        Utf8Buffer( void );
-        Utf8Buffer( const std::string& );
-        Utf8Buffer( File* const );
-        virtual ~Utf8Buffer( void );
-
-        // Methods
-        ChangeSet*  mGetChangeSet();
-        bool        mInsert( const std::string& );
-        bool        mDelete( OffSet from, OffSet to );
-        bool        mLoadPage( void );
-
-        PageContainer _vecPages;
-
-};
-
-#endif // UTF8BUFFER_INCLUDE_H
+#endif // UTF8_INCLUDE_H

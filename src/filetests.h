@@ -20,9 +20,10 @@
 
 #include "cxxtest/TestSuite.h"
 #include <file.h>
-#include <utf8buffer.h>
+#include <utf8.h>
 #include <iostream>
 #include <fstream>
+#include <errno.h>
 
 using namespace std;
 
@@ -32,6 +33,33 @@ using namespace std;
 class BufferTests : public CxxTest::TestSuite
 {
     public: 
+
+        // --------------------------------
+        // Method to create a test file
+        // --------------------------------
+        void createTestFile( const char * cstrFileName ) {
+
+            fstream ioFile;
+            ioFile.open( cstrFileName, fstream::out );
+            if( ( ! ioFile.is_open() ) || ( ! ioFile.good() ) ) { 
+                TS_FAIL( string("Unable to create test file '") + cstrFileName + "'" + strerror( errno ) );
+            }
+
+            // Add some Text to the file
+            ioFile << "AAAABBBBCCCCDDDDEEEE11223344\n";
+
+            ioFile.close();
+
+        }
+
+        // --------------------------------
+        // Create a some test files
+        // --------------------------------
+        void testCreateFileForTests( void ) {
+            
+            createTestFile(TEST_FILE);
+
+        }
 
         // --------------------------------
         // --------------------------------
@@ -55,4 +83,14 @@ class BufferTests : public CxxTest::TestSuite
 
         }
 
+        // --------------------------------
+        // --------------------------------
+        void testCleanUpFile( void ) {
+           
+            // Delete the test file
+            if ( unlink(TEST_FILE) ) {
+                TS_FAIL( string("Unable to delete test file '" TEST_FILE  "' ") + strerror( errno ) );
+            }
+         
+        }
 };

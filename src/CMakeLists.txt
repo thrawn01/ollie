@@ -5,7 +5,7 @@
 # ----------------------------------------------------------------
 
 # Add the ollie Library
-ADD_LIBRARY(ollie ollie.cpp buffer.cpp file.cpp iohandle.cpp utf8buffer.cpp )
+ADD_LIBRARY(ollie ollie.cpp buffer.cpp file.cpp iohandle.cpp )
 
 # Add our Tests
 # -----------------

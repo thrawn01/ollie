@@ -23,6 +23,7 @@
 
 #include <ollie.h>
 #include <buffer.h>
+#include <file.h>
 
 /*!
  * Class for handling Utf8 Blocks ( Text Blocks )
@@ -30,8 +31,8 @@
 class Utf8Block : public Block {
 
     public:
-        Utf8Block( ) { } 
-        virtual ~Utf8Block( ) { }
+        Utf8Block( void ) { } 
+        virtual ~Utf8Block( void ) { }
 
         bool mSetBlockData( char* cstrData ) { _strBlockData.assign( cstrData ); delete cstrData; }
 
@@ -45,8 +46,8 @@ class Utf8Block : public Block {
 class Utf8Page : public Page {
 
     public:
-        Utf8Page() { }
-        virtual ~Utf8Page() { }
+        Utf8Page( void ) { }
+        virtual ~Utf8Page( void ) { }
 
         Iterator    mAppendBlock( OffSet, char*, OffSet ) { return Iterator(); }
         Iterator    mAppendBlock( OffSet offSet, char* blockData, OffSet offLen, Attributes attr  ) { return Iterator(); }
@@ -61,7 +62,7 @@ class Utf8Page : public Page {
 class Utf8ChangeSet : public ChangeSet {
 
     public:
-        Utf8ChangeSet( ) { };
+        Utf8ChangeSet( void ) { };
         virtual ~Utf8ChangeSet( void ) { };
 
         virtual std::string mGetText();
@@ -72,6 +73,34 @@ class Utf8ChangeSet : public ChangeSet {
 
 };
 
-typedef Utf8Page Utf8;
+/*!
+ * This is the buffer implementation for utf8 files
+ */
+class Utf8Buffer : public Buffer {
+
+    public:
+        Utf8Buffer( void ) { }
+        virtual ~Utf8Buffer( void ) { }
+        Utf8Buffer( const std::string& strName ) : Buffer( strName ) { }
+        Utf8Buffer( File* const fileHandle ) : Buffer( fileHandle ) { }
+
+};
+
+
+/*!
+ * This class reads and writes UTF-8 Files
+ */
+class Utf8File : public File {
+    
+    public:
+       Utf8File( IOHandle* const ioHandle ) : File( ioHandle ) { };
+       ~Utf8File() { };
+
+       OffSet       mReadBlock( OffSet, char*, Attributes& );
+       OffSet       mReadNextBlock( char*, Attributes& );
+       //OffSet       mWriteBlock( OffSet, char*, Attributes& );
+       //OffSet       mWriteNextBlock( char*, Attributes& );
+
+};
 
 #endif // UTF8_INCLUDE_H

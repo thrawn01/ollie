@@ -18,8 +18,8 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
-#include<file.h>
-#include<buffer.h>
+#include <file.h>
+#include <buffer.h>
 
 /*!
  * File Constructor
@@ -40,87 +40,6 @@ File::~File() {
         delete _ioHandle;
     }
 }
-
-/*!
- * Utf8File Constructor
- */
-Utf8File::Utf8File( IOHandle* const ioHandle ) : File(ioHandle) { }
-
-/*!
- * Utf8File Destructor
- */
-Utf8File::~Utf8File() { }
-
-/*
- * Read in the next block of text starting at the last read offset
- */
-bool Utf8File::mReadNextBlock( Page& page ) {
-    assert( _ioHandle != 0 );
-
-    // If we timeout waiting on clear to read
-    if( ! _ioHandle->mWaitForClearToRead( _intTimeout ) ) {
-        mSetError("Timeout waiting to read from file");
-        return false;
-    }
-
-    char* arrBlockData = new char[_offBlockSize]; 
-    OffSet offLen = 0;
-
-    // Read in the block from the IO
-    if( ( offLen = _ioHandle->mRead( arrBlockData, _offBlockSize ) ) < 0 ) {
-        mSetError( _ioHandle->mGetError() );
-        delete arrBlockData;
-        return false;
-    }
-
-    // Since utf8 files have no additional attributes we load the entire
-    // block of data as 1 page, Other file handlers might process the input from the 
-    // file and form blocks with attributes appropriate to the file format.
-    
-    // mAppendBlock() is resposible for deleting the allocated 
-    // cstrBuffer if nessary. Some implementations of the Block class could 
-    // use the char* for it's internal storage instead of copying and destroying it
-    
-    page.mAppendBlock( _offReadOffSet, arrBlockData, offLen );
-    
-    // Keep track of where in the file we are
-    _offReadOffSet += offLen;
-
-    return true;
-
-}
-
-/*
- * Read in the next block of text
- */
-bool Utf8File::mReadBlock( OffSet offset, Page& page ) {
-    assert( _ioHandle != 0 );
-
-    // If the IO handle we are using does not offer Seek
-    if( ! _ioHandle->mOffersSeek() ) {
-        mSetError("Current IO Device does not support file seeks");
-        return false;
-    }
-
-    // Attempt to seek to the correct offset
-    if( ! _ioHandle->mSeek(offset) ) {
-        mSetError( _ioHandle->mGetError() );
-        return false;
-    }
-
-    return mReadNextBlock( page );
-}
-
-
-/*!
- * GzipFile Constructor
- */
-GzipFile::GzipFile( IOHandle* const ioHandle ) : File(ioHandle) { }
-
-/*!
- * File Destructor
- */
-GzipFile::~GzipFile() { }
 
 /*!
  * Returns the File name IOHandler has open
@@ -144,8 +63,6 @@ IOHandle* File::mGetIOHandler( void ) {
  * Attempts to identify the file by reading parts of the file from the IOHandler.
  */
 File* File::mIdentifyFile( IOHandle* ioHandle ) {
-
-    // No Other file handlers defined yet, Always load the Utf8File()
-    return new Utf8File( ioHandle );  
+    return new File( ioHandle );  
 }
 

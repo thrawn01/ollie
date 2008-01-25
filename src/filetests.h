@@ -64,7 +64,7 @@ class BufferTests : public CxxTest::TestSuite
         // --------------------------------
         // --------------------------------
         void testmReadNextBlock( void ) {
-            Utf8Page page;
+            Attributes attr;
 
             // Get the default IO handler for this Operating System
             IOHandle* ioHandle = IOHandle::mGetDefaultIOHandler();
@@ -77,9 +77,25 @@ class BufferTests : public CxxTest::TestSuite
             File* file = new Utf8File( ioHandle );
             TS_ASSERT( file );
 
-            file->mSetMaxBlockSize(3000);
+            // Each block of text should be 250 bytes or less
+            char* arrBlockData = new char[250];
 
-            TS_ASSERT_EQUALS( file->mReadNextBlock( page ), true );
+            // Tell file to return blocks of text no greater than 250 bytes
+            file->mSetBlockSize(250);
+
+            // The block read should return the entire file contents, 29 bytes.
+            TS_ASSERT_EQUALS( file->mReadNextBlock( arrBlockData, attr ), 29 );
+
+            // TODO Add Check for empty attributes
+           
+            // No Errors should have occured
+            TS_ASSERT_EQUALS( file->mGetError(), "" );
+          
+            // The data returned should be 29 bytes and should match the data we created for the test
+            TS_ASSERT_EQUALS( string( arrBlockData, 29 ), "AAAABBBBCCCCDDDDEEEE11223344\n" );
+
+            // Clean up the blockdata
+            delete arrBlockData;
 
         }
 

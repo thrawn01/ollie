@@ -24,7 +24,16 @@
 #include <iohandle.h>
 #include <ollie.h>
 
-class Page;
+/*! 
+ * Class hold all the attributes associated with a block of data
+ */
+class Attributes {
+
+    public:
+        Attributes() { }
+        ~Attributes() { }
+
+};
 
 /*! 
  * This is the base class for all files.
@@ -37,17 +46,14 @@ class File : public OllieCommon {
        static File* mIdentifyFile( IOHandle* );
 
        // Virtual Methods
-       virtual bool         mReadBlock( OffSet, Page& ) { return false; }
-       virtual bool         mReadNextBlock( Page& ) { return false; }
-       virtual bool         mWriteBlock( OffSet, Page& ) { return false; }
-       virtual bool         mWriteNextBlock( Page& ) { return false; }
-
-       //virtual bool         mWriteBlobk( &std::string, Attributes *attr ); TODO: Add Attributes Support
-       //virtual Attributes   mGetPageAttributes( void ) { }  TODO: Add Attribute Support
+       virtual OffSet       mReadBlock( OffSet, char*, Attributes &attr ) { return -1; }
+       virtual OffSet       mReadNextBlock( char*, Attributes &attr ) { return -1; }
+       virtual OffSet       mWriteBlock( OffSet, char*, Attributes &attr ) { return -1; }
+       virtual OffSet       mWriteNextBlock( char*, Attributes &attr ) { return -1; }
 
        // Methods
-       void          mSetMaxBlockSize( OffSet offSize ) { _offBlockSize = offSize; }
-       OffSet        mGetMaxBlockSize( void ) { return _offBlockSize; }
+       void          mSetBlockSize( OffSet offSize ) { _offBlockSize = offSize; }
+       OffSet        mGetBlockSize( void ) { return _offBlockSize; }
        void          mSetTimeOut( int seconds ) { _intTimeout = seconds; }
        IOHandle*     mGetIOHandler( void );
        std::string&  mGetFileName( void );
@@ -62,21 +68,6 @@ class File : public OllieCommon {
 
 };
 
-/*!
- * This class reads and writes UTF-8 Files
- */
-class Utf8File : public File {
-    
-    public:
-       Utf8File( IOHandle* const );
-       ~Utf8File();
-       // Implemented virtual methods
-       bool         mReadBlock( OffSet offset, Page& );
-       bool         mReadNextBlock( Page& );
-       bool         mWriteBlock( OffSet offset, Page& ) { return false; }
-       bool         mWriteNextBlock( Page& ) { return false; }
-
-};
 
 /*!
  * This class reads and writes gzip files. 
@@ -84,8 +75,8 @@ class Utf8File : public File {
 class GzipFile : public File {
     
     public:
-       GzipFile( IOHandle* const );
-       ~GzipFile();
+       GzipFile( IOHandle* const ioHandle ) : File( ioHandle ) { }
+       ~GzipFile() { }
         // All the virtual methods implemented
 
 };

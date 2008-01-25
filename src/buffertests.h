@@ -49,7 +49,7 @@ class BufferTests : public CxxTest::TestSuite
         void testmCreateEmptyUtf8Buffer( void ) {
 
             // Create a new buffer 
-            Buffer<Utf8>* buf = new Buffer<Utf8>("buffer1");
+            Utf8Buffer* buf = new Utf8Buffer("buffer1");
             TS_ASSERT( buf ); 
 
             // Buffer should have correct name
@@ -112,7 +112,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT( file );
 
             // Create the buffer with the file handler
-            Buffer<Utf8>* buf = new Buffer<Utf8>(file);
+            Utf8Buffer* buf = new Utf8Buffer(file);
             TS_ASSERT( buf ); 
 
             // The name should be the same as the file name 
@@ -156,7 +156,7 @@ class BufferTests : public CxxTest::TestSuite
         void testmAssignFileAndSaveBuffer( void ) {
 
             // Create a new Buffer Called "buffer1"
-            Buffer<Utf8>* buf = new Buffer<Utf8>("buffer1");
+            Utf8Buffer* buf = new Utf8Buffer("buffer1");
             TS_ASSERT( buf );
 
             // Get the default IO handler for this Operating System
@@ -185,7 +185,7 @@ class BufferTests : public CxxTest::TestSuite
         void testmIsModified( void ) {
 
             // Create a new Buffer Called "buffer1"
-            Buffer<Utf8>* buf = new Buffer<Utf8>("buffer1");
+            Utf8Buffer* buf = new Utf8Buffer("buffer1");
             TS_ASSERT( buf );
 
             // Modify the buffer 
@@ -201,7 +201,7 @@ class BufferTests : public CxxTest::TestSuite
         void testChangeSetInsertRecording( void ) {
 
             // Create a new Buffer Called "buffer1"
-            Buffer<Utf8>* buf = new Buffer<Utf8>("bufferOne");
+            Utf8Buffer* buf = new Utf8Buffer("bufferOne");
             TS_ASSERT(buf);
 
             // Insert "Derrick J. Wippler"
@@ -227,7 +227,7 @@ class BufferTests : public CxxTest::TestSuite
         void testChangeSetDeleteRecording( void ) {
 
             // Create a new Buffer Called "buffer1"
-            Buffer<Utf8>* buf = new Buffer<Utf8>("bufferOne");
+            Utf8Buffer* buf = new Utf8Buffer("bufferOne");
             TS_ASSERT(buf);
 
             // Insert "Derrick J. Wippler" without returning a change set

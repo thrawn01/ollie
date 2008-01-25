@@ -121,7 +121,10 @@ int PosixIOHandle::mWaitForClearToRead( int intSeconds ) {
     }
 
     // select timed out TODO: Should we check FD_ISSET instead?
-    if( intVal == 0 ) { return 1; }
+    if( intVal == 0 ) { 
+        mSetError() << "IO Error: Timeout waiting to read '" << _strName << "'";
+        return 1; 
+    }
 
     return 0;
 }

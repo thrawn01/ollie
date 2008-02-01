@@ -73,7 +73,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( ioHandle->mOpen("fileToOpen.txt", IOHandle::ReadWrite ), false );
 
             // Ensure mGetError() is set properly
-            TS_ASSERT_EQUALS( ioHandle->mGetError().substr(0,31), "Unable to open 'fileToOpen.txt'" );
+            TS_ASSERT_EQUALS( ioHandle->mGetError().substr(0,41), "IO Error: Unable to open 'fileToOpen.txt'" );
             
         }
 

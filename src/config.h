@@ -22,11 +22,15 @@
 typedef __off_t OffSet;
 
 // File used in the test suite
-#define TEST_FILE "/tmp/OllieTestFile.txt"
+#define TEST_FILE               "/tmp/OllieTestFile.txt"
 
-#define READ_ONLY_TEST_FILE "/tmp/OllieTestFile-ReadOnly.txt"
+#define READ_ONLY_TEST_FILE     "/tmp/OllieTestFile-ReadOnly.txt"
 
 // Max size the buffer hold in memory 
 // ( Not the maximum size a buffer can open )
-#define DEFAULT_MAX_BUF_SIZE 800000000L
+#define DEFAULT_MAX_BUF_SIZE    800000000L
+
+// The max number of bytes to read each time a buffer 
+// asks a file handler for a block of text 
+#define DEFAULT_BLOCK_SIZE      2000
 

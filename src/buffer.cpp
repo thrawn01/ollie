@@ -30,7 +30,7 @@
  
 void Buffer::init( void ) {
     _boolModified         = false;
-    _FileMyFile           = 0;
+    _fileHandle           = 0;
     _boolEntireFileLoaded = false;
     _offMaxBufferSize     = DEFAULT_MAX_BUF_SIZE;
     _offBufferSize        = 0;
@@ -79,7 +79,7 @@ Buffer::Buffer( File* const file ) {
     }
 
     // Assign the file handler
-    _FileMyFile = file;
+    _fileHandle = file;
 
     // Set the buffer name from the filename
     _strMyName = file->mGetFileName();
@@ -88,6 +88,7 @@ Buffer::Buffer( File* const file ) {
     mSetTaskStatus() << "Loading " << file->mGetFileName() << "..." ;
     _currentTask = &Buffer::mCallLoadPage;
 
+    _fileHandle->mSetBlockSize( DEFAULT_BLOCK_SIZE );
 }
 
 /*!
@@ -96,8 +97,8 @@ Buffer::Buffer( File* const file ) {
 
 Buffer::~Buffer( void ) {
     // Unallocate the file
-    if( _FileMyFile ) { 
-        delete (_FileMyFile); 
+    if( _fileHandle ) { 
+        delete (_fileHandle); 
     }
 }
 
@@ -110,6 +111,7 @@ bool Buffer::mAssignFile( File* const file ) {
     assert( file != 0 );
 
     _strMyName = file->mGetFileName();
+    _fileHandle = file;
 
     return false;
 }
@@ -120,8 +122,8 @@ bool Buffer::mAssignFile( File* const file ) {
 
 std::string& Buffer::mGetFileName( void ) {
 
-    if( _FileMyFile ) {
-        return _FileMyFile->mGetFileName();
+    if( _fileHandle ) {
+        return _fileHandle->mGetFileName();
     }
     return _strMyName;
 }
@@ -177,10 +179,10 @@ bool Buffer::mPreformTask( void ) {
  */
 
 bool Buffer::mCallLoadPage( void ) {
-    assert( _FileMyFile != 0 );
+    assert( _fileHandle != 0 );
 
     // Is the file loaded completely?
-    if( _offBufferSize == _FileMyFile->mGetFileSize() ) {
+    if( _offBufferSize == _fileHandle->mGetFileSize() ) {
 
         // Report the entire file loaded into memory
         _boolEntireFileLoaded = true;

@@ -72,3 +72,57 @@ OffSet Utf8File::mReadBlock( OffSet offset, char* arrBlockData, Attributes& attr
     return mReadNextBlock( arrBlockData, attr );
 }
 
+/*!
+ * Load 1 page of data from a file
+ */
+bool Utf8Buffer::mLoadPage( void ) {
+    OffSet offLen = 0;
+    Attributes attr;
+    Utf8Page page;
+
+    assert( _fileHandle != 0 );
+
+    // Create an array of data to read to
+    char* arrBlockData = new char[ _fileHandle->mGetBlockSize() ];
+
+    // Keep reading until we fill a page with data
+    while( ( offLen = _fileHandle->mReadNextBlock( arrBlockData, attr ) ) > 1 ) {
+       
+        // Create a new block of data
+        Utf8Block block(arrBlockData);
+       
+        // Add the block to the page
+        page.mAppendBlock( block );
+
+        // TODO Add support for attributes
+        
+        // Update the buffer size
+        _offBufferSize += offLen;
+
+        // if the page is full stop reading
+        if( page.mIsFull() ) {
+            break;
+        }
+    }
+
+    // offLen should be 0, unless there was an error
+    if( offLen != 0 ) {
+        mSetError( _fileHandle->mGetError() );
+        return false;
+    }
+
+    // TODO Append the page to the page container
+
+    return true;
+}
+
+/*!
+ * Append a block to the page and return an iterator to the block
+ */
+Iterator Utf8Page::mAppendBlock( Utf8Block &block ) {
+    _blockContainer.push_back( block ); 
+    
+    return Iterator( );
+
+}
+

@@ -23,79 +23,9 @@
 
 #include <ollie.h>
 #include <file.h>
-#include <vector>
-
-//class Attributes;
 
 /*!
- * A Class that holds 1 block of data
- */
-class Block {
-
-    public:
-        Block() { }
-        virtual ~Block() { }
-
-        virtual bool    mSetBlockData( char* ) { return false; }
-        bool            mSetOffSet( OffSet offset ) { _offOffSet = offset; }
-
-        OffSet _offOffSet;
-};
-
-/*! 
- * Iterator Class to Traverse the blocks of data across all pages
- */
-class PageIterator {
-
-    public:
-        PageIterator() { }
-        ~PageIterator() { }
-
-};
-
-/*!
- * A Class that holds blocks of data that consitutes a page
- * ( Not a Literal Page )
- */
-class Page {
-
-    public:
-        Page() { }
-        virtual ~Page() { }
-
-        // If we change how
-        typedef PageIterator Iterator;
-        
-        virtual Iterator    mAppendBlock( OffSet offSet, char* blockData, OffSet offLen ) { }
-        virtual Iterator    mAppendBlock( OffSet offSet, char* blockData, OffSet offLen, Attributes attr  ) { }
-        bool                mSetOffSet( OffSet offset ) { _offOffSet = offset; }
-       
-        OffSet              _offOffSet;
-};
-
-/*!
- * A Container class to hold the pages that make up the buffer
- */
-class PageContainer {
-
-    public:
-        PageContainer() {  };
-        ~PageContainer() {  };
-
-        typedef std::vector<Page>::iterator PageIterator;  
-
-        PageIterator begin() { return _vecContainer.begin(); }
-        PageIterator end()   { return _vecContainer.end();   }
-
-        Page back()  { return _vecContainer.back();  }
-        
-    protected:
-        std::vector<Page> _vecContainer;
-         
-};
-
-/*!
- *  Abstract base class stores 1 changeset. A change set 
+ *  Base class stores 1 changeset. A change set 
  *  represents eather a delete or an insert
  */
 class ChangeSet {
@@ -122,7 +52,7 @@ class ChangeSet {
 };
 
 /*!
- *  Abstract base class of all buffers
+ *  Base class of all buffers
  */
  
 class Buffer : public OllieCommon { 
@@ -163,7 +93,7 @@ class Buffer : public OllieCommon {
         // Variables
         std::string _strMyName;
         bool  _boolModified;
-        File* _FileMyFile;
+        File* _fileHandle;
         bool  _boolEntireFileLoaded;
         OffSet _offMaxBufferSize;
         OffSet _offBufferSize;
@@ -172,7 +102,6 @@ class Buffer : public OllieCommon {
         // A pointer to the method that preforms the current task
         bool (Buffer::*_currentTask)(void);
 
-        //FIXME MethodPointer<Buffer,bool,void> *_currentTask;
 };
 
 #endif // BUFFER_INCLUDE_H

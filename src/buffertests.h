@@ -131,7 +131,7 @@ class BufferTests : public CxxTest::TestSuite
             // Since we just created the buffer, the current task
             // is to load the file into the buffer
             while( ! buf->mIsBufferReady() ) {
-
+                
                 // Preform task should return true
                 TS_ASSERT_EQUALS( buf->mPreformTask(), true );
 

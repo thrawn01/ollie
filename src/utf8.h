@@ -32,16 +32,22 @@
 class Utf8Block {
 
     public:
-        Utf8Block( void ) { } 
-        Utf8Block( char* cstrData ) { mSetBlockData( cstrData); } 
+        Utf8Block( void ) { _offOffSet = 0; _sizeBufferSize = 0; } 
+        Utf8Block( char* cstrData, OffSet offLen );
         virtual ~Utf8Block( void ) { }
 
-        bool    mSetBlockData( char* cstrData ) { _strBlockData.assign( cstrData ); delete cstrData; }
+        bool    mSetBlockData( char* cstrData, OffSet offLen );
+        bool    mSetAttributes( Attributes &attr ) { return false; } //TODO Add Support for attributes
         bool    mSetOffSet( OffSet offset ) { _offOffSet = offset; }
+        bool    mIsEmpty( void ) { return _strBlockData.empty(); }
+        void    mClear( void ) { _strBlockData.clear(); }
+        size_t  mGetSize( void ) { return _sizeBufferSize; }
 
         // members
         std::string _strBlockData;
-        OffSet _offOffSet;
+        OffSet      _offOffSet;
+        size_t      _sizeBufferSize;
+
 };
 
 /*! 
@@ -65,17 +71,27 @@ typedef Utf8PageIterator Iterator;
 class Utf8Page {
 
     public:
-        Utf8Page( void ) { }
+        Utf8Page( void ) {
+            _offMaxPageSize = DEFAULT_PAGE_SIZE;
+            _offPageSize    = 0;
+            _offOffSet      = 0; 
+        }
         virtual ~Utf8Page( void ) { }
 
-        Iterator    mAppendBlock( OffSet, char*, OffSet ) { return Iterator(); }
-        Iterator    mAppendBlock( OffSet offSet, char* blockData, OffSet offLen, Attributes attr  ) { return Iterator(); }
+        //Iterator    mAppendBlock( OffSet, char*, OffSet ) { return Iterator(); }
+        //Iterator    mAppendBlock( OffSet offSet, char* blockData, OffSet offLen, Attributes attr  ) { return Iterator(); }
         Iterator    mAppendBlock( Utf8Block &block );
+        bool        mSetMaxPageSize( OffSet offSize ) { _offMaxPageSize = offSize; }
+        OffSet      mGetMaxPageSize( void ) { return _offMaxPageSize; }
         bool        mSetOffSet( OffSet offset ) { _offOffSet = offset; }
-        bool        mIsFull() { return false; }
+        OffSet      mGetPageSize( void ) { return _offPageSize; }
+        bool        mCanAcceptBytes( OffSet );
+        bool        mIsFull( void );
 
         std::vector<Utf8Block> _blockContainer;
         OffSet                 _offOffSet;
+        OffSet                 _offMaxPageSize;
+        OffSet                 _offPageSize;
 };
 
 /*!
@@ -93,6 +109,7 @@ class Utf8PageContainer {
         PageIterator end()   { return _vecContainer.end();   }
 
         Utf8Page back()  { return _vecContainer.back();  }
+        void mAppendPage( Utf8Page &page ) { _vecContainer.push_back( page ); }
         
     protected:
         std::vector<Utf8Page> _vecContainer;
@@ -128,7 +145,8 @@ class Utf8Buffer : public Buffer {
         Utf8Buffer( File* const fileHandle ) : Buffer( fileHandle ) { }
         bool mLoadPage( void );
 
-        Utf8Page _pageContainer;
+        Utf8PageContainer  _pageContainer;
+        Utf8Block          _blockHoldOver;
 };
 
 

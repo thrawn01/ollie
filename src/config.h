@@ -30,7 +30,24 @@ typedef __off_t OffSet;
 // ( Not the maximum size a buffer can open )
 #define DEFAULT_MAX_BUF_SIZE    800000000L
 
+// ----------------------------------------------------
+// The default block size SHOULD NOT be larger than
+// the default page size, In addition if the Block size 
+// is not equal to or evenly divisable by the page size
+// a you may experience a preformance penalty.
+//
+// Example: 
+// If the page size is = 100
+// Block size of 50 is acceptable
+// Block size of 49 is not
+// Block size of 10 is acceptable
+//
+// ----------------------------------------------------
+
 // The max number of bytes to read each time a buffer 
 // asks a file handler for a block of text 
 #define DEFAULT_BLOCK_SIZE      2000
+
+// The default size of each page of blocks
+#define DEFAULT_PAGE_SIZE      2000
 

@@ -59,15 +59,15 @@ class Buffer : public OllieCommon {
 
     public:
         // Constructor / Destructor  
-        Buffer( void );
-        Buffer( const std::string& );
+        Buffer( void ) { init(); }
+        Buffer( const std::string& strName ) { init(); _strName = strName; };
         Buffer( File* const );
         void init( void );
         virtual ~Buffer( void );
 
         // Methods
-        virtual std::string& mGetName( void ) { return _strMyName; }
-        virtual void         mSetName( const std::string& strName ) { _strMyName = strName; }
+        virtual std::string& mGetName( void ) { return _strName; }
+        virtual void         mSetName( const std::string& strName ) { _strName = strName; }
         virtual bool         mIsModified( void ) { return false; }
         virtual bool         mSaveBuffer( void ) { return false; }
         virtual bool         mInsert( const std::string& ) { return false; }
@@ -84,20 +84,20 @@ class Buffer : public OllieCommon {
         bool                mBufferFull( void );
         bool                mIsBufferReady( void );
         bool                mPreformTask( void );
-        bool                mGetProgress( int* );
         bool                mAssignFile( File* const );
         bool                mCallLoadPage( void );
-
+        bool                mGetProgress( long* longProgress );
         //void                mSetCurrentTask(bool (Buffer::*Method)(void) ); 
 
         // Variables
-        std::string _strMyName;
-        bool  _boolModified;
-        File* _fileHandle;
-        bool  _boolEntireFileLoaded;
-        OffSet _offMaxBufferSize;
-        OffSet _offBufferSize;
-        std::stringstream _streamStatusMsg;
+        std::string         _strName;
+        bool                _boolModified;
+        File*               _fileHandle;
+        bool                _boolEntireFileLoaded;
+        OffSet              _offMaxBufferSize;
+        OffSet              _offBufferSize;
+        std::stringstream   _streamStatusMsg;
+        long                _longCurProgress;
 
         // A pointer to the method that preforms the current task
         bool (Buffer::*_currentTask)(void);

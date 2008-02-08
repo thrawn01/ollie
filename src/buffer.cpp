@@ -38,33 +38,6 @@ void Buffer::init( void ) {
 }
 
 /*!
- * Construct a empty buffer 
- */
-
-Buffer::Buffer( void ) {
-
-    // Initialize class variables
-    init();
-
-    // TODO: Add the first page to the pageContainer
-}
-
-/*!
- * Construct a empty buffer and give it a name
- */
-
-Buffer::Buffer( const std::string& strMyName ) {
-
-    // Initialize class variables
-    init();
-
-    // Record our name
-    _strMyName = strMyName;
-
-    // TODO: Add the first page to the pageContainer
-}
-
-/*!
  * Construct a buffer from a file and give it a name
  */
 
@@ -75,18 +48,19 @@ Buffer::Buffer( File* const file ) {
 
     // Check for valid handle
     if( ! file ) {
-        mFatalError("Internal Error: Cannot create buffer from null file pointer");
+        fatalError("Internal Error: Cannot create buffer from null file pointer");
     }
 
     // Assign the file handler
     _fileHandle = file;
 
     // Set the buffer name from the filename
-    _strMyName = file->mGetFileName();
+    _strName = file->mGetFileName();
 
     // Assign the load Page task and set the status message
     mSetTaskStatus() << "Loading " << file->mGetFileName() << "..." ;
     _currentTask = &Buffer::mCallLoadPage;
+    _longCurProgress = 0;
 
     _fileHandle->mSetBlockSize( DEFAULT_BLOCK_SIZE );
 }
@@ -110,7 +84,7 @@ Buffer::~Buffer( void ) {
 bool Buffer::mAssignFile( File* const file ) {
     assert( file != 0 );
 
-    _strMyName = file->mGetFileName();
+    _strName = file->mGetFileName();
     _fileHandle = file;
 
     return false;
@@ -125,7 +99,7 @@ std::string& Buffer::mGetFileName( void ) {
     if( _fileHandle ) {
         return _fileHandle->mGetFileName();
     }
-    return _strMyName;
+    return _strName;
 }
 
 /*!
@@ -153,12 +127,6 @@ bool Buffer::mIsBufferReady( void ) {
         return false;
     }
 
-    // TODO Implement garbage collection
-    // Do we have any pages we can remove from memory?
-    //if( pageContainer->mCanRunGarbageCollection() ) {
-        //pageContainer->mRunGarbageCollection();
-    //}
-    
     return true;
 }
 
@@ -177,9 +145,11 @@ bool Buffer::mPreformTask( void ) {
 /*
  * Load 1 Page of data from the file
  */
-
 bool Buffer::mCallLoadPage( void ) {
     assert( _fileHandle != 0 );
+
+    // Attempt to load 1 page of data
+    if( ! mLoadPage() ) return false;
 
     // Is the file loaded completely?
     if( _offBufferSize == _fileHandle->mGetFileSize() ) {
@@ -190,17 +160,25 @@ bool Buffer::mCallLoadPage( void ) {
         // Clear our task
         mSetTaskStatus(); 
         _currentTask = 0;
+        _longCurProgress = 100L;
 
         return true;
     }
 
-    return mLoadPage();
+    // Record the current progress
+    _longCurProgress = long( _offBufferSize / ( _fileHandle->mGetFileSize() / 100 ) );
+
+    return true;
 }
 
-/*
- * Sets the current progress of the current task
+/* 
+ * Returns the progress of the current task if there is one.
+ * If not returns false
  */
+bool Buffer::mGetProgress( long* longProgress ) { 
 
-bool Buffer::mGetProgress( int* intPrecent ) {
+    *longProgress = _longCurProgress; 
+    if( _currentTask ) return true;
     return false;
+    
 }

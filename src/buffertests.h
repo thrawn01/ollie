@@ -98,7 +98,7 @@ class BufferTests : public CxxTest::TestSuite
         // To Create a new buffer from a file
         // --------------------------------
         void testmCreateBufferFromFile( void ) {
-            int intPrecent = 0; 
+            long longPercent = 0; 
            
             // Get the default IO handler for this Operating System
             IOHandle* ioHandle = IOHandle::mGetDefaultIOHandler();
@@ -136,18 +136,22 @@ class BufferTests : public CxxTest::TestSuite
                 TS_ASSERT_EQUALS( buf->mPreformTask(), true );
 
                 // Get the progress of the current task
-                buf->mGetProgress(&intPrecent);
+                TS_ASSERT_EQUALS( buf->mGetProgress( &longPercent ), false );
 
             }
 
+            // TODO check for buffer size, Page Size and Block Size
+
+            // TODO Interogate the Pages loaded and Blocks
+            
             // Buffer should be ready
             TS_ASSERT_EQUALS( buf->mIsBufferReady(), true );
 
             // Progress should return false, when there is nothing left to do
-            TS_ASSERT_EQUALS( buf->mGetProgress( &intPrecent ), false );
+            TS_ASSERT_EQUALS( buf->mGetProgress( &longPercent ), false );
 
             // Precent should be at 100%
-            TS_ASSERT_EQUALS( intPrecent, 100 );
+            TS_ASSERT_EQUALS( longPercent, 100 );
         }
 
         // --------------------------------
@@ -173,7 +177,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS(buf->mAssignFile(file), true );
             
             // The Assignment updated the 
-            TS_ASSERT_EQUALS(buf->_strMyName, TEST_FILE ); 
+            TS_ASSERT_EQUALS(buf->_strName, TEST_FILE ); 
 
             // Save the buffer to the file
             TS_ASSERT_EQUALS(buf->mSaveBuffer(), true );

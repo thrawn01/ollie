@@ -74,6 +74,8 @@ OffSet Utf8File::mReadBlock( OffSet offset, char* arrBlockData, Attributes& attr
 
 /*!
  * Load 1 page of data from a file
+ * TODO: Blocks should be pointers, to reduce 
+ *       the amount of data copy happening here
  */
 bool Utf8Buffer::mLoadPage( void ) {
     OffSet offLen = 0;
@@ -82,6 +84,16 @@ bool Utf8Buffer::mLoadPage( void ) {
 
     assert( _fileHandle != 0 );
 
+    // If the hold over block is NOT empty
+    if( ! _blockHoldOver.mIsEmpty() ) {
+
+        // Add the block to the page
+        page.mAppendBlock( _blockHoldOver );
+
+        // Clear the hold over block
+        _blockHoldOver.mClear();
+    }
+        
     // Create an array of data to read to
     char* arrBlockData = new char[ _fileHandle->mGetBlockSize() ];
 
@@ -89,20 +101,26 @@ bool Utf8Buffer::mLoadPage( void ) {
     while( ( offLen = _fileHandle->mReadNextBlock( arrBlockData, attr ) ) > 1 ) {
        
         // Create a new block of data
-        Utf8Block block(arrBlockData);
-       
-        // Add the block to the page
-        page.mAppendBlock( block );
+        Utf8Block block(arrBlockData, offLen );
 
-        // TODO Add support for attributes
-        
-        // Update the buffer size
-        _offBufferSize += offLen;
+        // Add the attributes to the block
+        block.mSetAttributes( attr );
+     
+        // If the page can accept more blocks
+        if( page.mCanAcceptBytes( offLen ) ) {
 
-        // if the page is full stop reading
-        if( page.mIsFull() ) {
+            // Add the block to the page
+            page.mAppendBlock( block );
+
+        }else {
+
+            // Hold a copy of the block until mLoadPage is called again
+            _blockHoldOver = block;
+            offLen = 0;
             break;
+
         }
+
     }
 
     // offLen should be 0, unless there was an error
@@ -111,18 +129,77 @@ bool Utf8Buffer::mLoadPage( void ) {
         return false;
     }
 
-    // TODO Append the page to the page container
+    // Only append a new page if the page has some data
+    if( page.mGetPageSize() != 0 ) {
 
+        // Append the page to the page container
+        _pageContainer.mAppendPage( page );
+
+        // Update the buffer size
+        _offBufferSize += page.mGetPageSize() ;
+
+        return true;
+    }
+
+    // Return true anyway, the last read might have read 0 bytes ( EOF )
     return true;
+
 }
 
 /*!
  * Append a block to the page and return an iterator to the block
  */
 Iterator Utf8Page::mAppendBlock( Utf8Block &block ) {
-    _blockContainer.push_back( block ); 
     
+    // Add the block to our page
+    _blockContainer.push_back( block ); 
+   
+    // Record Incr the Cur size of our page
+    _offPageSize += block.mGetSize();
+
+    // TODO Return a real iterator
     return Iterator( );
+
+}
+
+/*! 
+ * Return true if the page size is greater or equal to the max page size
+ */
+bool Utf8Page::mIsFull( void ) {
+    if (_offPageSize >= _offMaxPageSize ) { return true; }
+    return false;
+}
+
+/*! 
+ * Return false if adding offBytes to the page will put it over the MaxPageSize
+ * Return true otherwise
+ */
+bool Utf8Page::mCanAcceptBytes( OffSet offBytes ) {
+   
+    // If the num of bytes will put us over the max page size 
+    if( ( offBytes + _offPageSize) > _offMaxPageSize ) {
+        return false; 
+    }
+    return true;
+}
+
+/*! 
+ * Assign the char* of data to the internal structure of the block
+ * also delete the char* data after assignment
+ */
+bool Utf8Block::mSetBlockData( char*cstrData, OffSet offLen ) {
+    _strBlockData.assign( cstrData, offLen ); 
+    _sizeBufferSize = offLen;
+
+    delete cstrData; 
+    cstrData = 0; 
+}
+
+Utf8Block::Utf8Block( char* cstrData, OffSet offLen ) { 
+    _offOffSet        = 0; 
+    _sizeBufferSize   = 0;
+
+    mSetBlockData( cstrData, offLen ); 
 
 }
 

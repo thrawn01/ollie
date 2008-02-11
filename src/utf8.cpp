@@ -96,6 +96,7 @@ bool Utf8Buffer::mLoadPage( void ) {
         
     // Create an array of data to read to
     char* arrBlockData = new char[ _fileHandle->mGetBlockSize() ];
+    memset(arrBlockData, 0, _fileHandle->mGetBlockSize() );
 
     // Keep reading until we fill a page with data
     while( ( offLen = _fileHandle->mReadNextBlock( arrBlockData, attr ) ) > 1 ) {
@@ -121,7 +122,11 @@ bool Utf8Buffer::mLoadPage( void ) {
 
         }
 
+        // Clear the BlockData for next read
+        memset(arrBlockData, 0, _fileHandle->mGetBlockSize() );
     }
+
+    delete arrBlockData;
 
     // offLen should be 0, unless there was an error
     if( offLen != 0 ) {
@@ -149,7 +154,7 @@ bool Utf8Buffer::mLoadPage( void ) {
 /*!
  * Append a block to the page and return an iterator to the block
  */
-Iterator Utf8Page::mAppendBlock( Utf8Block &block ) {
+Utf8Block::Iterator Utf8Page::mAppendBlock( Utf8Block &block ) {
     
     // Add the block to our page
     _blockContainer.push_back( block ); 
@@ -157,15 +162,15 @@ Iterator Utf8Page::mAppendBlock( Utf8Block &block ) {
     // Record Incr the Cur size of our page
     _offPageSize += block.mGetSize();
 
-    // TODO Return a real iterator
-    return Iterator( );
+    // Return an iterator to the last element
+    return --(_blockContainer.end());
 
 }
 
 /*! 
  * Return true if the page size is greater or equal to the max page size
  */
-bool Utf8Page::mIsFull( void ) {
+bool Utf8Page::mIsFull( void ) const {
     if (_offPageSize >= _offMaxPageSize ) { return true; }
     return false;
 }
@@ -174,7 +179,7 @@ bool Utf8Page::mIsFull( void ) {
  * Return false if adding offBytes to the page will put it over the MaxPageSize
  * Return true otherwise
  */
-bool Utf8Page::mCanAcceptBytes( OffSet offBytes ) {
+bool Utf8Page::mCanAcceptBytes( OffSet offBytes ) const {
    
     // If the num of bytes will put us over the max page size 
     if( ( offBytes + _offPageSize) > _offMaxPageSize ) {
@@ -185,14 +190,10 @@ bool Utf8Page::mCanAcceptBytes( OffSet offBytes ) {
 
 /*! 
  * Assign the char* of data to the internal structure of the block
- * also delete the char* data after assignment
  */
 bool Utf8Block::mSetBlockData( char*cstrData, OffSet offLen ) {
     _strBlockData.assign( cstrData, offLen ); 
     _sizeBufferSize = offLen;
-
-    delete cstrData; 
-    cstrData = 0; 
 }
 
 Utf8Block::Utf8Block( char* cstrData, OffSet offLen ) { 

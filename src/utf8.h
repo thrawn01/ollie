@@ -36,12 +36,16 @@ class Utf8Block {
         Utf8Block( char* cstrData, OffSet offLen );
         virtual ~Utf8Block( void ) { }
 
-        bool    mSetBlockData( char* cstrData, OffSet offLen );
-        bool    mSetAttributes( Attributes &attr ) { return false; } //TODO Add Support for attributes
-        bool    mSetOffSet( OffSet offset ) { _offOffSet = offset; }
-        bool    mIsEmpty( void ) { return _strBlockData.empty(); }
-        void    mClear( void ) { _strBlockData.clear(); }
-        size_t  mGetSize( void ) { return _sizeBufferSize; }
+        typedef std::vector<Utf8Block>::iterator Iterator;
+
+
+        bool                mSetBlockData( char* cstrData, OffSet offLen );
+        const std::string&  mGetBlockData( void ) const { return _strBlockData; }
+        bool                mSetAttributes( Attributes &attr ) { return false; } //TODO Add Support for attributes
+        bool                mSetOffSet( OffSet offset ) { _offOffSet = offset; }
+        bool                mIsEmpty( void ) const { return _strBlockData.empty(); }
+        void                mClear( void ) { _strBlockData.clear(); }
+        size_t              mGetSize( void ) const { return _sizeBufferSize; }
 
         // members
         std::string _strBlockData;
@@ -50,19 +54,6 @@ class Utf8Block {
 
 };
 
-/*! 
- * Our Page Iterator
- */
-class Utf8PageIterator {
-
-    public: 
-        Utf8PageIterator( void ) { };
-        virtual ~Utf8PageIterator( void ) { };
-
-};
-
-// FIXME Change this?
-typedef Utf8PageIterator Iterator;
 
 /*!
  * A Class that holds blocks of data that consitutes a page
@@ -78,20 +69,41 @@ class Utf8Page {
         }
         virtual ~Utf8Page( void ) { }
 
+        typedef std::vector<Utf8Page>::iterator Iterator;  
+
         //Iterator    mAppendBlock( OffSet, char*, OffSet ) { return Iterator(); }
         //Iterator    mAppendBlock( OffSet offSet, char* blockData, OffSet offLen, Attributes attr  ) { return Iterator(); }
-        Iterator    mAppendBlock( Utf8Block &block );
-        bool        mSetMaxPageSize( OffSet offSize ) { _offMaxPageSize = offSize; }
-        OffSet      mGetMaxPageSize( void ) { return _offMaxPageSize; }
-        bool        mSetOffSet( OffSet offset ) { _offOffSet = offset; }
-        OffSet      mGetPageSize( void ) { return _offPageSize; }
-        bool        mCanAcceptBytes( OffSet );
-        bool        mIsFull( void );
+        Utf8Block::Iterator  mAppendBlock( Utf8Block &block );
+        bool                 mSetMaxPageSize( OffSet offSize ) { _offMaxPageSize = offSize; }
+        OffSet               mGetMaxPageSize( void ) const { return _offMaxPageSize; }
+        bool                 mSetOffSet( OffSet offset ) { _offOffSet = offset; }
+        OffSet               mGetPageSize( void ) const { return _offPageSize; }
+        bool                 mCanAcceptBytes( OffSet ) const;
+        bool                 mIsFull( void ) const;
+        Utf8Block::Iterator  mBegin( void ) { return _blockContainer.begin(); }
+        Utf8Block::Iterator  mEnd( void ) { return _blockContainer.end(); }
 
         std::vector<Utf8Block> _blockContainer;
         OffSet                 _offOffSet;
         OffSet                 _offMaxPageSize;
         OffSet                 _offPageSize;
+};
+
+/*! 
+ * Our Utf8 Iterator, This iterators iterates thru all the blocks and 
+ * pages as if they were apart of the same vector
+ */
+class Utf8Iterator {
+
+    public: 
+        Utf8Iterator( void ) { };
+        //Utf8Iterator( Utf8Page::Iterator &it ) { _itPage = it; };
+        virtual ~Utf8Iterator( void ) { };
+
+        //Utf8Page& operator* ( void ) { return &(*_itPage); }
+
+
+        //Utf8Page::Iterator _itPage;
 };
 
 /*!
@@ -103,18 +115,17 @@ class Utf8PageContainer {
         Utf8PageContainer() {  };
         ~Utf8PageContainer() {  };
 
-        typedef std::vector<Utf8Page>::iterator PageIterator;  
 
-        PageIterator begin() { return _vecContainer.begin(); }
-        PageIterator end()   { return _vecContainer.end();   }
+        Utf8Page::Iterator mBegin() { return _vecContainer.begin(); }
+        Utf8Page::Iterator mEnd()   { return _vecContainer.end();   }
 
-        Utf8Page back()  { return _vecContainer.back();  }
-        void mAppendPage( Utf8Page &page ) { _vecContainer.push_back( page ); }
+        void mAppendPage( Utf8Page const &page ) { _vecContainer.push_back( page ); }
         
     protected:
         std::vector<Utf8Page> _vecContainer;
          
 };
+
 
 /*!
  *  The Utf8 ChangeSet object.

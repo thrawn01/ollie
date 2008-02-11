@@ -30,7 +30,7 @@ using namespace std;
 // --------------------------------
 //  Unit Test for buffer.cpp
 // --------------------------------
-class BufferTests : public CxxTest::TestSuite
+class Utf8Tests : public CxxTest::TestSuite
 {
     public: 
 
@@ -44,7 +44,172 @@ class BufferTests : public CxxTest::TestSuite
         }
 
         // --------------------------------
-        // To Create a new empty buffer
+        // Create an block
+        // --------------------------------
+        void testmCreateBlock( void ) {
+
+            // Create a new block of data
+            Utf8Block block;
+
+            // Should be empty
+            TS_ASSERT_EQUALS( block.mIsEmpty(), true );
+
+            // Assign some data to the block
+            block.mSetBlockData( "This is a test", 14 );
+
+            // Should Not be empty
+            TS_ASSERT_EQUALS( block.mIsEmpty(), false );
+
+            // Ensure the size is correct
+            TS_ASSERT_EQUALS( block.mGetSize() , 14 );
+
+            // Data should be there
+            TS_ASSERT_EQUALS( block.mGetBlockData(), "This is a test" );
+
+            // Clear the block of data
+            block.mClear();
+
+            // Block should now be empty
+            TS_ASSERT_EQUALS( block.mIsEmpty(), true )
+
+        }
+
+        // --------------------------------
+        // Assign Attributes to a block
+        // --------------------------------
+        void testmAssignAttributesBlock( void ) {
+
+            // Create a new block of data
+            Utf8Block block;
+
+            // Assign some data to the block
+            block.mSetBlockData( "This is a test", 14 );
+
+            //TODO
+            //block.mSetAttributes( attr );
+
+        }
+
+        // --------------------------------
+        // Create a page of data
+        // --------------------------------
+        void testmCreatePage( void ) {
+            Utf8Block block;
+            Utf8Page page;
+
+            // Set the max page size to 100 bytes
+            page.mSetMaxPageSize( 100 );
+
+            // Set the max page size should be 100 bytes
+            TS_ASSERT_EQUALS( page.mGetMaxPageSize( ), 100 );
+
+            // Assign some data to the block
+            block.mSetBlockData( "AAAAABBBBBCCCCCDDDDD", 20 );
+          
+            // Add the block to the page
+            Utf8Block::Iterator it = page.mAppendBlock( block );
+
+            // Verify the data is there
+            TS_ASSERT_EQUALS( (*it).mGetBlockData(), "AAAAABBBBBCCCCCDDDDD" );
+
+            // Page size should be 20
+            TS_ASSERT_EQUALS( page.mGetPageSize() , 20 );
+
+            // Page should not be full
+            TS_ASSERT_EQUALS( page.mIsFull(), false );
+
+            // Page should accept 1 more byte
+            TS_ASSERT_EQUALS( page.mCanAcceptBytes( 1 ), true );
+
+            // Page should NOT accept 100 more bytes
+            TS_ASSERT_EQUALS( page.mCanAcceptBytes( 100 ), false );
+
+            char* arrBlockData = new char[100];
+            memset(arrBlockData, 'G', 100);
+
+            Utf8Block block2( arrBlockData, 100 );
+
+            // Add the block to the page
+            page.mAppendBlock( block2 );
+            
+            // Page size should be 100
+            TS_ASSERT_EQUALS( page.mGetPageSize() , 120 );
+
+            // Page should be full
+            TS_ASSERT_EQUALS( page.mIsFull(), true );
+
+            // Page should NOT accept 1 more byte
+            TS_ASSERT_EQUALS( page.mCanAcceptBytes( 1 ), false );
+
+            // Verify we can iterate thru the blocks in the page
+            it = page.mBegin();
+
+            // Verify the data is there
+            TS_ASSERT_EQUALS( (*it).mGetBlockData(), "AAAAABBBBBCCCCCDDDDD" );
+
+            // Go to the next block on the page
+            it++;
+
+            // The next block should contain all G's
+            TS_ASSERT_EQUALS( (*it).mGetBlockData().substr(0,10) , "GGGGGGGGGG" );
+
+        }
+
+        // --------------------------------
+        // Create a data page from passed character
+        // --------------------------------
+        Utf8Page createDataPage( char charByte ) {
+            Utf8Block block;
+            Utf8Page page;
+
+            page.mSetMaxPageSize( 100 );
+
+            char* arrBlockData = new char[100];
+            memset(arrBlockData, charByte, 100);
+
+            block.mSetBlockData( arrBlockData, 100 );
+            page.mAppendBlock( block );
+
+            delete arrBlockData;
+
+            return page;
+        }
+
+        // --------------------------------
+        // 
+        // --------------------------------
+        void testmPageContainers( void ) {
+            
+            Utf8PageContainer pages;
+            
+            pages.mAppendPage( createDataPage('A') );
+            pages.mAppendPage( createDataPage('B') );
+            pages.mAppendPage( createDataPage('C') );
+            pages.mAppendPage( createDataPage('D') );
+
+            // Get an Utf8Iterator to the Pages
+            Utf8Page::Iterator it = pages.mBegin(); 
+
+            // Get the first Block in the page
+            Utf8Block::Iterator itBlock = (*it).mBegin();
+
+            // The block should contain all A's
+            TS_ASSERT_EQUALS( (*itBlock).mGetBlockData().substr(0,10) , "AAAAAAAAAA" );
+
+            // Check the next Page
+            it++;
+       
+            // Get the first block in the page
+            itBlock = (*it).mBegin();
+
+            // The block should contain all B's
+            TS_ASSERT_EQUALS( (*itBlock).mGetBlockData().substr(0,10) , "BBBBBBBBBB" );
+
+            
+        }
+
+        // --------------------------------
+        // Create a new empty buffer
         // --------------------------------
         void testmCreateEmptyUtf8Buffer( void ) {
 

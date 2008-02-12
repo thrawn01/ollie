@@ -73,8 +73,6 @@ class Utf8Page {
 
         typedef boost::ptr_list<Utf8Page>::iterator Iterator;  
 
-        //Iterator    mAppendBlock( OffSet, char*, OffSet ) { return Iterator(); }
-        //Iterator    mAppendBlock( OffSet offSet, char* blockData, OffSet offLen, Attributes attr  ) { return Iterator(); }
         Utf8Block::Iterator  mAppendBlock( Utf8Block &block );
 
         void                 mSetMaxPageSize( OffSet const offSize ) { _offMaxPageSize = offSize; }
@@ -164,7 +162,8 @@ class Utf8Buffer : public Buffer {
         virtual ~Utf8Buffer( void ) { }
         Utf8Buffer( const std::string& strName ) : Buffer( strName ) { }
         Utf8Buffer( File* const fileHandle ) : Buffer( fileHandle ) { }
-        bool mLoadPage( void );
+        virtual bool mLoadPage( void );
+        virtual bool mSavePage( void );
 
         Utf8PageContainer  _pageContainer;
         Utf8Block          _blockHoldOver;
@@ -181,10 +180,11 @@ class Utf8File : public File {
        Utf8File( IOHandle* const ioHandle ) : File( ioHandle ) { };
        ~Utf8File() { };
 
-       OffSet       mReadBlock( OffSet, char*, Attributes& );
-       OffSet       mReadNextBlock( char*, Attributes& );
-       //OffSet       mWriteBlock( OffSet, char*, Attributes& );
-       //OffSet       mWriteNextBlock( char*, Attributes& );
+       virtual OffSet  mReadBlock( OffSet, char*, Attributes& );
+       virtual OffSet  mReadNextBlock( char*, Attributes& );
+       virtual OffSet  mWriteBlock( OffSet, char*, OffSet, Attributes& );
+       virtual OffSet  mWriteNextBlock( char*, OffSet, Attributes& );
+       virtual OffSet  mSetOffSet( OffSet );
 
 };
 

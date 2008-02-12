@@ -381,6 +381,7 @@ class Utf8Tests : public CxxTest::TestSuite
         // Test mAssignFile() and mSaveBufferToFile()
         // --------------------------------
         void testmAssignFileAndSaveBuffer( void ) {
+            long longPercent = 0; 
 
             // Create a new Buffer Called "buffer1"
             Utf8Buffer* buf = new Utf8Buffer("buffer1");
@@ -393,7 +394,7 @@ class Utf8Tests : public CxxTest::TestSuite
             // Open The File ReadWrite
             TS_ASSERT_EQUALS( ioHandle->mOpen(TEST_FILE, IOHandle::ReadWrite ), true );
             
-            File* file = File::mIdentifyFile( ioHandle );
+            File* file = new Utf8File( ioHandle );
             TS_ASSERT( file ); 
 
             // Assign a file to the buffer
@@ -403,7 +404,26 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS(buf->_strName, TEST_FILE ); 
 
             // Save the buffer to the file
-            TS_ASSERT_EQUALS(buf->mSaveBuffer(), true );
+            buf->mSaveBuffer();
+
+            // Status should be "Saving TEST_FILE..."
+            TS_ASSERT_EQUALS( buf->mGetTaskStatus(), "Saving " TEST_FILE "..." ); 
+           
+            // Preforms the task until the buffer is ready
+            while( ! buf->mIsBufferReady() ) {
+                
+                // Preform task should return true
+                TS_ASSERT_EQUALS( buf->mPreformTask(), true );
+
+                // Get the progress of the current task
+                buf->mGetProgress( &longPercent );
+
+                TS_ASSERT( longPercent != 0 );
+            }
+
+            // Buffer should be ready
+            TS_ASSERT_EQUALS( buf->mIsBufferReady(), true );
+
         }
 
         // --------------------------------

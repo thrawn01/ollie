@@ -21,6 +21,53 @@
 #include <utf8.h>
 
 /*
+ * Write out a block of text at a specific offset
+ */
+OffSet Utf8File::mWriteBlock( OffSet offset, char* arrBlockData, OffSet offBlockSize, Attributes& attr ) {
+
+    // Set the current offset
+    if( mSetOffSet( offset ) == -1 ) {
+        return false;
+    }
+
+    // Record our offset
+    _offCurOffSet = offset;
+
+    return mWriteNextBlock( arrBlockData, offBlockSize, attr );
+}
+
+/*
+ * Read in the next block of text starting at the last read offset
+ *
+ * Since utf8 files have no additional attributes, we ignore the 
+ * attributes reference passed
+ */
+OffSet Utf8File::mWriteNextBlock( char* arrBlockData, OffSet offBlockSize, Attributes &attr ) {
+    assert( _ioHandle != 0 );
+
+    // If we timeout waiting on clear to read
+    if( _ioHandle->mWaitForClearToWrite( _intTimeout ) ) {
+        mSetError( _ioHandle->mGetError() );
+        return -1;
+    }
+
+    OffSet offLen = 0;
+
+    // Write out the block of data 
+    if( ( offLen = _ioHandle->mWrite( arrBlockData, offBlockSize ) ) < 0 ) {
+        mSetError( _ioHandle->mGetError() );
+        return -1;
+    }
+
+    // Keep track of where in the file we are
+    _offCurOffSet += offLen;
+
+    // Tell the caller how many bytes we wrote
+    return offLen;
+
+}
+
+/*
  * Read in the next block of text starting at the last read offset
  *
  * Since utf8 files have no additional attributes, we ignore the 
@@ -31,6 +78,7 @@ OffSet Utf8File::mReadNextBlock( char* arrBlockData, Attributes &attr ) {
 
     // If we timeout waiting on clear to read
     if( _ioHandle->mWaitForClearToRead( _intTimeout ) ) {
+        std::cout << __LINE__ << std::endl;
         mSetError( _ioHandle->mGetError() );
         return -1;
     }
@@ -39,12 +87,13 @@ OffSet Utf8File::mReadNextBlock( char* arrBlockData, Attributes &attr ) {
 
     // Read in the block from the IO
     if( ( offLen = _ioHandle->mRead( arrBlockData, _offBlockSize ) ) < 0 ) {
+        std::cout << __LINE__ << std::endl;
         mSetError( _ioHandle->mGetError() );
         return -1;
     }
 
     // Keep track of where in the file we are
-    _offReadOffSet += offLen;
+    _offCurOffSet += offLen;
 
     // Tell the caller how many bytes are in the block of data
     return offLen;
@@ -52,24 +101,50 @@ OffSet Utf8File::mReadNextBlock( char* arrBlockData, Attributes &attr ) {
 }
 
 /*
- * Read in the next block of text
+ * Read in a block of text at specific offset
  */
 OffSet Utf8File::mReadBlock( OffSet offset, char* arrBlockData, Attributes& attr ) {
-    assert( _ioHandle != 0 ); 
 
+    // Set the current offset
+    if( mSetOffSet( offset ) == -1 ) {
+        return false;
+    }
+
+    return mReadNextBlock( arrBlockData, attr );
+}
+
+/*
+ * Seek to the required offset and remeber where we are
+ */
+OffSet Utf8File::mSetOffSet( OffSet offset ) {
+    assert( _ioHandle != 0 ); 
+    
     // If the IO handle we are using does not offer Seek
-    if( ! _ioHandle->mOffersSeek() ) {
+    // and we are not asking to seek the begining of the file
+    if( ! _ioHandle->mOffersSeek() && offset != 0 ) {
         mSetError("Current IO Device does not support file seeks");
+        std::cout << __LINE__ << std::endl;
         return -1;
     }
 
     // Attempt to seek to the correct offset
-    if( ! _ioHandle->mSeek(offset) ) {
+    if( _ioHandle->mSeek(offset) == -1 ) {
+        std::cout << __LINE__ << std::endl;
         mSetError( _ioHandle->mGetError() );
         return -1;
     }
 
-    return mReadNextBlock( arrBlockData, attr );
+    // Record our offset
+    _offCurOffSet = offset;
+
+    return _offCurOffSet;
+}
+
+/*! 
+ * Saves 1 page of data to a file
+ */
+bool Utf8Buffer::mSavePage( void ) {
+    return false;
 }
 
 /*!
@@ -87,7 +162,7 @@ bool Utf8Buffer::mLoadPage( void ) {
     assert( _fileHandle != 0 );
 
     // Record the offset for this page
-    page->mSetStartOffSet( _fileHandle->mGetReadOffSet() );
+    page->mSetStartOffSet( _fileHandle->mGetOffSet() );
 
     // If the hold over block is NOT empty
     if( ! _blockHoldOver.mIsEmpty() ) {
@@ -124,7 +199,7 @@ bool Utf8Buffer::mLoadPage( void ) {
         }else {
 
             // Record the offset of this block
-            _blockHoldOverOffset =  _fileHandle->mGetReadOffSet() - offLen;
+            _blockHoldOverOffset =  _fileHandle->mGetOffSet() - offLen;
 
             // Hold a copy of the block until mLoadPage is called again
             _blockHoldOver = block;

@@ -26,9 +26,8 @@
  */
 File::File( IOHandle* const ioHandle ) {
     _ioHandle       = ioHandle;
-    _offBlockSize   = 0;
-    _offReadOffSet  = 0;
-    _offWriteOffSet = 0;
+    _offBlockSize   = DEFAULT_BLOCK_SIZE;
+    _offCurOffSet   = 0;
     _intTimeout     = 0;
 }
 
@@ -57,12 +56,5 @@ IOHandle* File::mGetIOHandler( void ) {
         return _ioHandle;
     }
     return 0;
-}
-
-/*!
- * Attempts to identify the file by reading parts of the file from the IOHandler.
- */
-File* File::mIdentifyFile( IOHandle* ioHandle ) {
-    return new File( ioHandle );  
 }
 

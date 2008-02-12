@@ -66,14 +66,17 @@ class Buffer : public OllieCommon {
         virtual ~Buffer( void );
 
         // Methods
-        virtual std::string& mGetName( void ) { return _strName; }
-        virtual void         mSetName( const std::string& strName ) { _strName = strName; }
-        virtual bool         mIsModified( void ) { return false; }
-        virtual bool         mSaveBuffer( void ) { return false; }
         virtual bool         mInsert( const std::string& ) { return false; }
         virtual bool         mDelete( OffSet , OffSet ) { return false; }
-        virtual std::string& mGetFileName( void );
-        virtual bool         mLoadPage( void ) { return false; }
+        virtual bool         mLoadPage( void ) = 0;
+        virtual bool         mSavePage( void ) = 0;
+
+        std::string& mGetName( void ) { return _strName; }
+        void         mSetName( const std::string& strName ) { _strName = strName; }
+        bool         mIsModified( void ) const { return _boolModified; }
+        std::string& mGetFileName( void );
+        void         mSaveBuffer( void );
+        void         mLoadBuffer( void );
 
         // Non virtual methods
         std::stringstream&  mSetTaskStatus( void ) { _streamStatusMsg.str(""); return _streamStatusMsg; }
@@ -87,6 +90,7 @@ class Buffer : public OllieCommon {
         bool                mPreformTask( void );
         bool                mAssignFile( File* const );
         bool                mCallLoadPage( void );
+        bool                mCallSavePage( void );
         bool                mGetProgress( long* longProgress );
         //void                mSetCurrentTask(bool (Buffer::*Method)(void) ); 
 

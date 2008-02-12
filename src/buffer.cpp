@@ -40,7 +40,6 @@ void Buffer::init( void ) {
 /*!
  * Construct a buffer from a file and give it a name
  */
-
 Buffer::Buffer( File* const file ) {
     
     // Initialize class variables
@@ -57,12 +56,36 @@ Buffer::Buffer( File* const file ) {
     // Set the buffer name from the filename
     _strName = file->mGetFileName();
 
+    mLoadBuffer();
+}
+
+/*! 
+ * Start the Save buffer task
+ */
+void Buffer::mSaveBuffer( void ) {
+
     // Assign the load Page task and set the status message
-    mSetTaskStatus() << "Loading " << file->mGetFileName() << "..." ;
+    mSetTaskStatus() << "Saving " << _fileHandle->mGetFileName() << "..." ;
+    _currentTask = &Buffer::mCallSavePage;
+    _longCurProgress = 0;
+
+    // Set the offset to the begining of the file
+    _fileHandle->mSetOffSet( 0 );
+
+}
+
+/*! 
+ * Start the load buffer task
+ */
+void Buffer::mLoadBuffer() {
+
+    // Assign the load Page task and set the status message
+    mSetTaskStatus() << "Loading " << _fileHandle->mGetFileName() << "..." ;
     _currentTask = &Buffer::mCallLoadPage;
     _longCurProgress = 0;
 
-    _fileHandle->mSetBlockSize( DEFAULT_BLOCK_SIZE );
+    // Set the offset to the begining of the file
+    _fileHandle->mSetOffSet( 0 );
 }
 
 /*!
@@ -84,10 +107,10 @@ Buffer::~Buffer( void ) {
 bool Buffer::mAssignFile( File* const file ) {
     assert( file != 0 );
 
-    _strName = file->mGetFileName();
+    _strName    = file->mGetFileName();
     _fileHandle = file;
 
-    return false;
+    return true;
 }
 
 /*!
@@ -141,6 +164,34 @@ bool Buffer::mPreformTask( void ) {
     return (this->*_currentTask)();
 }
 
+/*
+ * Save 1 Page of data from the file
+ */
+bool Buffer::mCallSavePage( void ) {
+    assert( _fileHandle != 0 );
+
+    // Attempt to Save 1 page of data
+    if( ! mSavePage() ) return false;
+
+    // Is the file save complete?
+    if( _offBufferSize == _fileHandle->mGetOffSet() ) {
+
+        // Report the entire file loaded into memory
+        _boolModified = false;
+
+        // Clear our task
+        mSetTaskStatus(); 
+        _currentTask = 0;
+        _longCurProgress = 100L;
+
+        return true;
+    }
+
+    // Record the current progress
+    _longCurProgress = long( _fileHandle->mGetOffSet() / ( _offBufferSize / 100 ) );
+
+    return true;
+}
 
 /*
  * Load 1 Page of data from the file

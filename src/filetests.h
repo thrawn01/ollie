@@ -53,18 +53,11 @@ class BufferTests : public CxxTest::TestSuite
         }
 
         // --------------------------------
-        // Create a some test files
-        // --------------------------------
-        void testCreateFileForTests( void ) {
-            
-            createTestFile(TEST_FILE);
-
-        }
-
-        // --------------------------------
         // --------------------------------
         void testmReadNextBlock( void ) {
             Attributes attr;
+
+            createTestFile(TEST_FILE);
 
             // Get the default IO handler for this Operating System
             IOHandle* ioHandle = IOHandle::mGetDefaultIOHandler();
@@ -77,14 +70,15 @@ class BufferTests : public CxxTest::TestSuite
             File* file = new Utf8File( ioHandle );
             TS_ASSERT( file );
 
-            // Each block of text should be 250 bytes or less
-            char* arrBlockData = new char[250];
+            char* arrBlockData = new char[file->mGetBlockSize()];
 
-            // Tell file to return blocks of text no greater than 250 bytes
-            file->mSetBlockSize(250);
+            // Offset should be the begining of the file
+            TS_ASSERT_EQUALS( file->mSetOffSet(0), 0 );
 
             // The block read should return the entire file contents, 29 bytes.
             TS_ASSERT_EQUALS( file->mReadNextBlock( arrBlockData, attr ), 29 );
+
+            TS_ASSERT_EQUALS( file->mGetOffSet() , 29 );
 
             // TODO Add Check for empty attributes
            
@@ -97,16 +91,65 @@ class BufferTests : public CxxTest::TestSuite
             // Clean up the blockdata
             delete arrBlockData;
 
-        }
-
-        // --------------------------------
-        // --------------------------------
-        void testCleanUpFile( void ) {
-           
             // Delete the test file
             if ( unlink(TEST_FILE) ) {
                 TS_FAIL( string("Unable to delete test file '" TEST_FILE  "' ") + strerror( errno ) );
             }
-         
         }
+
+        // --------------------------------
+        // --------------------------------
+        void testmWriteNextBlock( void ) {
+            Attributes attr;
+
+            createTestFile(TEST_FILE);
+
+            // Get the default IO handler for this Operating System
+            IOHandle* ioHandle = IOHandle::mGetDefaultIOHandler();
+            TS_ASSERT( ioHandle ); 
+
+            // Open The File ReadWrite
+            TS_ASSERT_EQUALS( ioHandle->mOpen(TEST_FILE, IOHandle::ReadWrite ), true );
+           
+            // Load the utf8 file handler
+            File* file = new Utf8File( ioHandle );
+            TS_ASSERT( file );
+
+            // Offset should be the begining of the file
+            TS_ASSERT_EQUALS( file->mSetOffSet(0), 0 );
+
+            // Write a block of text with no attributes
+            TS_ASSERT_EQUALS( file->mWriteNextBlock( "DDDDDFFFFFGGGGGHHHHHJJJJJKKKKKLLLLL:::::", 40, attr ), 40 );
+
+            TS_ASSERT_EQUALS( file->mGetOffSet() , 40 );
+
+            // No Errors should have occured
+            TS_ASSERT_EQUALS( file->mGetError(), "" );
+            
+            char* arrBlockData = new char[file->mGetBlockSize()];
+
+            // Offset should be the begining of the file
+            TS_ASSERT_EQUALS( file->mSetOffSet(0), 0 );
+
+            TS_ASSERT_EQUALS( file->mGetOffSet() , 0 );
+
+            TS_ASSERT_EQUALS( file->mReadNextBlock( arrBlockData, attr ), 40 );
+
+            TS_ASSERT_EQUALS( file->mGetOffSet() , 40 );
+
+            // No Errors should have occured
+            TS_ASSERT_EQUALS( file->mGetError(), "" );
+          
+            // The data returned should be 29 bytes and should match the data we created for the test
+            TS_ASSERT_EQUALS( string( arrBlockData, 40 ), "DDDDDFFFFFGGGGGHHHHHJJJJJKKKKKLLLLL:::::" );
+
+            // Delete the test file
+            if ( unlink(TEST_FILE) ) {
+                TS_FAIL( string("Unable to delete test file '" TEST_FILE  "' ") + strerror( errno ) );
+            }
+
+            // Clean up the blockdata
+            delete arrBlockData;
+        }
+
 };

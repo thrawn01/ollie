@@ -46,10 +46,11 @@ class File : public OllieCommon {
        static File* mIdentifyFile( IOHandle* );
 
        // Virtual Methods
-       virtual OffSet       mReadBlock( OffSet, char*, Attributes &attr ) { return -1; }
-       virtual OffSet       mReadNextBlock( char*, Attributes &attr ) { return -1; }
-       virtual OffSet       mWriteBlock( OffSet, char*, Attributes &attr ) { return -1; }
-       virtual OffSet       mWriteNextBlock( char*, Attributes &attr ) { return -1; }
+       virtual OffSet       mReadBlock( OffSet, char*, Attributes &attr ) = 0;
+       virtual OffSet       mReadNextBlock( char*, Attributes &attr ) = 0;
+       virtual OffSet       mWriteBlock( OffSet, char*, OffSet, Attributes &attr ) = 0;
+       virtual OffSet       mWriteNextBlock( char*,  OffSet, Attributes &attr ) = 0;
+       virtual OffSet       mSetOffSet( OffSet ) = 0;
 
        // Methods
        void          mSetBlockSize( OffSet offSize ) { _offBlockSize = offSize; }
@@ -58,13 +59,12 @@ class File : public OllieCommon {
        IOHandle*     mGetIOHandler( void );
        std::string&  mGetFileName( void );
        OffSet        mGetFileSize( void ) { return _ioHandle->mGetFileSize(); }
-       OffSet        mGetReadOffSet( void ) const { return _offReadOffSet; }
+       OffSet        mGetOffSet( void ) const { return _offCurOffSet; }
 
        // Members
        IOHandle*    _ioHandle;
        OffSet       _offBlockSize;
-       OffSet       _offReadOffSet;
-       OffSet       _offWriteOffSet;
+       OffSet       _offCurOffSet;
        int          _intTimeout;
 
 };

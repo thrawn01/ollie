@@ -1,0 +1,6 @@
+
+========================================
+Ubuntu Gutsy packages for source compile
+========================================
+
+sudo aptitude install build-essential libboost-serialization-dev libboost-dev cmake 

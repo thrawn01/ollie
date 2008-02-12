@@ -24,7 +24,8 @@
 #include <ollie.h>
 #include <buffer.h>
 #include <file.h>
-#include <vector>
+#include <list>
+#include <boost/ptr_container/ptr_list.hpp>
 
 /*!
  * Class for handling Utf8 Blocks ( Text Blocks )
@@ -36,7 +37,7 @@ class Utf8Block {
         Utf8Block( char* cstrData, OffSet offLen );
         virtual ~Utf8Block( void ) { }
 
-        typedef std::vector<Utf8Block>::iterator Iterator;
+        typedef std::list<Utf8Block>::iterator Iterator;
 
 
         bool                mSetBlockData( char* cstrData, OffSet offLen );
@@ -65,33 +66,42 @@ class Utf8Page {
         Utf8Page( void ) {
             _offMaxPageSize = DEFAULT_PAGE_SIZE;
             _offPageSize    = 0;
-            _offOffSet      = 0; 
+            _offStart       = 0; 
+            _offEnd         = 0; 
         }
         virtual ~Utf8Page( void ) { }
 
-        typedef std::vector<Utf8Page>::iterator Iterator;  
+        typedef boost::ptr_list<Utf8Page>::iterator Iterator;  
 
         //Iterator    mAppendBlock( OffSet, char*, OffSet ) { return Iterator(); }
         //Iterator    mAppendBlock( OffSet offSet, char* blockData, OffSet offLen, Attributes attr  ) { return Iterator(); }
         Utf8Block::Iterator  mAppendBlock( Utf8Block &block );
-        bool                 mSetMaxPageSize( OffSet offSize ) { _offMaxPageSize = offSize; }
+
+        void                 mSetMaxPageSize( OffSet const offSize ) { _offMaxPageSize = offSize; }
         OffSet               mGetMaxPageSize( void ) const { return _offMaxPageSize; }
-        bool                 mSetOffSet( OffSet offset ) { _offOffSet = offset; }
+
+        void                 mSetStartOffSet( OffSet const offset ) { _offStart = offset; }
+        OffSet               mGetStartOffSet( void ) const { return _offStart; }
+
+        void                 mSetEndOffSet( OffSet const offset ) { _offEnd = offset; }
+        OffSet               mGetEndOffSet( void ) const { return _offEnd; }
+
         OffSet               mGetPageSize( void ) const { return _offPageSize; }
         bool                 mCanAcceptBytes( OffSet ) const;
         bool                 mIsFull( void ) const;
         Utf8Block::Iterator  mBegin( void ) { return _blockContainer.begin(); }
         Utf8Block::Iterator  mEnd( void ) { return _blockContainer.end(); }
 
-        std::vector<Utf8Block> _blockContainer;
-        OffSet                 _offOffSet;
+        std::list<Utf8Block>   _blockContainer;
+        OffSet                 _offStart;
+        OffSet                 _offEnd;
         OffSet                 _offMaxPageSize;
         OffSet                 _offPageSize;
 };
 
 /*! 
  * Our Utf8 Iterator, This iterators iterates thru all the blocks and 
- * pages as if they were apart of the same vector
+ * pages as if they were apart of the same list
  */
 class Utf8Iterator {
 
@@ -112,17 +122,17 @@ class Utf8Iterator {
 class Utf8PageContainer {
 
     public:
-        Utf8PageContainer() {  };
+        Utf8PageContainer() { _longSize = 0;  };
         ~Utf8PageContainer() {  };
 
+        Utf8Page::Iterator mBegin() { return _listContainer.begin(); }
+        Utf8Page::Iterator mEnd()   { return _listContainer.end();   }
 
-        Utf8Page::Iterator mBegin() { return _vecContainer.begin(); }
-        Utf8Page::Iterator mEnd()   { return _vecContainer.end();   }
-
-        void mAppendPage( Utf8Page const &page ) { _vecContainer.push_back( page ); }
+        void mAppendPage( Utf8Page *page );
+        void mInsertPage( Utf8Page::Iterator const it, Utf8Page *page );
         
-    protected:
-        std::vector<Utf8Page> _vecContainer;
+        boost::ptr_list<Utf8Page> _listContainer;
+        long _longSize;
          
 };
 

@@ -75,7 +75,7 @@ class Utf8Tests : public CxxTest::TestSuite
         }
 
         // --------------------------------
-        // Assign Attributes to a block
+        // Assign Attributes to a block TODO: Finish this
         // --------------------------------
         void testmAssignAttributesBlock( void ) {
 
@@ -158,17 +158,18 @@ class Utf8Tests : public CxxTest::TestSuite
         // --------------------------------
         // Create a data page from passed character
         // --------------------------------
-        Utf8Page createDataPage( char charByte ) {
+        Utf8Page* createDataPage( char charByte ) {
             Utf8Block block;
-            Utf8Page page;
 
-            page.mSetMaxPageSize( 100 );
+            Utf8Page *page = new Utf8Page();
+
+            page->mSetMaxPageSize( 100 );
 
             char* arrBlockData = new char[100];
             memset(arrBlockData, charByte, 100);
 
             block.mSetBlockData( arrBlockData, 100 );
-            page.mAppendBlock( block );
+            page->mAppendBlock( block );
 
             delete arrBlockData;
 
@@ -187,8 +188,16 @@ class Utf8Tests : public CxxTest::TestSuite
             pages.mAppendPage( createDataPage('C') );
             pages.mAppendPage( createDataPage('D') );
 
+            TS_ASSERT_EQUALS( pages._longSize, 4 );
+
             // Get an Utf8Iterator to the Pages
             Utf8Page::Iterator it = pages.mBegin(); 
+
+            // The starting offset for this page should be 0
+            TS_ASSERT_EQUALS( (*it).mGetStartOffSet(), 0 );
+
+            // This ending offset for this page should be 100, since is it 100 bytes long
+            TS_ASSERT_EQUALS( (*it).mGetEndOffSet(), 100 );
 
             // Get the first Block in the page
             Utf8Block::Iterator itBlock = (*it).mBegin();
@@ -205,7 +214,20 @@ class Utf8Tests : public CxxTest::TestSuite
             // The block should contain all B's
             TS_ASSERT_EQUALS( (*itBlock).mGetBlockData().substr(0,10) , "BBBBBBBBBB" );
 
-            
+            // Insert a new page
+            pages.mInsertPage( it , createDataPage('E') );
+
+            TS_ASSERT_EQUALS( pages._longSize, 5 );
+
+            // Move to the newly inserted page
+            it--;
+
+            // Get the first block in the page
+            itBlock = (*it).mBegin();
+
+            // The block should contain all E's
+            TS_ASSERT_EQUALS( (*itBlock).mGetBlockData().substr(0,10) , "EEEEEEEEEE" );
+
         }
 
         // --------------------------------

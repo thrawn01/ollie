@@ -36,6 +36,7 @@ SET(LIBRARY_OUTPUT_PATH ${OLLIE_SOURCE_DIR}/lib)
 # Find Packages Needed for Testing
 FIND_PACKAGE(PythonInterp)
 FIND_PACKAGE(Perl)
+INCLUDE(FindBoost)
 
 # Set to svn so Ctest doesn't 
 # complain and confuse users

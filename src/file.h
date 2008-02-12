@@ -58,6 +58,7 @@ class File : public OllieCommon {
        IOHandle*     mGetIOHandler( void );
        std::string&  mGetFileName( void );
        OffSet        mGetFileSize( void ) { return _ioHandle->mGetFileSize(); }
+       OffSet        mGetReadOffSet( void ) const { return _offReadOffSet; }
 
        // Members
        IOHandle*    _ioHandle;

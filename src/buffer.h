@@ -79,8 +79,9 @@ class Buffer : public OllieCommon {
         std::stringstream&  mSetTaskStatus( void ) { _streamStatusMsg.str(""); return _streamStatusMsg; }
         std::string         mGetTaskStatus( void ) { return _streamStatusMsg.str(); }
         void                mSetMaxBufferSize( OffSet size ) { _offMaxBufferSize = size; }
-        OffSet              mGetMaxBufferSize( void ) { return _offMaxBufferSize; }
-        bool                mEntireFileLoaded( void ) { return _boolEntireFileLoaded; }
+        OffSet              mGetMaxBufferSize( void ) const { return _offMaxBufferSize; }
+        OffSet              mGetBufferSize( void ) const { return _offBufferSize; }
+        bool                mEntireFileLoaded( void ) const { return _boolEntireFileLoaded; }
         bool                mBufferFull( void );
         bool                mIsBufferReady( void );
         bool                mPreformTask( void );

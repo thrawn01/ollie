@@ -66,8 +66,8 @@ class Utf8Page {
         Utf8Page( void ) {
             _offMaxPageSize = DEFAULT_PAGE_SIZE;
             _offPageSize    = 0;
-            _offStart       = 0; 
-            _offEnd         = 0; 
+            _offStart       = -1; 
+            _offEnd         = -1; 
         }
         virtual ~Utf8Page( void ) { }
 
@@ -128,8 +128,8 @@ class Utf8PageContainer {
         Utf8Page::Iterator mBegin() { return _listContainer.begin(); }
         Utf8Page::Iterator mEnd()   { return _listContainer.end();   }
 
-        void mAppendPage( Utf8Page *page );
-        void mInsertPage( Utf8Page::Iterator const it, Utf8Page *page );
+        void mAppendPage( Utf8Page *page, OffSet offset = -1 );
+        void mInsertPage( Utf8Page::Iterator const it, Utf8Page *page);
         
         boost::ptr_list<Utf8Page> _listContainer;
         long _longSize;
@@ -168,6 +168,7 @@ class Utf8Buffer : public Buffer {
 
         Utf8PageContainer  _pageContainer;
         Utf8Block          _blockHoldOver;
+        OffSet             _blockHoldOverOffset;
 };
 
 

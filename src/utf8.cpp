@@ -79,17 +79,24 @@ OffSet Utf8File::mReadBlock( OffSet offset, char* arrBlockData, Attributes& attr
  */
 bool Utf8Buffer::mLoadPage( void ) {
     OffSet offLen = 0;
+    OffSet offStart = 0;
     Attributes attr;
 
     Utf8Page *page = new Utf8Page();
 
     assert( _fileHandle != 0 );
 
+    // Record the offset for this page
+    page->mSetStartOffSet( _fileHandle->mGetReadOffSet() );
+
     // If the hold over block is NOT empty
     if( ! _blockHoldOver.mIsEmpty() ) {
 
         // Add the block to the page
         page->mAppendBlock( _blockHoldOver );
+
+        // Set the offset of the holdover
+        offStart = _blockHoldOverOffset;
 
         // Clear the hold over block
         _blockHoldOver.mClear();
@@ -116,8 +123,12 @@ bool Utf8Buffer::mLoadPage( void ) {
 
         }else {
 
+            // Record the offset of this block
+            _blockHoldOverOffset =  _fileHandle->mGetReadOffSet() - offLen;
+
             // Hold a copy of the block until mLoadPage is called again
             _blockHoldOver = block;
+
             offLen = 0;
             break;
 
@@ -140,7 +151,7 @@ bool Utf8Buffer::mLoadPage( void ) {
     if( page->mGetPageSize() != 0 ) {
 
         // Append the page to the page container
-        _pageContainer.mAppendPage( page );
+        _pageContainer.mAppendPage( page, offStart );
 
         // Update the buffer size
         _offBufferSize += page->mGetPageSize() ;
@@ -212,26 +223,18 @@ Utf8Block::Utf8Block( char* cstrData, OffSet offLen ) {
 /*!
  * Add a page to the container and update the offsets
  */
-void Utf8PageContainer::mAppendPage( Utf8Page *page ) { 
+void Utf8PageContainer::mAppendPage( Utf8Page *page , OffSet offset ) { 
     Utf8Page::Iterator itLastPage;
     
-    if( _longSize ) {
+    if( offset != -1 ) {
         
-        // Get an iterator to the last page in the list
-        Utf8Page::Iterator itLastPage = _listContainer.end();
-        itLastPage--;
-
         // Set the Start Offset of the new Page
-        page->mSetStartOffSet( itLastPage->mGetEndOffSet()+1 );
+        page->mSetStartOffSet( offset );
 
-    }else {
+        // Add the Start offset with the size of the page to set the End Offset
+        page->mSetEndOffSet( offset + page->mGetPageSize() );
 
-        // Set the start offset to 0 ( Begining of the file )
-        page->mSetStartOffSet( 0 );
     }
-  
-    // Add the Start offset with the size of the page to set the End Offset
-    page->mSetEndOffSet( page->mGetStartOffSet() + page->mGetPageSize() );
 
     // Add the new page to the list
     _listContainer.push_back( page );
@@ -242,23 +245,14 @@ void Utf8PageContainer::mAppendPage( Utf8Page *page ) {
 }
 
 /*!
- * Insert a page to the container and update the offsets
+ * Insert a page to the container
  */
-void Utf8PageContainer::mInsertPage( Utf8Page::Iterator const it, Utf8Page *page ) {
+void Utf8PageContainer::mInsertPage( Utf8Page::Iterator const it, Utf8Page *page) {
 
     // Did we mean append?
     if( ! _longSize ) { 
         return mAppendPage( page );
     }
-
-    Utf8Page::Iterator itPrev = it;
-    itPrev--;
-
-    // Set the new start offset
-    page->mSetStartOffSet( itPrev->mGetEndOffSet()+1 );
-
-    // Set the new end offset
-    page->mSetEndOffSet( page->mGetStartOffSet() + page->mGetPageSize() );
 
     // Insert the new page
     _listContainer.insert( it , page );

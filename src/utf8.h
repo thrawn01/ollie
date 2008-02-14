@@ -162,8 +162,8 @@ class Utf8Buffer : public Buffer {
         virtual ~Utf8Buffer( void ) { }
         Utf8Buffer( const std::string& strName ) : Buffer( strName ) { }
         Utf8Buffer( File* const fileHandle ) : Buffer( fileHandle ) { }
-        virtual bool mLoadNextPage( void );
-        virtual bool mSaveNextPage( void );
+        virtual OffSet mLoadPage( OffSet );
+        virtual bool   mSavePage( void );
 
         Utf8PageContainer  _pageContainer;
 };

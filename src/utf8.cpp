@@ -27,7 +27,7 @@ OffSet Utf8File::mWriteBlock( OffSet offset, char* arrBlockData, OffSet offBlock
 
     // Set the current offset
     if( mSetOffSet( offset ) == -1 ) {
-        return false;
+        return -1;
     }
 
     // Record our offset
@@ -123,7 +123,7 @@ OffSet Utf8File::mReadBlock( OffSet offset, char* arrBlockData, Attributes& attr
 
     // Set the current offset
     if( mSetOffSet( offset ) == -1 ) {
-        return false;
+        return -1;
     }
 
     return mReadNextBlock( arrBlockData, attr );
@@ -134,7 +134,10 @@ OffSet Utf8File::mReadBlock( OffSet offset, char* arrBlockData, Attributes& attr
  */
 OffSet Utf8File::mSetOffSet( OffSet offset ) {
     assert( _ioHandle != 0 ); 
-    
+  
+    // Return if the requested location is the same
+    if( _offCurOffSet == offset ) return _offCurOffSet;
+
     // If the IO handle we are using does not offer Seek
     // and we are not asking to seek the begining of the file
     if( ! _ioHandle->mOffersSeek() && offset != 0 ) {
@@ -157,26 +160,29 @@ OffSet Utf8File::mSetOffSet( OffSet offset ) {
 /*! 
  * Saves 1 page of data to a file
  */
-bool Utf8Buffer::mSaveNextPage( void ) {
+bool Utf8Buffer::mSavePage( void ) {
     return false;
 }
 
 /*!
  * Load 1 page of data from a file
- * TODO: Blocks should be pointers, to reduce 
- *       the amount of data copy happening here
  */
-bool Utf8Buffer::mLoadNextPage( void ) {
+OffSet Utf8Buffer::mLoadPage( OffSet offSet ) {
     OffSet offLen = 0;
-    OffSet offStart = 0;
     Attributes attr;
-
-    Utf8Page *page = new Utf8Page();
 
     assert( _fileHandle != 0 );
 
+    // Seek to the requested offset
+    if( _fileHandle->mSetOffSet( offSet ) == -1 ) {
+        mSetError( _fileHandle->mGetError() );
+        return -1;
+    }
+
+    Utf8Page *page = new Utf8Page();
+
     // Record the offset for this page
-    page->mSetStartOffSet( _fileHandle->mGetOffSet() );
+    page->mSetStartOffSet( offSet );
 
     // Create an array of data to read to
     char* arrBlockData = new char[ _fileHandle->mGetBlockSize() ];
@@ -193,7 +199,7 @@ bool Utf8Buffer::mLoadNextPage( void ) {
         // Read in the next block
         if( ( offLen = _fileHandle->mReadNextBlock( arrBlockData, attr ) ) == -1 ) {
             mSetError( _fileHandle->mGetError() );
-            delete page; return false;
+            delete page; return -1;
         }
 
         // Create a new block of data
@@ -221,15 +227,15 @@ bool Utf8Buffer::mLoadNextPage( void ) {
         // Update the buffer size
         _offBufferSize += page->mGetPageSize() ;
 
-        return true;
+        return _fileHandle->mGetOffSet();
     }
 
     // Empty Page, Discard
     delete page;
 
-    // Return true, No Errors right? 
+    // Return ok, No Errors right? 
     // The last read might have read 0 bytes ( EOF )
-    return true;
+    return _fileHandle->mGetOffSet();
 
 }
 

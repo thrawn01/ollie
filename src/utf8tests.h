@@ -158,7 +158,7 @@ class Utf8Tests : public CxxTest::TestSuite
         // --------------------------------
         // Create a data page from passed character
         // --------------------------------
-        Utf8Page* createDataPage( char charByte ) {
+        Utf8Page* createDataPage( char charByte, int offSet ) {
             Utf8Block block;
 
             Utf8Page *page = new Utf8Page();
@@ -170,6 +170,10 @@ class Utf8Tests : public CxxTest::TestSuite
 
             block.mSetBlockData( arrBlockData, 100 );
             page->mAppendBlock( block );
+
+            page->mSetStartOffSet( offSet );
+
+            page->mSetEndOffSet( page->mGetStartOffSet() + page->mGetPageSize() );
 
             delete arrBlockData;
 
@@ -184,10 +188,10 @@ class Utf8Tests : public CxxTest::TestSuite
             Utf8PageContainer pages;
            
             // Append the pages as if we were reading from a file
-            pages.mAppendPage( createDataPage('A'), 0 );
-            pages.mAppendPage( createDataPage('B'), 100 );
-            pages.mAppendPage( createDataPage('C'), 200 );
-            pages.mAppendPage( createDataPage('D'), 300 );
+            pages.mAppendPage( createDataPage('A', 0) );
+            pages.mAppendPage( createDataPage('B', 100) );
+            pages.mAppendPage( createDataPage('C', 200) );
+            pages.mAppendPage( createDataPage('D', 300) );
 
             TS_ASSERT_EQUALS( pages._longSize, 4 );
 
@@ -222,7 +226,7 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( itBlock->mGetBlockData().substr(0,10) , "BBBBBBBBBB" );
 
             // Insert a new page
-            pages.mInsertPage( it , createDataPage('E') );
+            pages.mInsertPage( it , createDataPage('E', 0) );
 
             TS_ASSERT_EQUALS( pages._longSize, 5 );
 

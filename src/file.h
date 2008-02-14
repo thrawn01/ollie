@@ -46,6 +46,7 @@ class File : public OllieCommon {
        static File* mIdentifyFile( IOHandle* );
 
        // Virtual Methods
+       virtual OffSet       mPeekNextBlock( void ) = 0;
        virtual OffSet       mReadBlock( OffSet, char*, Attributes &attr ) = 0;
        virtual OffSet       mReadNextBlock( char*, Attributes &attr ) = 0;
        virtual OffSet       mWriteBlock( OffSet, char*, OffSet, Attributes &attr ) = 0;

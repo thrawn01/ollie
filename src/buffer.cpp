@@ -66,7 +66,7 @@ void Buffer::mSaveBuffer( void ) {
 
     // Assign the load Page task and set the status message
     mSetTaskStatus() << "Saving " << _fileHandle->mGetFileName() << "..." ;
-    _currentTask = &Buffer::mCallSavePage;
+    _currentTask = &Buffer::mCallSaveNextPage;
     _longCurProgress = 0;
 
     // Set the offset to the begining of the file
@@ -81,7 +81,7 @@ void Buffer::mLoadBuffer() {
 
     // Assign the load Page task and set the status message
     mSetTaskStatus() << "Loading " << _fileHandle->mGetFileName() << "..." ;
-    _currentTask = &Buffer::mCallLoadPage;
+    _currentTask = &Buffer::mCallLoadNextPage;
     _longCurProgress = 0;
 
     // Set the offset to the begining of the file
@@ -167,11 +167,11 @@ bool Buffer::mPreformTask( void ) {
 /*
  * Save 1 Page of data from the file
  */
-bool Buffer::mCallSavePage( void ) {
+bool Buffer::mCallSaveNextPage( void ) {
     assert( _fileHandle != 0 );
 
     // Attempt to Save 1 page of data
-    if( ! mSavePage() ) return false;
+    if( ! mSaveNextPage() ) return false;
 
     // Is the file save complete?
     if( _offBufferSize == _fileHandle->mGetOffSet() ) {
@@ -196,11 +196,11 @@ bool Buffer::mCallSavePage( void ) {
 /*
  * Load 1 Page of data from the file
  */
-bool Buffer::mCallLoadPage( void ) {
+bool Buffer::mCallLoadNextPage( void ) {
     assert( _fileHandle != 0 );
 
     // Attempt to load 1 page of data
-    if( ! mLoadPage() ) return false;
+    if( ! mLoadNextPage() ) return false;
 
     // Is the file loaded completely?
     if( _offBufferSize == _fileHandle->mGetFileSize() ) {

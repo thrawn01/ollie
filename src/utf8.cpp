@@ -67,6 +67,24 @@ OffSet Utf8File::mWriteNextBlock( char* arrBlockData, OffSet offBlockSize, Attri
 
 }
 
+/*!
+ *  Return the size of the next block read will return
+ *  Utf8File will always return the max block size because
+ *  Utf8File does not assign attributes so all the block sizes 
+ *  are the same, unless it is the end of the file ( Last block read )
+ */
+OffSet Utf8File::mPeekNextBlock( void ) {
+
+    // If we were to read the next block would we hit the end of the file?
+    if( ( _ioHandle->mGetFileSize() - _offCurOffSet ) < _offBlockSize ) { 
+        // If so, return how many bytes we would read
+        return _ioHandle->mGetFileSize() - _offCurOffSet;
+    }
+
+    return _offBlockSize;
+
+}
+
 /*
  * Read in the next block of text starting at the last read offset
  *
@@ -78,7 +96,6 @@ OffSet Utf8File::mReadNextBlock( char* arrBlockData, Attributes &attr ) {
 
     // If we timeout waiting on clear to read
     if( _ioHandle->mWaitForClearToRead( _intTimeout ) ) {
-        std::cout << __LINE__ << std::endl;
         mSetError( _ioHandle->mGetError() );
         return -1;
     }
@@ -87,7 +104,6 @@ OffSet Utf8File::mReadNextBlock( char* arrBlockData, Attributes &attr ) {
 
     // Read in the block from the IO
     if( ( offLen = _ioHandle->mRead( arrBlockData, _offBlockSize ) ) < 0 ) {
-        std::cout << __LINE__ << std::endl;
         mSetError( _ioHandle->mGetError() );
         return -1;
     }
@@ -123,13 +139,11 @@ OffSet Utf8File::mSetOffSet( OffSet offset ) {
     // and we are not asking to seek the begining of the file
     if( ! _ioHandle->mOffersSeek() && offset != 0 ) {
         mSetError("Current IO Device does not support file seeks");
-        std::cout << __LINE__ << std::endl;
         return -1;
     }
 
     // Attempt to seek to the correct offset
     if( _ioHandle->mSeek(offset) == -1 ) {
-        std::cout << __LINE__ << std::endl;
         mSetError( _ioHandle->mGetError() );
         return -1;
     }
@@ -143,7 +157,7 @@ OffSet Utf8File::mSetOffSet( OffSet offset ) {
 /*! 
  * Saves 1 page of data to a file
  */
-bool Utf8Buffer::mSavePage( void ) {
+bool Utf8Buffer::mSaveNextPage( void ) {
     return false;
 }
 
@@ -152,7 +166,7 @@ bool Utf8Buffer::mSavePage( void ) {
  * TODO: Blocks should be pointers, to reduce 
  *       the amount of data copy happening here
  */
-bool Utf8Buffer::mLoadPage( void ) {
+bool Utf8Buffer::mLoadNextPage( void ) {
     OffSet offLen = 0;
     OffSet offStart = 0;
     Attributes attr;
@@ -164,69 +178,45 @@ bool Utf8Buffer::mLoadPage( void ) {
     // Record the offset for this page
     page->mSetStartOffSet( _fileHandle->mGetOffSet() );
 
-    // If the hold over block is NOT empty
-    if( ! _blockHoldOver.mIsEmpty() ) {
-
-        // Add the block to the page
-        page->mAppendBlock( _blockHoldOver );
-
-        // Set the offset of the holdover
-        offStart = _blockHoldOverOffset;
-
-        // Clear the hold over block
-        _blockHoldOver.mClear();
-    }
-        
     // Create an array of data to read to
     char* arrBlockData = new char[ _fileHandle->mGetBlockSize() ];
-    memset(arrBlockData, 0, _fileHandle->mGetBlockSize() );
 
-    // Keep reading until we fill a page with data
-    while( ( offLen = _fileHandle->mReadNextBlock( arrBlockData, attr ) ) > 1 ) {
-       
+    // As long as the next read will return a block greater than 0 bytes
+    while( ( offLen = _fileHandle->mPeekNextBlock() ) != 0 ) {
+
+        // Clear the BlockData for next read
+        memset(arrBlockData, 0, _fileHandle->mGetBlockSize() );
+
+        // Will the next read fit into the current page?
+        if( ! page->mCanAcceptBytes( offLen ) )  break;
+
+        // Read in the next block
+        if( ( offLen = _fileHandle->mReadNextBlock( arrBlockData, attr ) ) == -1 ) {
+            mSetError( _fileHandle->mGetError() );
+            delete page; return false;
+        }
+
         // Create a new block of data
         Utf8Block block(arrBlockData, offLen );
 
         // Add the attributes to the block
         block.mSetAttributes( attr );
-     
-        // If the page can accept more blocks
-        if( page->mCanAcceptBytes( offLen ) ) {
 
-            // Add the block to the page
-            page->mAppendBlock( block );
+        // Add the block to the page
+        page->mAppendBlock( block );
 
-        }else {
-
-            // Record the offset of this block
-            _blockHoldOverOffset =  _fileHandle->mGetOffSet() - offLen;
-
-            // Hold a copy of the block until mLoadPage is called again
-            _blockHoldOver = block;
-
-            offLen = 0;
-            break;
-
-        }
-
-        // Clear the BlockData for next read
-        memset(arrBlockData, 0, _fileHandle->mGetBlockSize() );
     }
 
     delete arrBlockData;
 
-    // offLen should be 0, unless there was an error
-    if( offLen != 0 ) {
-        mSetError( _fileHandle->mGetError() );
-        delete page;
-        return false;
-    }
-
     // Only append a new page if the page has some data
     if( page->mGetPageSize() != 0 ) {
 
+        // Add the Start offset with the size of the page to set the End Offset
+        page->mSetEndOffSet( page->mGetStartOffSet() + page->mGetPageSize() );
+
         // Append the page to the page container
-        _pageContainer.mAppendPage( page, offStart );
+        _pageContainer.mAppendPage( page );
 
         // Update the buffer size
         _offBufferSize += page->mGetPageSize() ;
@@ -237,7 +227,8 @@ bool Utf8Buffer::mLoadPage( void ) {
     // Empty Page, Discard
     delete page;
 
-    // Return true anyway, the last read might have read 0 bytes ( EOF )
+    // Return true, No Errors right? 
+    // The last read might have read 0 bytes ( EOF )
     return true;
 
 }
@@ -296,21 +287,10 @@ Utf8Block::Utf8Block( char* cstrData, OffSet offLen ) {
 }
 
 /*!
- * Add a page to the container and update the offsets
+ * Add a page to the container 
  */
-void Utf8PageContainer::mAppendPage( Utf8Page *page , OffSet offset ) { 
-    Utf8Page::Iterator itLastPage;
+void Utf8PageContainer::mAppendPage( Utf8Page *page ) { 
     
-    if( offset != -1 ) {
-        
-        // Set the Start Offset of the new Page
-        page->mSetStartOffSet( offset );
-
-        // Add the Start offset with the size of the page to set the End Offset
-        page->mSetEndOffSet( offset + page->mGetPageSize() );
-
-    }
-
     // Add the new page to the list
     _listContainer.push_back( page );
    

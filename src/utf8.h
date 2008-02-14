@@ -126,7 +126,7 @@ class Utf8PageContainer {
         Utf8Page::Iterator mBegin() { return _listContainer.begin(); }
         Utf8Page::Iterator mEnd()   { return _listContainer.end();   }
 
-        void mAppendPage( Utf8Page *page, OffSet offset = -1 );
+        void mAppendPage( Utf8Page *page );
         void mInsertPage( Utf8Page::Iterator const it, Utf8Page *page);
         
         boost::ptr_list<Utf8Page> _listContainer;
@@ -162,12 +162,10 @@ class Utf8Buffer : public Buffer {
         virtual ~Utf8Buffer( void ) { }
         Utf8Buffer( const std::string& strName ) : Buffer( strName ) { }
         Utf8Buffer( File* const fileHandle ) : Buffer( fileHandle ) { }
-        virtual bool mLoadPage( void );
-        virtual bool mSavePage( void );
+        virtual bool mLoadNextPage( void );
+        virtual bool mSaveNextPage( void );
 
         Utf8PageContainer  _pageContainer;
-        Utf8Block          _blockHoldOver;
-        OffSet             _blockHoldOverOffset;
 };
 
 
@@ -180,6 +178,7 @@ class Utf8File : public File {
        Utf8File( IOHandle* const ioHandle ) : File( ioHandle ) { };
        ~Utf8File() { };
 
+       virtual OffSet  mPeekNextBlock( void );
        virtual OffSet  mReadBlock( OffSet, char*, Attributes& );
        virtual OffSet  mReadNextBlock( char*, Attributes& );
        virtual OffSet  mWriteBlock( OffSet, char*, OffSet, Attributes& );

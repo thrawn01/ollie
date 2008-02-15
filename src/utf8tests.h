@@ -317,6 +317,9 @@ class Utf8Tests : public CxxTest::TestSuite
             Utf8Buffer* buf = new Utf8Buffer(file);
             TS_ASSERT( buf ); 
 
+            // Set the current task to load the buffer
+            TS_ASSERT_EQUALS( buf->mLoadBuffer(), true );
+
             // The name should be the same as the file name 
             TS_ASSERT_EQUALS( buf->mGetName() , TEST_FILE );
 
@@ -330,8 +333,7 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( buf->mGetTaskStatus(), "Loading " TEST_FILE "..." ); 
            
             // Preform tasks until the buffer is ready
-            // Since we just created the buffer, the current task
-            // is to load the file into the buffer
+            // The current task is to load the file into the buffer
             while( ! buf->mIsBufferReady() ) {
                 
                 // Preform task should return true
@@ -408,7 +410,7 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS(buf->_strName, TEST_FILE ); 
 
             // Save the buffer to the file
-            buf->mSaveBuffer();
+            TS_ASSERT_EQUALS(buf->mSaveBuffer(), true );
 
             // Status should be "Saving TEST_FILE..."
             TS_ASSERT_EQUALS( buf->mGetTaskStatus(), "Saving " TEST_FILE "..." ); 

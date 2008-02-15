@@ -23,7 +23,7 @@
 /*
  * Write out a block of text at a specific offset
  */
-OffSet Utf8File::mWriteBlock( OffSet offset, char* arrBlockData, OffSet offBlockSize, Attributes& attr ) {
+OffSet Utf8File::mWriteBlock( OffSet offset, const char* arrBlockData, OffSet offBlockSize, Attributes& attr ) {
 
     // Set the current offset
     if( mSetOffSet( offset ) == -1 ) {
@@ -42,7 +42,7 @@ OffSet Utf8File::mWriteBlock( OffSet offset, char* arrBlockData, OffSet offBlock
  * Since utf8 files have no additional attributes, we ignore the 
  * attributes reference passed
  */
-OffSet Utf8File::mWriteNextBlock( char* arrBlockData, OffSet offBlockSize, Attributes &attr ) {
+OffSet Utf8File::mWriteNextBlock( const char* arrBlockData, OffSet offBlockSize, Attributes &attr ) {
     assert( _ioHandle != 0 );
 
     // If we timeout waiting on clear to read
@@ -160,8 +160,109 @@ OffSet Utf8File::mSetOffSet( OffSet offset ) {
 /*! 
  * Saves 1 page of data to a file
  */
-bool Utf8Buffer::mSavePage( void ) {
-    return false;
+OffSet Utf8Buffer::mSavePage( Utf8Page::Iterator &itPage, OffSet offSet ) {
+    OffSet offLen = 0;
+
+    assert( _fileHandle != 0 );
+
+    // Seek to the requested offset
+    if( _fileHandle->mSetOffSet( offSet ) == -1 ) {
+        mSetError( _fileHandle->mGetError() );
+        return -1;
+    }
+
+    Utf8Block::Iterator it = itPage->mBegin();
+  
+    // Foreach block in the page write it 2 the file
+    for( it = itPage->mBegin() ; it != itPage->mEnd() ; it++ ) {
+
+        // Attempt to write the block
+        if( ( offLen = _fileHandle->mWriteNextBlock( it->mGetBlockData().c_str(), it->mGetSize(), it->mGetAttributes() ) ) == -1 ) {
+            mSetError( _fileHandle->mGetError() );
+            return -1;
+        }
+
+        // Did we write all the bytes we expected?
+        if( offLen != it->mGetSize() ) {
+            mSetError() << "Buffer Error: Attempted to write '" << it->mGetSize() << "' bytes, however '" 
+                        << offLen << "' where actually written";
+            return -1;
+        }
+    }
+    return _fileHandle->mGetOffSet();
+
+}
+
+/*!
+ * Set the offset to the begining of the file
+ * in prep for saving the file
+ */
+bool Utf8Buffer::mSaveBuffer( void ) {
+
+    // Get the first page of the buffer
+    _itCurSavePage = _pageContainer.mBegin();
+
+    if( _itCurSavePage == _pageContainer.mEnd() ) {
+        mSetError("Buffer Error: Can not save empty buffer, Atleast not yet");
+        return false;
+    }
+
+    // Assign the load Page task and set the status message
+    mSetTaskStatus() << "Saving " << _fileHandle->mGetFileName() << "..." ;
+    _currentTask = &Buffer::mSaveFileTask;
+
+    // Set the file offset to the begining of the file
+    _fileHandle->mSetOffSet( 0 );
+
+    _longCurProgress = 0;
+
+    return true;
+}
+
+
+bool Utf8Buffer::mSaveFileTask( void ) {
+    OffSet offset = 0;
+    assert( _fileHandle != 0 );
+    std::cout << __LINE__ << std::endl;
+
+    // Ensure we don't do anything stupid
+    if( _itCurSavePage == _pageContainer.mEnd() ) {
+    std::cout << __LINE__ << std::endl;
+        mSetError("Buffer Error: Attempted to save pass last page of data");
+        return false;
+    }
+
+    std::cout << __LINE__ << std::endl;
+    // Attempt to Save 1 page of data
+    if( ( offset = mSavePage( _itCurSavePage, _offCurSaveOffSet ) ) == -1 ) return false;
+
+    std::cout << __LINE__ << std::endl;
+    _offCurSaveOffSet = offset;
+
+    std::cout << __LINE__ << std::endl;
+    // Is the file save complete?
+    if( _offBufferSize == offset ) {
+    std::cout << __LINE__ << std::endl;
+
+        // We are no longer in a modified state
+        _boolModified = false;
+
+        // Clear our task
+        mSetTaskStatus(); 
+        _currentTask = 0;
+        _longCurProgress = 100L;
+
+        return true;
+    }
+
+    // Record the current progress
+    _longCurProgress = long( offset / ( _offBufferSize / 100 ) );
+
+    // Move to the next page
+    _itCurSavePage++;
+
+    std::cout << __LINE__ << std::endl;
+    return true;
 }
 
 /*!
@@ -237,6 +338,56 @@ OffSet Utf8Buffer::mLoadPage( OffSet offSet ) {
     // The last read might have read 0 bytes ( EOF )
     return _fileHandle->mGetOffSet();
 
+}
+
+bool Utf8Buffer::mLoadBuffer( void ) {
+
+    if( ! _fileHandle ) {
+        mSetError("Buffer Error: Can't load buffer without a file handle");
+        return false;
+    }
+
+    // Assign the load Page task and set the status message
+    mSetTaskStatus() << "Loading " << _fileHandle->mGetFileName() << "..." ;
+    _currentTask = &Buffer::mLoadFileTask;
+
+    // Start the load at the begnning of the file
+    _offCurLoadOffSet = 0;
+    _longCurProgress = 0;
+
+    return true;
+}
+
+/*!
+ * This task loads the entire file into memory
+ */
+bool Utf8Buffer::mLoadFileTask( void ) {
+    OffSet offset = 0;
+    assert( _fileHandle != 0 );
+
+    // Attempt to load 1 page at the current offset
+    if( ( offset = mLoadPage( _offCurLoadOffSet ) ) == -1 ) return false;
+
+    _offCurLoadOffSet = offset;
+
+    // Is the file loaded completely?
+    if( _offBufferSize == _fileHandle->mGetFileSize() ) {
+
+        // Report the entire file loaded into memory
+        _boolEntireFileLoaded = true;
+
+        // Clear our task
+        mSetTaskStatus(); 
+        _currentTask = 0;
+        _longCurProgress = 100L;
+
+        return true;
+    }
+
+    // Record the current progress
+    _longCurProgress = long( _offBufferSize / ( _fileHandle->mGetFileSize() / 100 ) );
+
+    return true;
 }
 
 /*!

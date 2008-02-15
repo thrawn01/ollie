@@ -43,6 +43,7 @@ class Utf8Block {
         bool                mSetBlockData( char* cstrData, OffSet offLen );
         const std::string&  mGetBlockData( void ) const { return _strBlockData; }
         bool                mSetAttributes( Attributes &attr ) { return false; } //TODO Add Support for attributes
+        Attributes&         mGetAttributes( void ) { return _attr; } //TODO Add Support for attributes
         bool                mSetOffSet( OffSet offset ) { _offOffSet = offset; }
         bool                mIsEmpty( void ) const { return _strBlockData.empty(); }
         void                mClear( void ) { _strBlockData.clear(); }
@@ -52,6 +53,7 @@ class Utf8Block {
         std::string _strBlockData;
         OffSet      _offOffSet;
         size_t      _sizeBufferSize;
+        Attributes  _attr;
 
 };
 
@@ -162,10 +164,17 @@ class Utf8Buffer : public Buffer {
         virtual ~Utf8Buffer( void ) { }
         Utf8Buffer( const std::string& strName ) : Buffer( strName ) { }
         Utf8Buffer( File* const fileHandle ) : Buffer( fileHandle ) { }
-        virtual OffSet mLoadPage( OffSet );
-        virtual bool   mSavePage( void );
+        OffSet mLoadPage( OffSet );
+        OffSet mSavePage( Utf8Page::Iterator&, OffSet );
+        virtual bool   mSaveFileTask( void );
+        virtual bool   mLoadFileTask( void );
+        virtual bool   mSaveBuffer( void );
+        virtual bool   mLoadBuffer( void );
 
-        Utf8PageContainer  _pageContainer;
+        Utf8PageContainer       _pageContainer;
+        OffSet                  _offCurLoadOffSet;
+        OffSet                  _offCurSaveOffSet;
+        Utf8Page::Iterator      _itCurSavePage;
 };
 
 
@@ -181,8 +190,8 @@ class Utf8File : public File {
        virtual OffSet  mPeekNextBlock( void );
        virtual OffSet  mReadBlock( OffSet, char*, Attributes& );
        virtual OffSet  mReadNextBlock( char*, Attributes& );
-       virtual OffSet  mWriteBlock( OffSet, char*, OffSet, Attributes& );
-       virtual OffSet  mWriteNextBlock( char*, OffSet, Attributes& );
+       virtual OffSet  mWriteBlock( OffSet, const char*, OffSet, Attributes& );
+       virtual OffSet  mWriteNextBlock( const char*, OffSet, Attributes& );
        virtual OffSet  mSetOffSet( OffSet );
 
 };

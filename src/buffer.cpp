@@ -56,41 +56,11 @@ Buffer::Buffer( File* const file ) {
     // Set the buffer name from the filename
     _strName = file->mGetFileName();
 
-    mLoadBuffer();
-}
-
-/*! 
- * Start the Save buffer task
- */
-void Buffer::mSaveBuffer( void ) {
-
-    // Assign the load Page task and set the status message
-    mSetTaskStatus() << "Saving " << _fileHandle->mGetFileName() << "..." ;
-    _currentTask = &Buffer::mCallSavePage;
-    _longCurProgress = 0;
-
-    // Set the offset to the begining of the file
-    _fileHandle->mSetOffSet( 0 );
-
-}
-
-/*! 
- * Start the load buffer task
- */
-void Buffer::mLoadBuffer() {
-
-    // Assign the load Page task and set the status message
-    mSetTaskStatus() << "Loading " << _fileHandle->mGetFileName() << "..." ;
-    _currentTask = &Buffer::mCallLoadPage;
-    _longCurProgress = 0;
-    _curLoadOffSet = 0;
-
 }
 
 /*!
  * Buffer Destructor
  */
-
 Buffer::~Buffer( void ) {
     // Unallocate the file
     if( _fileHandle ) { 
@@ -161,67 +131,6 @@ bool Buffer::mPreformTask( void ) {
     assert( _currentTask != 0 );
 
     return (this->*_currentTask)();
-}
-
-/*
- * Save 1 Page of data from the file
- */
-bool Buffer::mCallSavePage( void ) {
-    assert( _fileHandle != 0 );
-
-    // Attempt to Save 1 page of data
-    if( ! mSavePage() ) return false;
-
-    // Is the file save complete?
-    if( _offBufferSize == _fileHandle->mGetOffSet() ) {
-
-        // Report the entire file loaded into memory
-        _boolModified = false;
-
-        // Clear our task
-        mSetTaskStatus(); 
-        _currentTask = 0;
-        _longCurProgress = 100L;
-
-        return true;
-    }
-
-    // Record the current progress
-    _longCurProgress = long( _fileHandle->mGetOffSet() / ( _offBufferSize / 100 ) );
-
-    return true;
-}
-
-/*
- * Load 1 Page of data from the file
- */
-bool Buffer::mCallLoadPage( void ) {
-    OffSet offset = 0;
-    assert( _fileHandle != 0 );
-
-    // Attempt to load 1 page at the current offset
-    if( ( offset = mLoadPage( _curLoadOffSet ) ) == -1 ) return false;
-
-    _curLoadOffSet = offset;
-
-    // Is the file loaded completely?
-    if( _offBufferSize == _fileHandle->mGetFileSize() ) {
-
-        // Report the entire file loaded into memory
-        _boolEntireFileLoaded = true;
-
-        // Clear our task
-        mSetTaskStatus(); 
-        _currentTask = 0;
-        _longCurProgress = 100L;
-
-        return true;
-    }
-
-    // Record the current progress
-    _longCurProgress = long( _offBufferSize / ( _fileHandle->mGetFileSize() / 100 ) );
-
-    return true;
 }
 
 /* 

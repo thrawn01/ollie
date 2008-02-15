@@ -49,8 +49,8 @@ class File : public OllieCommon {
        virtual OffSet       mPeekNextBlock( void ) = 0;
        virtual OffSet       mReadBlock( OffSet, char*, Attributes &attr ) = 0;
        virtual OffSet       mReadNextBlock( char*, Attributes &attr ) = 0;
-       virtual OffSet       mWriteBlock( OffSet, char*, OffSet, Attributes &attr ) = 0;
-       virtual OffSet       mWriteNextBlock( char*,  OffSet, Attributes &attr ) = 0;
+       virtual OffSet       mWriteBlock( OffSet, const char*, OffSet, Attributes &attr ) = 0;
+       virtual OffSet       mWriteNextBlock( const char*,  OffSet, Attributes &attr ) = 0;
        virtual OffSet       mSetOffSet( OffSet ) = 0;
 
        // Methods

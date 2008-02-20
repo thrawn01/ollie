@@ -75,7 +75,7 @@ class Utf8Page {
 
         typedef boost::ptr_list<Utf8Page>::iterator Iterator;  
 
-        Utf8Block::Iterator  mAppendBlock( Utf8Block &block );
+        Utf8Block::Iterator  mAppendBlock( const Utf8Block &block );
 
         void                 mSetMaxPageSize( OffSet const offSize ) { _offMaxPageSize = offSize; }
         OffSet               mGetMaxPageSize( void ) const { return _offMaxPageSize; }
@@ -99,23 +99,6 @@ class Utf8Page {
         OffSet                 _offPageSize;
 };
 
-/*! 
- * Our Utf8 Iterator, This iterators iterates thru all the blocks and 
- * pages as if they were apart of the same list
- */
-class Utf8Iterator {
-
-    public: 
-        Utf8Iterator( void ) { };
-        //Utf8Iterator( Utf8Page::Iterator &it ) { _itPage = it; };
-        virtual ~Utf8Iterator( void ) { };
-
-        //Utf8Page& operator* ( void ) { return &(*_itPage); }
-
-
-        //Utf8Page::Iterator _itPage;
-};
-
 /*!
  * A Container class to hold the pages that make up the buffer
  */
@@ -128,6 +111,7 @@ class Utf8PageContainer {
         Utf8Page::Iterator mBegin() { return _listContainer.begin(); }
         Utf8Page::Iterator mEnd()   { return _listContainer.end();   }
 
+        void mClear( void ) { _listContainer.clear(); }
         void mAppendPage( Utf8Page *page );
         void mInsertPage( Utf8Page::Iterator const it, Utf8Page *page);
         
@@ -136,6 +120,33 @@ class Utf8PageContainer {
          
 };
 
+class Utf8BufferIterator : public BufferIterator {
+
+    public: 
+        Utf8BufferIterator() { }
+        virtual ~Utf8BufferIterator() { }
+
+        // Interface specific
+        virtual void    mNextChar( void ) { }
+        virtual void    mPrevChar( void ) { }
+        virtual bool    mSetOffSet( OffSet offset ) { std::cout << "Called Implementation" << std::endl; return false; }
+
+        // Implementation specific
+        Utf8Page&       mGetPage( void ) { return *_itPage; }
+        void            mSetPage( const Utf8Page::Iterator &it ) { _itPage = it; }
+
+        Utf8Block&      mGetBlock( void ) { return *_itBlock; }
+        void            mSetBlock( const Utf8Block::Iterator &it ) { _itBlock = it; }
+
+        int             mGetPos( void ) { return _intPos; }
+        void            mSetPos( const int pos ) { _intPos = pos; }
+
+        Utf8Page::Iterator  _itPage;
+        Utf8Block::Iterator _itBlock;
+        OffSet              _offset;
+        int                 _intPos;
+
+};
 
 /*!
  *  The Utf8 ChangeSet object.
@@ -155,26 +166,69 @@ class Utf8ChangeSet : public ChangeSet {
 };
 
 /*!
- * This is the buffer implementation for utf8 files
+ * This is the buffer implementation 
  */
-class Utf8Buffer : public Buffer {
+class Utf8Buffer : public BufferInterface {
 
     public:
-        Utf8Buffer( void ) { }
-        virtual ~Utf8Buffer( void ) { }
-        Utf8Buffer( const std::string& strName ) : Buffer( strName ) { }
-        Utf8Buffer( File* const fileHandle ) : Buffer( fileHandle ) { }
-        OffSet mLoadPage( OffSet );
-        OffSet mSavePage( Utf8Page::Iterator&, OffSet );
-        virtual bool   mSaveFileTask( void );
-        virtual bool   mLoadFileTask( void );
-        virtual bool   mSaveBuffer( void );
-        virtual bool   mLoadBuffer( void );
+        Utf8Buffer( void );
+        Utf8Buffer( const std::string& strName );
+        Utf8Buffer( File* const );
+        void init( void );
+        virtual ~Utf8Buffer( void );
 
+        typedef Utf8BufferIterator Iterator;
+
+        // Interface Implementaton
+        virtual BufferIterator               mBegin( void );
+        virtual BufferIterator               mEnd( void );
+        virtual bool                         mInsertUtf16( BufferIterator&, const ushort*, int ) { return false; }
+        virtual bool                         mInsert( BufferIterator&, const char*, int ) { return false; }
+        virtual bool                         mInsert( BufferIterator&, const std::string& ) { return false; }
+        virtual bool                         mDelete( BufferIterator& , BufferIterator& ) { return false; }
+        virtual bool                         mDelete( OffSet , OffSet ) { return false; }
+        virtual bool                         mSaveBuffer( void );
+        virtual bool                         mLoadBuffer( void );
+        virtual std::string                  mGetFileName( void );
+        virtual std::string                  mGetName( void ) { return _strName; }
+        virtual void                         mSetName( const std::string& strName ) { _strName = strName; }
+        virtual void                         mSetMaxBufferSize( OffSet size ) { _offMaxBufferSize = size; }
+        virtual OffSet                       mGetMaxBufferSize( void ) { return _offMaxBufferSize; }
+        virtual OffSet                       mGetBufferSize( void ) { return _offBufferSize; }
+        virtual bool                         mEntireFileLoaded( void ) { return _boolEntireFileLoaded; }
+        virtual bool                         mBufferFull( void );
+        virtual bool                         mIsBufferReady( void );
+        virtual bool                         mPreformTask( void );
+        virtual bool                         mAssignFile( File* const );
+        virtual bool                         mGetProgress( long* longProgress );
+        virtual bool                         mIsModified( void ) { return _boolModified; }
+
+        // Implementation Only 
+        bool                                 mSaveFileTask( void );
+        bool                                 mLoadFileTask( void );
+        OffSet                               mLoadPage( OffSet );
+        OffSet                               mSavePage( Utf8Page::Iterator&, OffSet );
+        std::stringstream&                   mSetTaskStatus( void ) { _streamStatusMsg.str(""); return _streamStatusMsg; }
+        std::string                          mGetTaskStatus( void ) { return _streamStatusMsg.str(); }
+
+        // Variables
         Utf8PageContainer       _pageContainer;
         OffSet                  _offCurLoadOffSet;
         OffSet                  _offCurSaveOffSet;
         Utf8Page::Iterator      _itCurSavePage;
+        long                    _longCurProgress;
+        std::stringstream       _streamStatusMsg;
+        File*                   _fileHandle;
+        std::string             _strName;
+        bool                    _boolModified;
+        bool                    _boolEntireFileLoaded;
+        OffSet                  _offMaxBufferSize;
+        OffSet                  _offBufferSize;
+
+
+        // A pointer to the method that preforms the current task
+        bool (Utf8Buffer::*_currentTask)(void);
+
 };
 
 

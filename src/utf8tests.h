@@ -148,7 +148,7 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it->mGetBlockData(), "AAAAABBBBBCCCCCDDDDD" );
 
             // Go to the next block on the page
-            it++;
+            ++it;
 
             // The next block should contain all G's
             TS_ASSERT_EQUALS( it->mGetBlockData().substr(0,10) , "GGGGGGGGGG" );
@@ -211,7 +211,7 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( itBlock->mGetBlockData().substr(0,10) , "AAAAAAAAAA" );
 
             // Check the next Page
-            it++;
+            ++it;
        
             // The starting offset for this page should be 100
             TS_ASSERT_EQUALS( it->mGetStartOffSet(), 100 );
@@ -290,7 +290,7 @@ class Utf8Tests : public CxxTest::TestSuite
             // Create a 500 line file
             while( i < 500 ) {
                 ioFile << "AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHH\n";
-                i++;
+                ++i;
             }
 
             ioFile.close();
@@ -374,7 +374,7 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( itBlock->mGetBlockData().substr(0,41) , "AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHH\n" );
           
             // Go to the next page
-            it++;
+            ++it;
 
             // The starting offset for this page should be 2000
             TS_ASSERT_EQUALS( it->mGetStartOffSet(), DEFAULT_PAGE_SIZE );
@@ -392,6 +392,26 @@ class Utf8Tests : public CxxTest::TestSuite
             // Create a new Buffer Called "buffer1"
             Utf8Buffer* buf = new Utf8Buffer("buffer1");
             TS_ASSERT( buf );
+
+            TS_ASSERT_EQUALS( buf->mIsModified(), false );
+
+            BufferIterator it = buf->mBegin();
+
+            // Insert text At the begining of the file
+            TS_ASSERT_EQUALS( buf->mInsert( it, "AAAAAGGGGGDDDDDBBBBB" , 20 ), true );
+
+            // Move to the next char in the buffer
+            ++it;
+
+            //TS_ASSERT_EQUALS( it.mAt(), 'A' );
+
+            TS_ASSERT_EQUALS( it.mSetOffSet(19), true );
+
+            TS_ASSERT_EQUALS( it.mSetOffSet(20), false );
+
+            TS_ASSERT_EQUALS( it.mGetError(), "Internal Error: Requested OffSet out of bounds" );
+
+            TS_ASSERT_EQUALS( buf->mIsModified(), true );
 
             // Get the default IO handler for this Operating System
             IOHandle* ioHandle = IOHandle::mGetDefaultIOHandler();
@@ -430,6 +450,7 @@ class Utf8Tests : public CxxTest::TestSuite
             // Buffer should be ready
             TS_ASSERT_EQUALS( buf->mIsBufferReady(), true );
 
+            TS_ASSERT_EQUALS( buf->mIsModified(), false );
         }
 
         // --------------------------------
@@ -442,7 +463,7 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT( buf );
 
             // Modify the buffer 
-            TS_ASSERT( buf->mInsert("This buffer now has some text") );
+            //TS_ASSERT( buf->mInsert("This buffer now has some text") );
 
             TS_ASSERT_EQUALS( buf->mIsModified(), true );
 
@@ -458,7 +479,7 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT(buf);
 
             // Insert "Derrick J. Wippler"
-            TS_ASSERT( buf->mInsert("Derrick J. Wippler") );
+            //TS_ASSERT( buf->mInsert("Derrick J. Wippler") );
 
             /*ChangeSet* changeSet = buf->mGetChangeSet();
             TS_ASSERT( changeSet );
@@ -484,10 +505,10 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT(buf);
 
             // Insert "Derrick J. Wippler" without returning a change set
-            TS_ASSERT( buf->mInsert("Derrick J. Wippler") );
+            //TS_ASSERT( buf->mInsert("Derrick J. Wippler") );
             
             // Delete " J. Wippler"
-            TS_ASSERT( buf->mDelete(8,18) );
+            //TS_ASSERT( buf->mDelete(8,18) );
 
             /*ChangeSet* changeSet = buf->mGetChangeSet();
             TS_ASSERT( changeSet );

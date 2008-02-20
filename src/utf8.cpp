@@ -20,6 +20,155 @@
 
 #include <utf8.h>
 
+/*!
+ * Initalize class variables
+ */
+void Utf8Buffer::init( void ) {
+    _boolModified         = false;
+    _fileHandle           = 0;
+    _boolEntireFileLoaded = false;
+    _offMaxBufferSize     = DEFAULT_MAX_BUF_SIZE;
+    _offBufferSize        = 0;
+    _currentTask          = 0;
+
+    // Append an empty page to the buffer
+    Utf8Page *page = new Utf8Page();
+    page->mAppendBlock( Utf8Block() );
+    _pageContainer.mAppendPage( page );
+
+}
+
+/**
+ * Construct a buffer with empty pages
+ */
+Utf8Buffer::Utf8Buffer( void ) { 
+
+    // Initialize class variables
+    init();
+
+}
+
+/**
+ * Construct a buffer with a name
+ */
+Utf8Buffer::Utf8Buffer( const std::string& strName ) { 
+
+    // Initialize class variables
+    init();
+
+    // Set the buffer name
+    _strName = strName; 
+
+};
+
+/*!
+ * Construct a buffer from a file and give it a name
+ */
+Utf8Buffer::Utf8Buffer( File* const file ) {
+    
+    // Initialize class variables
+    init();
+
+    // Check for valid handle
+    if( ! file ) {
+        fatalError("Internal Error: Cannot create buffer from null file pointer");
+    }
+
+    // Assign the file handler
+    _fileHandle = file;
+
+    // Set the buffer name from the filename
+    _strName = file->mGetFileName();
+
+}
+
+/*!
+ * Buffer Destructor
+ */
+Utf8Buffer::~Utf8Buffer( void ) {
+
+    // Unallocate the file
+    if( _fileHandle ) { 
+        delete (_fileHandle); 
+    }
+
+}
+
+/*!
+ * Assign a File to be represented by this buffer
+ * The file passed must be an open valid file
+ */
+
+bool Utf8Buffer::mAssignFile( File* const file ) {
+    assert( file != 0 );
+
+    _strName    = file->mGetFileName();
+    _fileHandle = file;
+
+    return true;
+}
+
+/*!
+ * Returns the File Name the current buffer represents
+ */
+std::string Utf8Buffer::mGetFileName( void ) {
+
+    if( _fileHandle ) {
+        return _fileHandle->mGetFileName();
+    }
+    return _strName;
+}
+
+/*!
+ * Return true if the buffer has room to add data
+ */
+
+bool Utf8Buffer::mBufferFull( void ) {
+
+    // If the buffer size is not greater than the Max Buffer size
+    if( _offBufferSize >= _offMaxBufferSize ) {
+        return true;
+    }
+    return false;
+}
+
+/*!
+ * Convienience function for loading the file 
+ * into the buffer for the first time
+ */
+
+bool Utf8Buffer::mIsBufferReady( void ) {
+
+    // Are there any active tasks?
+    if( _currentTask ) {
+        return false;
+    }
+
+    return true;
+}
+
+/*!
+ * Call the Task method, Returns true if the operation was a success
+ * false if there was an error
+ */
+
+bool Utf8Buffer::mPreformTask( void ) {
+    assert( _currentTask != 0 );
+
+    return (this->*_currentTask)();
+}
+
+/* 
+ * Returns the progress of the current task if there is one.
+ * If not returns false
+ */
+bool Utf8Buffer::mGetProgress( long* longProgress ) { 
+
+    *longProgress = _longCurProgress; 
+    if( _currentTask ) return true;
+    return false;
+    
+}
 /*
  * Write out a block of text at a specific offset
  */
@@ -157,6 +306,47 @@ OffSet Utf8File::mSetOffSet( OffSet offset ) {
     return _offCurOffSet;
 }
 
+/**
+ * Returns a itertor to the begining of this this buffer
+ */
+BufferIterator Utf8Buffer::mBegin( void ) {
+
+    Utf8BufferIterator *it = new Utf8BufferIterator();
+
+    Utf8Page::Iterator itPage = _pageContainer.mBegin();
+    it->mSetPage( itPage );
+
+    Utf8Block::Iterator itBlock = itPage->mBegin();
+
+    it->mSetBlock( itBlock );
+
+    it->mSetPos( 0 );
+
+    BufferIterator itBuf( it );
+
+    return itBuf;
+
+}
+
+/**
+ * Returns a itertor to the end of this this buffer
+ */
+BufferIterator Utf8Buffer::mEnd( void ) {
+
+    Utf8BufferIterator *it = new Utf8BufferIterator();
+
+    Utf8Page::Iterator itPage = _pageContainer.mEnd();
+    
+    it->mSetPage( itPage );
+    it->mSetBlock( itPage->mEnd() );
+    it->mSetPos( 0 );
+
+    BufferIterator itBuf( it );
+
+    return itBuf;
+
+}
+ 
 /*! 
  * Saves 1 page of data to a file
  */
@@ -209,7 +399,7 @@ bool Utf8Buffer::mSaveBuffer( void ) {
 
     // Assign the load Page task and set the status message
     mSetTaskStatus() << "Saving " << _fileHandle->mGetFileName() << "..." ;
-    _currentTask = &Buffer::mSaveFileTask;
+    _currentTask = &Utf8Buffer::mSaveFileTask;
 
     // Set the file offset to the begining of the file
     _fileHandle->mSetOffSet( 0 );
@@ -223,26 +413,20 @@ bool Utf8Buffer::mSaveBuffer( void ) {
 bool Utf8Buffer::mSaveFileTask( void ) {
     OffSet offset = 0;
     assert( _fileHandle != 0 );
-    std::cout << __LINE__ << std::endl;
 
     // Ensure we don't do anything stupid
     if( _itCurSavePage == _pageContainer.mEnd() ) {
-    std::cout << __LINE__ << std::endl;
         mSetError("Buffer Error: Attempted to save pass last page of data");
         return false;
     }
 
-    std::cout << __LINE__ << std::endl;
     // Attempt to Save 1 page of data
     if( ( offset = mSavePage( _itCurSavePage, _offCurSaveOffSet ) ) == -1 ) return false;
 
-    std::cout << __LINE__ << std::endl;
     _offCurSaveOffSet = offset;
 
-    std::cout << __LINE__ << std::endl;
     // Is the file save complete?
     if( _offBufferSize == offset ) {
-    std::cout << __LINE__ << std::endl;
 
         // We are no longer in a modified state
         _boolModified = false;
@@ -261,7 +445,6 @@ bool Utf8Buffer::mSaveFileTask( void ) {
     // Move to the next page
     _itCurSavePage++;
 
-    std::cout << __LINE__ << std::endl;
     return true;
 }
 
@@ -342,6 +525,7 @@ OffSet Utf8Buffer::mLoadPage( OffSet offSet ) {
 
 bool Utf8Buffer::mLoadBuffer( void ) {
 
+    // Sanity check!
     if( ! _fileHandle ) {
         mSetError("Buffer Error: Can't load buffer without a file handle");
         return false;
@@ -349,7 +533,15 @@ bool Utf8Buffer::mLoadBuffer( void ) {
 
     // Assign the load Page task and set the status message
     mSetTaskStatus() << "Loading " << _fileHandle->mGetFileName() << "..." ;
-    _currentTask = &Buffer::mLoadFileTask;
+    _currentTask = &Utf8Buffer::mLoadFileTask;
+
+    // If the buffer contains pages already
+    if( _pageContainer.mBegin() != _pageContainer.mEnd() ) {
+
+        // Clear all the currently loaded pages
+        _pageContainer.mClear(); 
+
+    }
 
     // Start the load at the begnning of the file
     _offCurLoadOffSet = 0;
@@ -393,7 +585,7 @@ bool Utf8Buffer::mLoadFileTask( void ) {
 /*!
  * Append a block to the page and return an iterator to the block
  */
-Utf8Block::Iterator Utf8Page::mAppendBlock( Utf8Block &block ) {
+Utf8Block::Iterator Utf8Page::mAppendBlock( const Utf8Block &block ) {
     
     // Add the block to our page
     _blockContainer.push_back( block ); 

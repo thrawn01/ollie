@@ -23,6 +23,7 @@
 
 #include <ollie.h>
 #include <file.h>
+#include <boost/lexical_cast.hpp>
 
 /*!
  *  Base class stores 1 changeset. A change set 
@@ -51,60 +52,83 @@ class ChangeSet {
         ChangeSetType   _ChangeSetType;
 };
 
+class Cursor : public OllieCommon {
+
+
+};
+
+/**
+ * This is the base and wrapper class for the implementation 
+ * specific buffer iterator
+ *
+ * To use this Iterator in your implementation, just subclass and implement the virtual methods
+ */
+class BufferIterator : public OllieCommon {
+  
+    public:
+        
+        // Constructors / Destructor
+        BufferIterator() { }
+        BufferIterator( BufferIterator *it ) { _it = it; }
+        virtual ~BufferIterator() { delete _it; }
+
+        // Copy Constructor
+        BufferIterator( const BufferIterator &i ){ _it = i._it; }
+
+
+        // Operators are for base class only
+        const BufferIterator operator++( void ) { _it->mNextChar(); return *this; }
+        const BufferIterator operator--( void ) { _it->mPrevChar(); return *this; }
+
+        // Convenience Casting
+        template<class T> T as() { return boost::lexical_cast<T>(_it); }
+        template<class T> const T as() const { return boost::lexical_cast<const T>(_it); }
+
+        // Virtual Methods
+        virtual void mNextChar( void ) { };
+        virtual void mPrevChar( void ) { };
+        virtual bool mSetOffSet( OffSet offset ) { return _it->mSetOffSet( offset ); }
+
+    private:
+        BufferIterator *_it;
+};
+
 /*!
  *  Base class of all buffers
  */
  
-class Buffer : public OllieCommon { 
+class BufferInterface : public OllieCommon { 
 
     public:
         // Constructor / Destructor  
-        Buffer( void ) { init(); }
-        Buffer( const std::string& strName ) { init(); _strName = strName; };
-        Buffer( File* const );
-        void init( void );
-        virtual ~Buffer( void );
+        BufferInterface( void ) { }
+        virtual ~BufferInterface( void ) { }
+
+        typedef BufferIterator Iterator;
 
         // Methods
-        virtual bool         mInsert( const std::string& ) { return false; }
-        virtual bool         mDelete( OffSet , OffSet ) { return false; }
-        virtual bool         mSaveFileTask( void ) { return mSaveFileTask(); }
-        virtual bool         mLoadFileTask( void ) { return mLoadFileTask(); }
-        virtual bool         mSaveBuffer( void ) = 0;
-        virtual bool         mLoadBuffer( void ) = 0;
-
-
-        std::string& mGetName( void ) { return _strName; }
-        void         mSetName( const std::string& strName ) { _strName = strName; }
-        bool         mIsModified( void ) const { return _boolModified; }
-        std::string& mGetFileName( void );
-
-        // Non virtual methods
-        std::stringstream&  mSetTaskStatus( void ) { _streamStatusMsg.str(""); return _streamStatusMsg; }
-        std::string         mGetTaskStatus( void ) { return _streamStatusMsg.str(); }
-        void                mSetMaxBufferSize( OffSet size ) { _offMaxBufferSize = size; }
-        OffSet              mGetMaxBufferSize( void ) const { return _offMaxBufferSize; }
-        OffSet              mGetBufferSize( void ) const { return _offBufferSize; }
-        bool                mEntireFileLoaded( void ) const { return _boolEntireFileLoaded; }
-        bool                mBufferFull( void );
-        bool                mIsBufferReady( void );
-        bool                mPreformTask( void );
-        bool                mAssignFile( File* const );
-        bool                mGetProgress( long* longProgress );
-        //void                mSetCurrentTask(bool (Buffer::*Method)(void) ); 
-
-        // Variables
-        std::string         _strName;
-        bool                _boolModified;
-        File*               _fileHandle;
-        bool                _boolEntireFileLoaded;
-        OffSet              _offMaxBufferSize;
-        OffSet              _offBufferSize;
-        std::stringstream   _streamStatusMsg;
-        long                _longCurProgress;
-
-        // A pointer to the method that preforms the current task
-        bool (Buffer::*_currentTask)(void);
+        virtual BufferIterator               mBegin( void )                                         = 0;
+        virtual BufferIterator               mEnd( void )                                           = 0;
+        virtual bool                         mInsertUtf16( BufferIterator&, const ushort*, int )    = 0;
+        virtual bool                         mInsert( BufferIterator&, const char*, int )           = 0;
+        virtual bool                         mInsert( BufferIterator&, const std::string& )         = 0;
+        virtual bool                         mDelete( BufferIterator& , BufferIterator& )           = 0;
+        virtual bool                         mDelete( OffSet , OffSet )                             = 0;
+        virtual bool                         mSaveBuffer( void )                                    = 0;
+        virtual bool                         mLoadBuffer( void )                                    = 0;
+        virtual std::string                  mGetFileName( void )                                   = 0;
+        virtual std::string                  mGetName( void )                                       = 0;
+        virtual void                         mSetName( const std::string& strName )                 = 0;
+        virtual void                         mSetMaxBufferSize( OffSet size )                       = 0;
+        virtual OffSet                       mGetMaxBufferSize( void )                              = 0;
+        virtual OffSet                       mGetBufferSize( void )                                 = 0;
+        virtual bool                         mEntireFileLoaded( void )                              = 0;
+        virtual bool                         mBufferFull( void )                                    = 0;
+        virtual bool                         mIsBufferReady( void )                                 = 0;
+        virtual bool                         mPreformTask( void )                                   = 0;
+        virtual bool                         mAssignFile( File* const )                             = 0;
+        virtual bool                         mGetProgress( long* longProgress )                     = 0;
+        virtual bool                         mIsModified( void )                                    = 0;
 
 };
 

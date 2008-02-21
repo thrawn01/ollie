@@ -55,16 +55,19 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( block.mIsEmpty(), true );
 
             // Assign some data to the block
-            block.mSetBlockData( "This is a test", 14 );
+            block.mSetBlockData( "AAAAABBBBBCCCCCDDDDD", 20 );
 
             // Should Not be empty
             TS_ASSERT_EQUALS( block.mIsEmpty(), false );
 
             // Ensure the size is correct
-            TS_ASSERT_EQUALS( block.mGetSize() , 14 );
+            TS_ASSERT_EQUALS( block.mGetSize() , 20 );
+
+            // Insert some data into the block
+            TS_ASSERT_EQUALS( block.mInsert( 10 , "GGGGG", 5 ), 15 );
 
             // Data should be there
-            TS_ASSERT_EQUALS( block.mGetBlockData(), "This is a test" );
+            TS_ASSERT_EQUALS( block.mGetBlockData(), "AAAAABBBBBGGGGGCCCCCDDDDD" );
 
             // Clear the block of data
             block.mClear();
@@ -98,10 +101,10 @@ class Utf8Tests : public CxxTest::TestSuite
             Utf8Page page;
 
             // Set the max page size to 100 bytes
-            page.mSetMaxPageSize( 100 );
+            page.mSetTargetPageSize( 100 );
 
             // Set the max page size should be 100 bytes
-            TS_ASSERT_EQUALS( page.mGetMaxPageSize( ), 100 );
+            TS_ASSERT_EQUALS( page.mGetTargetPageSize( ), 100 );
 
             // Assign some data to the block
             block.mSetBlockData( "AAAAABBBBBCCCCCDDDDD", 20 );
@@ -163,7 +166,7 @@ class Utf8Tests : public CxxTest::TestSuite
 
             Utf8Page *page = new Utf8Page();
 
-            page->mSetMaxPageSize( 100 );
+            page->mSetTargetPageSize( 100 );
 
             char* arrBlockData = new char[100];
             memset(arrBlockData, charByte, 100);
@@ -388,29 +391,44 @@ class Utf8Tests : public CxxTest::TestSuite
         // --------------------------------
         void testmAssignFileAndSaveBuffer( void ) {
             long longPercent = 0; 
+            Attributes attr;
 
             // Create a new Buffer Called "buffer1"
             Utf8Buffer* buf = new Utf8Buffer("buffer1");
             TS_ASSERT( buf );
 
+            cout << __LINE__ << endl;
             TS_ASSERT_EQUALS( buf->mIsModified(), false );
 
+            cout << __LINE__ << endl;
             BufferIterator it = buf->mBegin();
 
+            TS_ASSERT_EQUALS( it.mToUtf8(), 0 );
+
+            cout << __LINE__ << endl;
             // Insert text At the begining of the file
-            TS_ASSERT_EQUALS( buf->mInsert( it, "AAAAAGGGGGDDDDDBBBBB" , 20 ), true );
+            BufferIterator itNew = buf->mInsert( it, "AAAAAGGGGGDDDDDBBBBB" , 20, attr );
+
+            // Ensure the new iterator doesn't point to the same position in the buffer
+            //TS_ASSERT( itNew != it );
 
             // Move to the next char in the buffer
-            ++it;
+            cout << __LINE__ << endl;
+            //++it;
 
-            //TS_ASSERT_EQUALS( it.mAt(), 'A' );
+            cout << __LINE__ << endl;
+            TS_ASSERT_EQUALS( it.mToUtf8(), 'A' );
 
+            cout << __LINE__ << endl;
             TS_ASSERT_EQUALS( it.mSetOffSet(19), true );
 
+            cout << __LINE__ << endl;
             TS_ASSERT_EQUALS( it.mSetOffSet(20), false );
 
+            cout << __LINE__ << endl;
             TS_ASSERT_EQUALS( it.mGetError(), "Internal Error: Requested OffSet out of bounds" );
 
+            cout << __LINE__ << endl;
             TS_ASSERT_EQUALS( buf->mIsModified(), true );
 
             // Get the default IO handler for this Operating System

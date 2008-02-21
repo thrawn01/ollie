@@ -582,6 +582,48 @@ bool Utf8Buffer::mLoadFileTask( void ) {
     return true;
 }
 
+/**
+ * Insert a char* array into the buffer at the BufferIterator position
+ */
+BufferIterator Utf8Buffer::mInsert( BufferIterator& itBuffer, const char* cstrBuffer, int intBufSize, Attributes &attr ) { 
+
+    // Ask Buffer Iterator for our implementation specific iterator
+    Utf8BufferIterator *it = itBuffer.as<Utf8BufferIterator*>();
+    
+    // Get the block the iterator points to
+    Utf8Block::Iterator itBlock = it->mGetBlock();
+
+    // Do the attributes of this insert match the block the iterator points to ?
+    //if( itBlock->mGetAttributes() == attr ) { TODO
+        // Then insert a new block into the page
+        // Assign the attributes to the new block
+        // Spliting the current block if nessary
+    //}
+    
+    // Insert the data into the block
+    itBlock->mInsert( it->mGetPos(), cstrBuffer, intBufSize );
+    
+    // Get the page size and the target page size
+    OffSet intPageSize = it->mGetPage()->mGetPageSize();
+    OffSet intTargetPageSize = it->mGetPage()->mGetTargetPageSize();
+
+    // Will this insert mean we will need to split the page ? 
+    // ( We Split the page if the page size is twice that of the target page size )
+    if( intPageSize >= ( intTargetPageSize + intTargetPageSize ) ) {
+        _pageContainer.mSplitPage( it );
+    }
+
+    return BufferIterator( it );
+}
+
+/**
+ * Split the page the iterator points to and update the iterator before returning
+ */
+void Utf8PageContainer::mSplitPage( Utf8BufferIterator *it ) {
+    return;
+}
+
+
 /*!
  * Append a block to the page and return an iterator to the block
  */
@@ -602,18 +644,18 @@ Utf8Block::Iterator Utf8Page::mAppendBlock( const Utf8Block &block ) {
  * Return true if the page size is greater or equal to the max page size
  */
 bool Utf8Page::mIsFull( void ) const {
-    if (_offPageSize >= _offMaxPageSize ) { return true; }
+    if (_offPageSize >= _offTargetPageSize ) { return true; }
     return false;
 }
 
 /*! 
- * Return false if adding offBytes to the page will put it over the MaxPageSize
+ * Return false if adding offBytes to the page will put it over the TargetPageSize
  * Return true otherwise
  */
 bool Utf8Page::mCanAcceptBytes( OffSet offBytes ) const {
    
     // If the num of bytes will put us over the max page size 
-    if( ( offBytes + _offPageSize) > _offMaxPageSize ) {
+    if( ( offBytes + _offPageSize) > _offTargetPageSize ) {
         return false; 
     }
     return true;
@@ -622,14 +664,31 @@ bool Utf8Page::mCanAcceptBytes( OffSet offBytes ) const {
 /*! 
  * Assign the char* of data to the internal structure of the block
  */
-bool Utf8Block::mSetBlockData( char*cstrData, OffSet offLen ) {
+bool Utf8Block::mSetBlockData( const char* cstrData, OffSet offLen ) {
+
+    // Assign the new data
     _strBlockData.assign( cstrData, offLen ); 
-    _sizeBufferSize = offLen;
+
+    // Update the size
+    _sizeBlockSize = offLen;
+
 }
+
+int Utf8Block::mInsert( int intPos, const char* cstrData, int intSize ) {
+
+    // Insert more data 
+    _strBlockData.insert(intPos, cstrData,intSize);
+
+    // Update the size
+    _sizeBlockSize += intSize;
+
+    return intPos + intSize;
+}
+
 
 Utf8Block::Utf8Block( char* cstrData, OffSet offLen ) { 
     _offOffSet        = 0; 
-    _sizeBufferSize   = 0;
+    _sizeBlockSize   = 0;
 
     mSetBlockData( cstrData, offLen ); 
 

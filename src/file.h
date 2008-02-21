@@ -32,7 +32,7 @@ class Attributes {
     public:
         Attributes() { }
         ~Attributes() { }
-
+        Attributes( const Attributes &a ) { }
 };
 
 /*! 

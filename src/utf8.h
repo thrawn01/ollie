@@ -33,26 +33,27 @@
 class Utf8Block {
 
     public:
-        Utf8Block( void ) { _offOffSet = 0; _sizeBufferSize = 0; } 
+        Utf8Block( void ) { _offOffSet = 0; _sizeBlockSize = 0; } 
         Utf8Block( char* cstrData, OffSet offLen );
         virtual ~Utf8Block( void ) { }
 
         typedef std::list<Utf8Block>::iterator Iterator;
 
 
-        bool                mSetBlockData( char* cstrData, OffSet offLen );
+        bool                mSetBlockData( const char* cstrData, OffSet offLen );
         const std::string&  mGetBlockData( void ) const { return _strBlockData; }
-        bool                mSetAttributes( Attributes &attr ) { return false; } //TODO Add Support for attributes
+        bool                mSetAttributes( const Attributes &attr ) { return false; } //TODO Add Support for attributes
         Attributes&         mGetAttributes( void ) { return _attr; } //TODO Add Support for attributes
         bool                mSetOffSet( OffSet offset ) { _offOffSet = offset; }
         bool                mIsEmpty( void ) const { return _strBlockData.empty(); }
         void                mClear( void ) { _strBlockData.clear(); }
-        size_t              mGetSize( void ) const { return _sizeBufferSize; }
+        size_t              mGetSize( void ) const { return _sizeBlockSize; }
+        int                 mInsert( int, const char*, int );
 
         // members
         std::string _strBlockData;
         OffSet      _offOffSet;
-        size_t      _sizeBufferSize;
+        size_t      _sizeBlockSize;
         Attributes  _attr;
 
 };
@@ -66,7 +67,7 @@ class Utf8Page {
 
     public:
         Utf8Page( void ) {
-            _offMaxPageSize = DEFAULT_PAGE_SIZE;
+            _offTargetPageSize = DEFAULT_PAGE_SIZE;
             _offPageSize    = 0;
             _offStart       = -1; 
             _offEnd         = -1; 
@@ -77,8 +78,8 @@ class Utf8Page {
 
         Utf8Block::Iterator  mAppendBlock( const Utf8Block &block );
 
-        void                 mSetMaxPageSize( OffSet const offSize ) { _offMaxPageSize = offSize; }
-        OffSet               mGetMaxPageSize( void ) const { return _offMaxPageSize; }
+        void                 mSetTargetPageSize( OffSet const offSize ) { _offTargetPageSize = offSize; }
+        OffSet               mGetTargetPageSize( void ) const { return _offTargetPageSize; }
 
         void                 mSetStartOffSet( OffSet const offset ) { _offStart = offset; }
         OffSet               mGetStartOffSet( void ) const { return _offStart; }
@@ -95,8 +96,36 @@ class Utf8Page {
         std::list<Utf8Block>   _blockContainer;
         OffSet                 _offStart;
         OffSet                 _offEnd;
-        OffSet                 _offMaxPageSize;
+        OffSet                 _offTargetPageSize;
         OffSet                 _offPageSize;
+};
+
+class Utf8BufferIterator : public BufferIterator {
+
+    public: 
+        Utf8BufferIterator() { }
+        virtual ~Utf8BufferIterator() { }
+
+        // Interface specific
+        virtual void    mNextChar( void ) { }
+        virtual void    mPrevChar( void ) { }
+        virtual bool    mSetOffSet( OffSet offset ) { return false; }
+        virtual char    mToUtf8( void ) { return 0; }
+        virtual ushort  mToUtf16( void ) { return 0; }
+
+        // Implementation specific
+        const Utf8Page::Iterator&   mGetPage( void ) { return _itPage; }
+        void                        mSetPage( const Utf8Page::Iterator &it ) { _itPage = it; }
+        const Utf8Block::Iterator&  mGetBlock( void ) { return _itBlock; }
+        void                        mSetBlock( const Utf8Block::Iterator &it ) { _itBlock = it; }
+        int                         mGetPos( void ) { return _intPos; }
+        void                        mSetPos( const int pos ) { _intPos = pos; }
+
+        Utf8Page::Iterator  _itPage;
+        Utf8Block::Iterator _itBlock;
+        OffSet              _offset;
+        int                 _intPos;
+
 };
 
 /*!
@@ -114,38 +143,11 @@ class Utf8PageContainer {
         void mClear( void ) { _listContainer.clear(); }
         void mAppendPage( Utf8Page *page );
         void mInsertPage( Utf8Page::Iterator const it, Utf8Page *page);
+        void mSplitPage( Utf8BufferIterator *it );
         
         boost::ptr_list<Utf8Page> _listContainer;
         long _longSize;
          
-};
-
-class Utf8BufferIterator : public BufferIterator {
-
-    public: 
-        Utf8BufferIterator() { }
-        virtual ~Utf8BufferIterator() { }
-
-        // Interface specific
-        virtual void    mNextChar( void ) { }
-        virtual void    mPrevChar( void ) { }
-        virtual bool    mSetOffSet( OffSet offset ) { std::cout << "Called Implementation" << std::endl; return false; }
-
-        // Implementation specific
-        Utf8Page&       mGetPage( void ) { return *_itPage; }
-        void            mSetPage( const Utf8Page::Iterator &it ) { _itPage = it; }
-
-        Utf8Block&      mGetBlock( void ) { return *_itBlock; }
-        void            mSetBlock( const Utf8Block::Iterator &it ) { _itBlock = it; }
-
-        int             mGetPos( void ) { return _intPos; }
-        void            mSetPos( const int pos ) { _intPos = pos; }
-
-        Utf8Page::Iterator  _itPage;
-        Utf8Block::Iterator _itBlock;
-        OffSet              _offset;
-        int                 _intPos;
-
 };
 
 /*!
@@ -182,9 +184,9 @@ class Utf8Buffer : public BufferInterface {
         // Interface Implementaton
         virtual BufferIterator               mBegin( void );
         virtual BufferIterator               mEnd( void );
-        virtual bool                         mInsertUtf16( BufferIterator&, const ushort*, int ) { return false; }
-        virtual bool                         mInsert( BufferIterator&, const char*, int ) { return false; }
-        virtual bool                         mInsert( BufferIterator&, const std::string& ) { return false; }
+        virtual BufferIterator               mInsert( BufferIterator&, const ushort*, int, Attributes &attr ) { return false; }
+        virtual BufferIterator               mInsert( BufferIterator&, const char*, int, Attributes &attr  );
+        virtual BufferIterator               mInsert( BufferIterator&, const std::string&, Attributes &attr  ) { return false; }
         virtual bool                         mDelete( BufferIterator& , BufferIterator& ) { return false; }
         virtual bool                         mDelete( OffSet , OffSet ) { return false; }
         virtual bool                         mSaveBuffer( void );

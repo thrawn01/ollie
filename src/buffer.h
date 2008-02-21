@@ -23,7 +23,7 @@
 
 #include <ollie.h>
 #include <file.h>
-#include <boost/lexical_cast.hpp>
+#include <boost/cast.hpp>
 
 /*!
  *  Base class stores 1 changeset. A change set 
@@ -68,26 +68,27 @@ class BufferIterator : public OllieCommon {
     public:
         
         // Constructors / Destructor
-        BufferIterator() { }
+        BufferIterator() { _it = 0; }
         BufferIterator( BufferIterator *it ) { _it = it; }
         virtual ~BufferIterator() { delete _it; }
 
         // Copy Constructor
         BufferIterator( const BufferIterator &i ){ _it = i._it; }
 
-
         // Operators are for base class only
-        const BufferIterator operator++( void ) { _it->mNextChar(); return *this; }
-        const BufferIterator operator--( void ) { _it->mPrevChar(); return *this; }
+        const BufferIterator operator++( void ) { assert(_it); _it->mNextChar(); return *this; }
+        const BufferIterator operator--( void ) { assert(_it); _it->mPrevChar(); return *this; }
 
         // Convenience Casting
-        template<class T> T as() { return boost::lexical_cast<T>(_it); }
-        template<class T> const T as() const { return boost::lexical_cast<const T>(_it); }
+        template<class T> T as() { return boost::polymorphic_downcast<T>(_it); }
+        template<class T> const T as() const { return boost::polymorphic_downcast<const T>(_it); }
 
         // Virtual Methods
-        virtual void mNextChar( void ) { };
-        virtual void mPrevChar( void ) { };
-        virtual bool mSetOffSet( OffSet offset ) { return _it->mSetOffSet( offset ); }
+        virtual void    mNextChar( void ) { };
+        virtual void    mPrevChar( void ) { };
+        virtual bool    mSetOffSet( OffSet offset ) { assert(_it); return _it->mSetOffSet( offset ); }
+        virtual char    mToUtf8( void ) { assert(_it); return _it->mToUtf8(); }
+        virtual ushort  mToUtf16( void ) { assert(_it); return _it->mToUtf16(); }
 
     private:
         BufferIterator *_it;
@@ -107,11 +108,9 @@ class BufferInterface : public OllieCommon {
         typedef BufferIterator Iterator;
 
         // Methods
-        virtual BufferIterator               mBegin( void )                                         = 0;
-        virtual BufferIterator               mEnd( void )                                           = 0;
-        virtual bool                         mInsertUtf16( BufferIterator&, const ushort*, int )    = 0;
-        virtual bool                         mInsert( BufferIterator&, const char*, int )           = 0;
-        virtual bool                         mInsert( BufferIterator&, const std::string& )         = 0;
+        virtual BufferIterator               mInsert( BufferIterator&, const ushort*, int, Attributes& )    = 0;
+        virtual BufferIterator               mInsert( BufferIterator&, const char*, int, Attributes& )      = 0;
+        virtual BufferIterator               mInsert( BufferIterator&, const std::string&, Attributes& )    = 0;
         virtual bool                         mDelete( BufferIterator& , BufferIterator& )           = 0;
         virtual bool                         mDelete( OffSet , OffSet )                             = 0;
         virtual bool                         mSaveBuffer( void )                                    = 0;
@@ -129,6 +128,8 @@ class BufferInterface : public OllieCommon {
         virtual bool                         mAssignFile( File* const )                             = 0;
         virtual bool                         mGetProgress( long* longProgress )                     = 0;
         virtual bool                         mIsModified( void )                                    = 0;
+        virtual BufferIterator               mBegin( void )                                         = 0;
+        virtual BufferIterator               mEnd( void )                                           = 0;
 
 };
 

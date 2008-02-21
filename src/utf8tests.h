@@ -393,6 +393,7 @@ class Utf8Tests : public CxxTest::TestSuite
             long longPercent = 0; 
             Attributes attr;
 
+        try {
             // Create a new Buffer Called "buffer1"
             Utf8Buffer* buf = new Utf8Buffer("buffer1");
             TS_ASSERT( buf );
@@ -401,21 +402,24 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( buf->mIsModified(), false );
 
             cout << __LINE__ << endl;
-            BufferIterator it = buf->mBegin();
+            BufferIterator it = buf->mBegin(); // Called
 
+            cout << __LINE__ << endl;
             TS_ASSERT_EQUALS( it.mToUtf8(), 0 );
 
             cout << __LINE__ << endl;
             // Insert text At the begining of the file
-            BufferIterator itNew = buf->mInsert( it, "AAAAAGGGGGDDDDDBBBBB" , 20, attr );
+            BufferIterator itNew = buf->mInsert( it, "AAAAAGGGGGDDDDDBBBBB" , 20, attr ); // Called
 
             // Ensure the new iterator doesn't point to the same position in the buffer
             //TS_ASSERT( itNew != it );
 
             // Move to the next char in the buffer
             cout << __LINE__ << endl;
-            //++it;
+            ++it; // Called
 
+            cout << __LINE__ << endl;
+            it.mToUtf8();
             cout << __LINE__ << endl;
             TS_ASSERT_EQUALS( it.mToUtf8(), 'A' );
 
@@ -469,6 +473,12 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( buf->mIsBufferReady(), true );
 
             TS_ASSERT_EQUALS( buf->mIsModified(), false );
+            cout << __LINE__ << endl;
+            }
+            catch( exception &e ) {
+                cout << "What: " << e.what() << endl;
+            }
+
         }
 
         // --------------------------------

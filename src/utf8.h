@@ -104,11 +104,14 @@ class Utf8BufferIterator : public BufferIterator {
 
     public: 
         Utf8BufferIterator() { }
+        Utf8BufferIterator( const Utf8BufferIterator* it );
+
         virtual ~Utf8BufferIterator() { }
 
         // Interface specific
-        virtual void    mNextChar( void ) { }
-        virtual void    mPrevChar( void ) { }
+        virtual boost::shared_ptr<BufferIterator> copy( void ) const;
+        virtual void    mNext( void ) { /*TODO */ }
+        virtual void    mPrev( void ) { /*TODO */ }
         virtual bool    mSetOffSet( OffSet offset ) { return false; }
         virtual char    mToUtf8( void ) { return 0; }
         virtual ushort  mToUtf16( void ) { return 0; }

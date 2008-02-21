@@ -24,6 +24,7 @@
 #include <ollie.h>
 #include <file.h>
 #include <boost/cast.hpp>
+#include <boost/shared_ptr.hpp>
 
 /*!
  *  Base class stores 1 changeset. A change set 
@@ -68,30 +69,41 @@ class BufferIterator : public OllieCommon {
     public:
         
         // Constructors / Destructor
-        BufferIterator() { _it = 0; }
-        BufferIterator( BufferIterator *it ) { _it = it; }
-        virtual ~BufferIterator() { delete _it; }
+        BufferIterator() { }
+        BufferIterator( BufferIterator *it ) : _it(it) { }
+        BufferIterator( boost::shared_ptr<BufferIterator> it ) : _it(it) { }
+        virtual ~BufferIterator() { }
 
-        // Copy Constructor
-        BufferIterator( const BufferIterator &i ){ _it = i._it; }
+        // Copy Constructor, Calls the implementation version of copy(), Only the 
+        // implementation knows how to make a copy of it self properly
+        BufferIterator( const BufferIterator &i ) : _it( i._it->copy( ) ) { }
 
-        // Operators are for base class only
-        const BufferIterator operator++( void ) { assert(_it); _it->mNextChar(); return *this; }
-        const BufferIterator operator--( void ) { assert(_it); _it->mPrevChar(); return *this; }
-
-        // Convenience Casting
-        template<class T> T as() { return boost::polymorphic_downcast<T>(_it); }
-        template<class T> const T as() const { return boost::polymorphic_downcast<const T>(_it); }
+        // Operators are for base class only, These operations are copy constructor 
+        // expensive, prefer to use mNext() and mPrev() - But include them in unittests
+        // they excercise the copy constructor
+        const BufferIterator operator++( void ) { _it->mNext(); return *this; }
+        const BufferIterator operator--( void ) { _it->mPrev(); return *this; }
 
         // Virtual Methods
-        virtual void    mNextChar( void ) { };
-        virtual void    mPrevChar( void ) { };
-        virtual bool    mSetOffSet( OffSet offset ) { assert(_it); return _it->mSetOffSet( offset ); }
-        virtual char    mToUtf8( void ) { assert(_it); return _it->mToUtf8(); }
-        virtual ushort  mToUtf16( void ) { assert(_it); return _it->mToUtf16(); }
+        virtual void    mNext( void ) { _it->mNext(); }
+        virtual void    mPrev( void ) { _it->mPrev(); }
+        virtual bool    mSetOffSet( OffSet offset ) { return _it->mSetOffSet( offset ); }
+        virtual char    mToUtf8( void ) { return _it->mToUtf8(); }
+        virtual ushort  mToUtf16( void ) { return _it->mToUtf16(); }
+
+        // The assert here warns us if we get called by accident, if the base class 
+        // copy() is called we are doing something very wrong.
+        virtual boost::shared_ptr<BufferIterator> copy( void ) const { assert( 1 == 0 ); }
+
+        // Convenience Casting
+        template<class T> T mGetPtrAs() { return boost::polymorphic_downcast<T>( _it.get() ); }
+        template<class T> const T mGetPtrAs() const { return boost::polymorphic_downcast<const T>( _it.get() ); }
+
+        //template<class T> boost::shared_ptr<T> mGetPtrAs() { return boost::shared_polymorphic_downcast<T>(_it); }
+        //template<class T> boost::shared_ptr<const T> mGetPtrAs() const { return boost::shared_polymorphic_downcast<const T>(_it); }
 
     private:
-        BufferIterator *_it;
+        boost::shared_ptr<BufferIterator> _it;
 };
 
 /*!

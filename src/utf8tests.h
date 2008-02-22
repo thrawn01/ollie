@@ -393,21 +393,16 @@ class Utf8Tests : public CxxTest::TestSuite
             long longPercent = 0; 
             Attributes attr;
 
-        try {
             // Create a new Buffer Called "buffer1"
             Utf8Buffer* buf = new Utf8Buffer("buffer1");
             TS_ASSERT( buf );
 
-            cout << __LINE__ << endl;
             TS_ASSERT_EQUALS( buf->mIsModified(), false );
 
-            cout << __LINE__ << endl;
             BufferIterator it = buf->mBegin(); // Called
 
-            cout << __LINE__ << endl;
             TS_ASSERT_EQUALS( it.mToUtf8(), 0 );
 
-            cout << __LINE__ << endl;
             // Insert text At the begining of the file
             BufferIterator itNew = buf->mInsert( it, "AAAAAGGGGGDDDDDBBBBB" , 20, attr ); // Called
 
@@ -415,24 +410,17 @@ class Utf8Tests : public CxxTest::TestSuite
             //TS_ASSERT( itNew != it );
 
             // Move to the next char in the buffer
-            cout << __LINE__ << endl;
             ++it; // Called
 
-            cout << __LINE__ << endl;
             it.mToUtf8();
-            cout << __LINE__ << endl;
             TS_ASSERT_EQUALS( it.mToUtf8(), 'A' );
 
-            cout << __LINE__ << endl;
             TS_ASSERT_EQUALS( it.mSetOffSet(19), true );
 
-            cout << __LINE__ << endl;
             TS_ASSERT_EQUALS( it.mSetOffSet(20), false );
 
-            cout << __LINE__ << endl;
             TS_ASSERT_EQUALS( it.mGetError(), "Internal Error: Requested OffSet out of bounds" );
 
-            cout << __LINE__ << endl;
             TS_ASSERT_EQUALS( buf->mIsModified(), true );
 
             // Get the default IO handler for this Operating System
@@ -473,11 +461,6 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( buf->mIsBufferReady(), true );
 
             TS_ASSERT_EQUALS( buf->mIsModified(), false );
-            cout << __LINE__ << endl;
-            }
-            catch( exception &e ) {
-                cout << "What: " << e.what() << endl;
-            }
 
         }
 

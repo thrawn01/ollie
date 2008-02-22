@@ -38,6 +38,8 @@ FIND_PACKAGE(PythonInterp)
 FIND_PACKAGE(Perl)
 INCLUDE(FindBoost)
 
+FIND_PACKAGE(Boost COMPONENTS serialization )
+
 # Set to svn so Ctest doesn't 
 # complain and confuse users
 SET(UPDATE_TYPE "svn")
@@ -51,13 +53,11 @@ INCLUDE (CxxTestMacros)
 
 # So the cxxtest headers can find the .h files
 INCLUDE_DIRECTORIES(src)
-INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 
-# If boost was not found, spew and die
-IF(NOT Boost_FOUND ) 
-    MESSAGE(FATAL_ERROR "Boost include files were not found, Boost is required for libollie to compile")
-ENDIF(NOT Boost_FOUND ) 
-    
+IF(NOT Boost_SERIALIZATION_FOUND)
+    MESSAGE(FATAL_ERROR "boost/serialization include files were not found, boost::serialization is required for libollie to compile")
+ENDIF(NOT Boost_SERIALIZATION_FOUND ) 
+
 MESSAGE(STATUS "Boost Found.. ${Boost_INCLUDE_DIRS}" )
 
 # --------------------------------------------

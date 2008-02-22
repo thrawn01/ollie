@@ -610,8 +610,6 @@ BufferIterator Utf8Buffer::mInsert( BufferIterator& itBuffer, const char* cstrBu
     // Ask Buffer Iterator for a pointer to our implementation specific iterator
     Utf8BufferIterator* it = itBuffer.mGetPtrAs<Utf8BufferIterator*>();
 
-    Utf8BufferIterator* itNew = new Utf8BufferIterator( itBuffer.mGetPtrAs<Utf8BufferIterator*>() );
-    
     // Get the block the iterator points to
     Utf8Block::Iterator itBlock = it->mGetBlock();
 
@@ -623,7 +621,7 @@ BufferIterator Utf8Buffer::mInsert( BufferIterator& itBuffer, const char* cstrBu
     //}
     
     // Insert the data into the block
-    itNew->mSetPos( itBlock->mInsert( it->mGetPos(), cstrBuffer, intBufSize ) );
+    int intPos = itBlock->mInsert( it->mGetPos(), cstrBuffer, intBufSize );
     
     // Get the page size and the target page size
     OffSet intPageSize = it->mGetPage()->mGetPageSize();
@@ -632,8 +630,14 @@ BufferIterator Utf8Buffer::mInsert( BufferIterator& itBuffer, const char* cstrBu
     // Will this insert mean we will need to split the page ? 
     // ( We Split the page if the page size is twice that of the target page size )
     if( intPageSize >= ( intTargetPageSize + intTargetPageSize ) ) {
-        //_pageContainer.mSplitPage( itNew );
+        _pageContainer.mSplitPage( it );
     }
+
+    // Create a new iterator
+    Utf8BufferIterator* itNew = new Utf8BufferIterator( it );
+
+    // Update the pos to the end of the block
+    itNew->mSetPos( intPos );
 
     return BufferIterator( itNew );
 }
@@ -644,7 +648,6 @@ BufferIterator Utf8Buffer::mInsert( BufferIterator& itBuffer, const char* cstrBu
 void Utf8PageContainer::mSplitPage( Utf8BufferIterator *it ) {
     return;
 }
-
 
 /*!
  * Append a block to the page and return an iterator to the block

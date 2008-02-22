@@ -81,15 +81,33 @@ class BufferIterator : public OllieCommon {
         // Operators are for base class only, These operations are copy constructor 
         // expensive, prefer to use mNext() and mPrev() - But include them in unittests
         // they excercise the copy constructor
-        const BufferIterator operator++( void ) { _it->mNext(); return *this; }
-        const BufferIterator operator--( void ) { _it->mPrev(); return *this; }
+        const BufferIterator    operator++( void ) { _it->mNext(); return *this; }
+        const BufferIterator    operator--( void ) { _it->mPrev(); return *this; }
+        BufferIterator&         operator=(const BufferIterator& i ) { 
+                                    if( &i != this ) _it = i._it->copy(); 
+                                    return *this; 
+                                }
+        int                     operator==(const BufferIterator& right ) { 
+                                    if( this == &right ) return 1; 
+                                    return _it->mEqual(_it, right._it);
+                                }
 
-        // Virtual Methods
-        virtual void    mNext( void ) { _it->mNext(); }
-        virtual void    mPrev( void ) { _it->mPrev(); }
-        virtual bool    mSetOffSet( OffSet offset ) { return _it->mSetOffSet( offset ); }
-        virtual char    mToUtf8( void ) { return _it->mToUtf8(); }
-        virtual ushort  mToUtf16( void ) { return _it->mToUtf16(); }
+        // Navigation Methods
+        virtual bool            mNext( void ) { return _it->mNext(); }
+        virtual bool            mPrev( void ) { return _it->mPrev(); }
+        virtual bool            mSetOffSet( OffSet offset ) { return _it->mSetOffSet( offset ); }
+        virtual OffSet          mGetOffSet( void ) { return _it->mGetOffSet( ); }
+        virtual int             mEqual( boost::shared_ptr<BufferIterator>,  boost::shared_ptr<BufferIterator> ) { assert( 1 == 0 ); }
+
+        // NOTES: 
+        // The array pointers returned by String() methods should be managed by 
+        // the implementation, The caller is not responsible for freeing this memory ( See Utf8Buffer )
+        // The caller should make a copy of the data returned by the String() methods before 
+        // calling any other iterator method, the implementation may invalidate the pointer at any time
+        virtual char            mGetUtf8Char( void ) { return _it->mGetUtf8Char(); }
+        virtual const char*     mGetUtf8String( int intLen, bool boolReverse = false ) { return _it->mGetUtf8String( intLen, boolReverse ); }
+        virtual ushort          mGetUtf16Char( void ) { return _it->mGetUtf16Char(); }
+        virtual const ushort*   mGetUtf16String( int intLen, bool boolReverse = false ) { return _it->mGetUtf16String( intLen, boolReverse ); }
 
         // The assert here warns us if we get called by accident, if the base class 
         // copy() is called we are doing something very wrong.
@@ -114,7 +132,9 @@ class BufferInterface : public OllieCommon {
 
     public:
         // Constructor / Destructor  
-        BufferInterface( void ) { }
+        BufferInterface( OffSet offPageSize = 0 ) { }
+        BufferInterface( const std::string& strName, OffSet offPageSize = 0 ) { }
+        BufferInterface( File* const,  OffSet offPageSize = 0 ) { }
         virtual ~BufferInterface( void ) { }
 
         typedef BufferIterator Iterator;
@@ -142,6 +162,8 @@ class BufferInterface : public OllieCommon {
         virtual bool                         mIsModified( void )                                    = 0;
         virtual BufferIterator               mBegin( void )                                         = 0;
         virtual BufferIterator               mEnd( void )                                           = 0;
+        virtual void                         mSetTargetPageSize( OffSet offSize )                   = 0;
+        virtual OffSet                       mGetTargetPageSize( void )                             = 0;
 
 };
 

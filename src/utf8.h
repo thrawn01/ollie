@@ -109,25 +109,29 @@ class Utf8BufferIterator : public BufferIterator {
         virtual ~Utf8BufferIterator() { }
 
         // Interface specific
-        virtual boost::shared_ptr<BufferIterator> copy( void ) const;
-        virtual void    mNext( void ) { /*TODO */ }
-        virtual void    mPrev( void ) { /*TODO */ }
-        virtual bool    mSetOffSet( OffSet offset ) { return false; }
-        virtual char    mToUtf8( void ) { return 0; }
-        virtual ushort  mToUtf16( void ) { return 0; }
+        virtual boost::shared_ptr<BufferIterator>   copy( void ) const;
+        virtual bool                                mNext( void ) { return false; }
+        virtual bool                                mPrev( void ) { return false; }
+        virtual bool                                mSetOffSet( OffSet offset ) { return false; }
+        virtual OffSet                              mGetOffSet( void ) { return 0; }
+        virtual char                                mGetUtf8Char( void ) { }
+        virtual const char*                         mGetUtf8String( int intLen, bool boolReverse = false ) {  }
+        virtual ushort                              mGetUtf16Char( void ) { }
+        virtual const ushort*                       mGetUtf16String( int intLen, bool boolReverse = false ) { }
+        virtual int                                 mEqual( boost::shared_ptr<BufferIterator>,  boost::shared_ptr<BufferIterator> );
 
         // Implementation specific
-        const Utf8Page::Iterator&   mGetPage( void ) { return _itPage; }
-        void                        mSetPage( const Utf8Page::Iterator &it ) { _itPage = it; }
-        const Utf8Block::Iterator&  mGetBlock( void ) { return _itBlock; }
-        void                        mSetBlock( const Utf8Block::Iterator &it ) { _itBlock = it; }
-        int                         mGetPos( void ) { return _intPos; }
-        void                        mSetPos( const int pos ) { _intPos = pos; }
+        const Utf8Page::Iterator&                   mGetPage( void ) { return _itPage; }
+        void                                        mSetPage( const Utf8Page::Iterator &it ) { _itPage = it; }
+        const Utf8Block::Iterator&                  mGetBlock( void ) { return _itBlock; }
+        void                                        mSetBlock( const Utf8Block::Iterator &it ) { _itBlock = it; }
+        int                                         mGetPos( void ) { return _intPos; }
+        void                                        mSetPos( const int pos ) { _intPos = pos; }
 
-        Utf8Page::Iterator  _itPage;
-        Utf8Block::Iterator _itBlock;
-        OffSet              _offset;
-        int                 _intPos;
+        Utf8Page::Iterator      _itPage;
+        Utf8Block::Iterator     _itBlock;
+        OffSet                  _offset;
+        int                     _intPos;
 
 };
 
@@ -137,7 +141,7 @@ class Utf8BufferIterator : public BufferIterator {
 class Utf8PageContainer {
 
     public:
-        Utf8PageContainer() { _longSize = 0;  };
+        Utf8PageContainer() { _longSize = 0; };
         ~Utf8PageContainer() {  };
 
         Utf8Page::Iterator mBegin() { return _listContainer.begin(); }
@@ -149,7 +153,7 @@ class Utf8PageContainer {
         void mSplitPage( Utf8BufferIterator *it );
         
         boost::ptr_list<Utf8Page> _listContainer;
-        long _longSize;
+        long                      _longSize;
          
 };
 
@@ -176,10 +180,10 @@ class Utf8ChangeSet : public ChangeSet {
 class Utf8Buffer : public BufferInterface {
 
     public:
-        Utf8Buffer( void );
-        Utf8Buffer( const std::string& strName );
-        Utf8Buffer( File* const );
-        void init( void );
+        Utf8Buffer( OffSet offPageSize = 0 );
+        Utf8Buffer( const std::string& strName, OffSet offPageSize = 0 );
+        Utf8Buffer( File* const,  OffSet offPageSize = 0 );
+        void init( OffSet );
         virtual ~Utf8Buffer( void );
 
         typedef Utf8BufferIterator Iterator;
@@ -207,6 +211,8 @@ class Utf8Buffer : public BufferInterface {
         virtual bool                         mAssignFile( File* const );
         virtual bool                         mGetProgress( long* longProgress );
         virtual bool                         mIsModified( void ) { return _boolModified; }
+        virtual void                         mSetTargetPageSize( OffSet offSize ) { _offTargetPageSize = offSize; }
+        virtual OffSet                       mGetTargetPageSize( void ) { return _offTargetPageSize; }
 
         // Implementation Only 
         bool                                 mSaveFileTask( void );
@@ -229,6 +235,7 @@ class Utf8Buffer : public BufferInterface {
         bool                    _boolEntireFileLoaded;
         OffSet                  _offMaxBufferSize;
         OffSet                  _offBufferSize;
+        OffSet                  _offTargetPageSize;
 
 
         // A pointer to the method that preforms the current task

@@ -80,7 +80,7 @@
 #  For details see the accompanying COPYING-CMAKE-SCRIPTS file.
 #
 
-# MESSAGE(STATUS "Finding Boost libraries.... ")
+MESSAGE(STATUS "Finding Boost libraries.... ")
 
 OPTION(Boost_USE_MULTITHREAD "Use the multithreaded versions of the boost libraries" ON)
 

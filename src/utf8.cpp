@@ -23,17 +23,27 @@
 /*!
  * Initalize class variables
  */
-void Utf8Buffer::init( void ) {
+void Utf8Buffer::init( OffSet offPageSize  ) {
     _boolModified         = false;
     _fileHandle           = 0;
     _boolEntireFileLoaded = false;
     _offMaxBufferSize     = DEFAULT_MAX_BUF_SIZE;
     _offBufferSize        = 0;
     _currentTask          = 0;
+    _offTargetPageSize    = offPageSize;
 
     // Append an empty page to the buffer
     Utf8Page *page = new Utf8Page();
+
+    // If the buffer wants to overide the default page size
+    if( _offTargetPageSize ) { 
+        page->mSetTargetPageSize( offPageSize );
+    }
+
+    // Append a new empty block to the page
     page->mAppendBlock( Utf8Block() );
+
+    // Append to the page to the container
     _pageContainer.mAppendPage( page );
 
 }
@@ -41,20 +51,20 @@ void Utf8Buffer::init( void ) {
 /**
  * Construct a buffer with empty pages
  */
-Utf8Buffer::Utf8Buffer( void ) { 
+Utf8Buffer::Utf8Buffer( OffSet offPageSize ) { 
 
     // Initialize class variables
-    init();
+    init( offPageSize );
 
 }
 
 /**
  * Construct a buffer with a name
  */
-Utf8Buffer::Utf8Buffer( const std::string& strName ) { 
+Utf8Buffer::Utf8Buffer( const std::string& strName, OffSet offPageSize ) { 
 
     // Initialize class variables
-    init();
+    init( offPageSize );
 
     // Set the buffer name
     _strName = strName; 
@@ -64,10 +74,10 @@ Utf8Buffer::Utf8Buffer( const std::string& strName ) {
 /*!
  * Construct a buffer from a file and give it a name
  */
-Utf8Buffer::Utf8Buffer( File* const file ) {
+Utf8Buffer::Utf8Buffer( File* const file, OffSet offPageSize ) {
     
     // Initialize class variables
-    init();
+    init( offPageSize );
 
     // Check for valid handle
     if( ! file ) {
@@ -314,12 +324,10 @@ BufferIterator Utf8Buffer::mBegin( void ) {
     Utf8BufferIterator *it = new Utf8BufferIterator();
 
     Utf8Page::Iterator itPage = _pageContainer.mBegin();
-    it->mSetPage( itPage );
-
     Utf8Block::Iterator itBlock = itPage->mBegin();
 
+    it->mSetPage( itPage );
     it->mSetBlock( itBlock );
-
     it->mSetPos( 0 );
 
     BufferIterator itBuf( it );
@@ -336,10 +344,11 @@ BufferIterator Utf8Buffer::mEnd( void ) {
     Utf8BufferIterator *it = new Utf8BufferIterator();
 
     Utf8Page::Iterator itPage = _pageContainer.mEnd();
+    Utf8Block::Iterator itBlock = itPage->mEnd();
     
     it->mSetPage( itPage );
-    it->mSetBlock( itPage->mEnd() );
-    it->mSetPos( 0 );
+    it->mSetBlock( itBlock );
+    it->mSetPos( itBlock->mGetSize()+1 );
 
     BufferIterator itBuf( it );
 
@@ -600,6 +609,26 @@ boost::shared_ptr<BufferIterator> Utf8BufferIterator::copy( ) const {
 
     return ptr;
 
+}
+
+/**
+ * Returns 1 if the Iterators are equal
+ */
+int Utf8BufferIterator::mEqual( boost::shared_ptr<BufferIterator> sharedLeft,  boost::shared_ptr<BufferIterator> sharedRight ){
+
+    // Grab the pointers
+    Utf8BufferIterator* itLeft = boost::polymorphic_downcast<Utf8BufferIterator*>( sharedLeft.get() );
+    Utf8BufferIterator* itRight = boost::polymorphic_downcast<Utf8BufferIterator*>( sharedRight.get() );
+
+    // If the both point to the same address they are equal!
+    if( itLeft == itRight ) return 1; 
+
+    // Are these iterators pointing to the same page?
+    if( ( itLeft->_itPage  == itRight->_itPage  ) and 
+        ( itLeft->_itBlock == itRight->_itBlock ) and
+        ( itLeft->_intPos == itRight->_intPos   ) ) return 1;
+
+    return 1;
 }
 
 /**

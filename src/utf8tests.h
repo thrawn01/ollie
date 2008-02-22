@@ -103,7 +103,7 @@ class Utf8Tests : public CxxTest::TestSuite
             // Set the max page size to 100 bytes
             page.mSetTargetPageSize( 100 );
 
-            // Set the max page size should be 100 bytes
+            // The max page size should be 100 bytes
             TS_ASSERT_EQUALS( page.mGetTargetPageSize( ), 100 );
 
             // Assign some data to the block
@@ -198,7 +198,7 @@ class Utf8Tests : public CxxTest::TestSuite
 
             TS_ASSERT_EQUALS( pages._longSize, 4 );
 
-            // Get an Utf8Iterator to the Pages
+            // Get an Iterator to the Pages
             Utf8Page::Iterator it = pages.mBegin(); 
 
             // The starting offset for this page should be 0
@@ -262,23 +262,6 @@ class Utf8Tests : public CxxTest::TestSuite
         }
 
         // --------------------------------
-        // Test fail on open
-        // --------------------------------
-        void testmCreateBufferFromFileError( void ) {
-           
-            // Get the default IO handler for this Operating System
-            IOHandle* ioHandle = IOHandle::mGetDefaultIOHandler();
-            TS_ASSERT( ioHandle ); 
-
-            // Open The File ReadWrite
-            TS_ASSERT_EQUALS( ioHandle->mOpen("fileToOpen.txt", IOHandle::ReadWrite ), false );
-
-            // Ensure mGetError() is set properly
-            TS_ASSERT_EQUALS( ioHandle->mGetError().substr(0,41), "IO Error: Unable to open 'fileToOpen.txt'" );
-            
-        }
-
-        // --------------------------------
         // Create a valid test file in /tmp 
         // --------------------------------
         void testCreateFileForTests( void ) {
@@ -316,12 +299,9 @@ class Utf8Tests : public CxxTest::TestSuite
             File* file = new Utf8File( ioHandle );
             TS_ASSERT( file );
 
-            // Create the buffer with the file handler
-            Utf8Buffer* buf = new Utf8Buffer(file);
+            // Create the buffer and assign this file handle to the buffer
+            Utf8Buffer* buf = new Utf8Buffer( file );
             TS_ASSERT( buf ); 
-
-            // Set the current task to load the buffer
-            TS_ASSERT_EQUALS( buf->mLoadBuffer(), true );
 
             // The name should be the same as the file name 
             TS_ASSERT_EQUALS( buf->mGetName() , TEST_FILE );
@@ -329,9 +309,15 @@ class Utf8Tests : public CxxTest::TestSuite
             // The Buffer should not be full
             TS_ASSERT_EQUALS( buf->mBufferFull(), false );
 
-            // The Buffer should not be ready
-            TS_ASSERT_EQUALS( buf->mIsBufferReady(), false );
+            // The Buffer should be ready ( No Loading operation assigned )
+            TS_ASSERT_EQUALS( buf->mIsBufferReady(), true );
           
+            // Tell the buffer we want to load the file
+            TS_ASSERT_EQUALS( buf->mLoadBuffer(), true );
+
+            // The Buffer should NOT be ready ( Need to load file )
+            TS_ASSERT_EQUALS( buf->mIsBufferReady(), false );
+
             // Status should be "Loading TEST_FILE..."
             TS_ASSERT_EQUALS( buf->mGetTaskStatus(), "Loading " TEST_FILE "..." ); 
            
@@ -368,6 +354,7 @@ class Utf8Tests : public CxxTest::TestSuite
             // The starting offset for this page should be 0
             TS_ASSERT_EQUALS( it->mGetStartOffSet(), 0 );
 
+            // The ending offset for this page should be the same as the DEFAULT_PAGE_SIZE
             TS_ASSERT_EQUALS( it->mGetEndOffSet(), DEFAULT_PAGE_SIZE );
 
             // Get the first Block in the page
@@ -379,7 +366,7 @@ class Utf8Tests : public CxxTest::TestSuite
             // Go to the next page
             ++it;
 
-            // The starting offset for this page should be 2000
+            // The starting offset for this page should be the same as the DEFAULT_PAGE_SIZE
             TS_ASSERT_EQUALS( it->mGetStartOffSet(), DEFAULT_PAGE_SIZE );
 
             TS_ASSERT_EQUALS( it->mGetEndOffSet(), DEFAULT_PAGE_SIZE * 2 );
@@ -387,41 +374,158 @@ class Utf8Tests : public CxxTest::TestSuite
         }
 
         // --------------------------------
-        // Test mAssignFile() and mSaveBufferToFile()
+        // Test mInsert()
         // --------------------------------
-        void testmAssignFileAndSaveBuffer( void ) {
-            long longPercent = 0; 
+        void testmBufferInsert( void ) {
             Attributes attr;
 
             // Create a new Buffer Called "buffer1"
-            Utf8Buffer* buf = new Utf8Buffer("buffer1");
+            Utf8Buffer* buf = new Utf8Buffer("buffer1", 20 );
             TS_ASSERT( buf );
 
             TS_ASSERT_EQUALS( buf->mIsModified(), false );
 
-            BufferIterator it = buf->mBegin(); // Called
+            BufferIterator it = buf->mBegin(); 
 
-            TS_ASSERT_EQUALS( it.mToUtf8(), 0 );
+            TS_ASSERT_EQUALS( it.mGetUtf8Char(), 0 );
 
-            // Insert text At the begining of the file
-            BufferIterator itNew = buf->mInsert( it, "AAAAAGGGGGDDDDDBBBBB" , 20, attr ); // Called
+            // Insert text At the begining of the file, The iterator returned should be at offset 21
+            TS_ASSERT_EQUALS( buf->mInsert( it, "AAAAAGGGGGDDDDDBBBBB" , 20, attr ).mGetOffSet(), 21 );
 
-            // Ensure the new iterator doesn't point to the same position in the buffer
-            //TS_ASSERT( itNew != it );
+            // Get the first Block in the page
+            Utf8Block::Iterator itBlock = buf->_pageContainer.mBegin()->mBegin();
 
-            // Move to the next char in the buffer
-            ++it; // Called
+            // The block should contain the file contents
+            TS_ASSERT_EQUALS( itBlock->mGetBlockData().substr(0,20) , "AAAAAGGGGGDDDDDBBBBB" );
 
-            it.mToUtf8();
-            TS_ASSERT_EQUALS( it.mToUtf8(), 'A' );
+            // Set the offset to the end of our inserted text
+            it.mSetOffSet( 21 );
 
-            TS_ASSERT_EQUALS( it.mSetOffSet(19), true );
+            // Insert At the end of the current text
+            buf->mInsert( it, "CCCCCZZZZZXXXXXBBBBB" , 20, attr ); 
 
-            TS_ASSERT_EQUALS( it.mSetOffSet(20), false );
+            // The Page should be split with the first half of the page with
+            // the first insert and the second half with the other insert
+            Utf8Page::Iterator itPage = buf->_pageContainer.mBegin();
+            itBlock = itPage->mBegin();
 
+            // Inserted data should be there
+            TS_ASSERT_EQUALS( itBlock->mGetBlockData() , "AAAAAGGGGGDDDDDBBBBB" );
+
+            // If we move to the next block that should be the end of the buffer
+            TS_ASSERT( ++itBlock == itPage->mEnd() );
+
+            // Get the next Page
+            ++itPage;
+
+            // There should be another page in the container
+            TS_ASSERT( itPage != buf->_pageContainer.mEnd() );
+
+            // Get the block 
+            itBlock = itPage->mBegin();
+
+            // This block should have the second insert
+            TS_ASSERT_EQUALS( itBlock->mGetBlockData() , "CCCCCZZZZZXXXXXBBBBB" );
+
+        }
+
+        // --------------------------------
+        // Test BufferIteratorClass
+        // --------------------------------
+        void testmBufferIterator( void ) {
+            long longPercent = 0; 
+            Attributes attr;
+
+            // Create a new Buffer Called "buffer1"
+            Utf8Buffer* buf = new Utf8Buffer("buffer1", 100);
+            TS_ASSERT( buf );
+
+            // Get the iterator for this buffer
+            BufferIterator it = buf->mBegin(); 
+
+            // Asking for the first character in an empty buffer should return 0
+            TS_ASSERT_EQUALS( it.mGetUtf8Char(), 0 );
+
+            // Move the iterator to a position with no data will return false 
+            // and the iterator will not move
+            TS_ASSERT_EQUALS( it.mNext(), false );
+
+            // mGetError() should tells us what happend
             TS_ASSERT_EQUALS( it.mGetError(), "Internal Error: Requested OffSet out of bounds" );
 
-            TS_ASSERT_EQUALS( buf->mIsModified(), true );
+            // Insert text At the begining of the file
+            buf->mInsert( it, "AAAAAGGGGGDDDDDEFGHB" , 20, attr );
+
+            // The first character in the buffer should be an 'A'
+            TS_ASSERT_EQUALS( it.mGetUtf8Char(), 'A' );
+
+            TS_ASSERT_EQUALS( it.mGetUtf8String( 20 ), "AAAAAGGGGGDDDDDEFGHB" );
+
+            // Move to the next char in the buffer
+            TS_ASSERT_EQUALS( it.mNext(), true );
+
+            // Get the character the iterator points 2
+            TS_ASSERT_EQUALS( it.mGetUtf8Char(), 'A' );
+
+            // Get the first 10 chars in the buffer
+            TS_ASSERT_EQUALS( it.mGetUtf8String( 10 ), "AAAAGGGGD" );
+
+            // Move the cursor 20th position in the buffer
+            TS_ASSERT_EQUALS( it.mSetOffSet(20), true );
+
+            // Get the character the iterator points 2
+            TS_ASSERT_EQUALS( it.mGetUtf8Char(), 'B' );
+
+            // Get 10 chars in the buffer, String returned only returns 
+            // the last char since this is the end of the buffer
+            TS_ASSERT_EQUALS( it.mGetUtf8String( 10 ), "B" );
+
+            // Move the cursor 21th position in the buffer ( Just after the last char )
+            TS_ASSERT_EQUALS( it.mSetOffSet(21), true );
+
+            // Get the character the iterator points 2
+            TS_ASSERT_EQUALS( it.mGetUtf8Char(), 0 );
+
+            // Move the cursor 22th position in the buffer should fail
+            TS_ASSERT_EQUALS( it.mSetOffSet(22), false );
+
+            // Should be an error
+            TS_ASSERT_EQUALS( it.mGetError(), "Internal Error: Requested OffSet out of bounds" );
+
+            // Iterator still points to 21th position
+            TS_ASSERT_EQUALS( it.mGetUtf8Char(), 0 );
+
+            // Iterator still points to 21th position
+            TS_ASSERT_EQUALS( it.mGetUtf8String( 10 ), "" );
+
+            // The Iterator should be at the end of the buffer
+            TS_ASSERT( it == buf->mEnd() );
+        }
+
+        // --------------------------------
+        // Test mInsert()
+        // --------------------------------
+        void testmBufferInsertSaveAndLoad( void ) {
+            long longPercent = 0; 
+            Attributes attr;
+
+            //TODO Remove this so this test continues
+            TS_ASSERT( 1 == 0 );
+
+            // Create a new Buffer Called "buffer1"
+            Utf8Buffer* buf = new Utf8Buffer("Buffer1", 20 );
+            TS_ASSERT( buf );
+
+            TS_ASSERT_EQUALS( buf->mIsModified(), false );
+
+            // Get the buffer iterator
+            BufferIterator it = buf->mBegin(); 
+
+            // Insert text At the begining of the file
+            it = buf->mInsert( it, "AAAAAGGGGGDDDDDEFGHB" , 20, attr );
+            
+            // Insert At the end of the current text
+            buf->mInsert( it, "CCCCCZZZZZXXXXXBBBBB" , 20, attr ); 
 
             // Get the default IO handler for this Operating System
             IOHandle* ioHandle = IOHandle::mGetDefaultIOHandler();
@@ -457,27 +561,47 @@ class Utf8Tests : public CxxTest::TestSuite
                 TS_ASSERT( longPercent != 0 );
             }
 
+            // Progress should return false, when there is nothing left to do
+            TS_ASSERT_EQUALS( buf->mGetProgress( &longPercent ), false );
+
+            // Precent should be at 100%
+            TS_ASSERT_EQUALS( longPercent, 100 );
+
             // Buffer should be ready
             TS_ASSERT_EQUALS( buf->mIsBufferReady(), true );
 
             TS_ASSERT_EQUALS( buf->mIsModified(), false );
+           
+            // ----------------------------------------------------------
+            // Now Load the same file we just saved into a second buffer
+            // ----------------------------------------------------------
+            
+            // Create the buffer and assign this file handle to the buffer
+            Utf8Buffer* buf2 = new Utf8Buffer( file, 20 );
+            TS_ASSERT( buf2 ); 
 
-        }
+            // Tell the buffer we want to load the file
+            TS_ASSERT_EQUALS( buf2->mLoadBuffer(), true );
 
-        // --------------------------------
-        // Test mIsModified()
-        // --------------------------------
-        void testmIsModified( void ) {
+            while( ! buf2->mIsBufferReady() ) {
+                
+                // Preform task should return true
+                TS_ASSERT_EQUALS( buf2->mPreformTask(), true );
 
-            // Create a new Buffer Called "buffer1"
-            Utf8Buffer* buf = new Utf8Buffer("buffer1");
-            TS_ASSERT( buf );
+                // Get the progress of the current task
+                buf->mGetProgress( &longPercent );
 
-            // Modify the buffer 
-            //TS_ASSERT( buf->mInsert("This buffer now has some text") );
+                TS_ASSERT( longPercent != 0 );
+            }
 
-            TS_ASSERT_EQUALS( buf->mIsModified(), true );
+            // Precent should be at 100%
+            TS_ASSERT_EQUALS( longPercent, 100 );
 
+            // Get the iterator for this buffer
+            BufferIterator it2 = buf2->mBegin(); 
+
+            // The data we load from the file should be the same
+            TS_ASSERT_EQUALS( it2.mGetUtf8String( 40 ), "AAAAAGGGGGDDDDDEFGHBCCCCCZZZZZXXXXXBBBBB" );
         }
 
         // --------------------------------

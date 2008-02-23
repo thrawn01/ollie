@@ -321,7 +321,7 @@ OffSet Utf8File::mSetOffSet( OffSet offset ) {
  */
 BufferIterator Utf8Buffer::mBegin( void ) {
 
-    Utf8BufferIterator *it = new Utf8BufferIterator();
+    Utf8BufferIterator *it = new Utf8BufferIterator( this );
 
     Utf8Page::Iterator itPage = _pageContainer.mBegin();
     Utf8Block::Iterator itBlock = itPage->mBegin();
@@ -341,7 +341,7 @@ BufferIterator Utf8Buffer::mBegin( void ) {
  */
 BufferIterator Utf8Buffer::mEnd( void ) {
 
-    Utf8BufferIterator *it = new Utf8BufferIterator();
+    Utf8BufferIterator *it = new Utf8BufferIterator( this );
 
     Utf8Page::Iterator itPage = _pageContainer.mEnd();
     Utf8Block::Iterator itBlock = itPage->mEnd();
@@ -591,12 +591,64 @@ bool Utf8Buffer::mLoadFileTask( void ) {
     return true;
 }
 
+/**
+ * Move the iterator up intCount number of characters
+ */
+int Utf8BufferIterator::mNext( int intCount ) { 
+
+    // If we are asking to move past the current block
+    if( ( _intPos + intCount ) > _itBlock->mGetBlockData().size()+1  ) {
+       
+        // if this is the last block in the page
+        if( _itBlock == (--( _itPage->mEnd() ) ) ) {
+
+            // if this is the last page in the buffer
+            if( _itPage == (--( _buf->_pageContainer.mEnd() ) ) ) {
+
+                // Update our location in the block to the end of the block
+                _intPos = _itBlock->mGetBlockData().size()+1;
+                return false;
+
+            }
+        }
+    }
+
+    // Update out position in the block
+    _intPos += intCount;
+    return true;
+
+}
+
+/**
+ * Return the charater the iterator points to in utf8 encoding
+ */
+char Utf8BufferIterator::mGetUtf8Char( void ) { 
+
+    // If the block is empty
+    if( _itBlock->mGetBlockData().empty() ) {
+        return 0;
+    }
+
+    // If the size is larger than the size 
+    if( _itBlock->mGetBlockData().size() > _intPos ) {
+        return 0;
+    }
+
+    // Return the char at the position requested
+    return _itBlock->mGetBlockData().at(_intPos);
+
+}
+
+/**
+ * Constructor
+ */
 Utf8BufferIterator::Utf8BufferIterator( const Utf8BufferIterator* it ) {
 
     _itPage    = it->_itPage;
     _itBlock   = it->_itBlock;
     _offset    = it->_offset;
     _intPos    = it->_intPos;
+    _buf       = it->_buf;
 
 }
 
@@ -652,20 +704,25 @@ BufferIterator Utf8Buffer::mInsert( BufferIterator& itBuffer, const char* cstrBu
     // Insert the data into the block
     int intPos = itBlock->mInsert( it->mGetPos(), cstrBuffer, intBufSize );
     
-    // Get the page size and the target page size
+    // Update the page size TODO: This should be done in the pageContainer
     OffSet intPageSize = it->mGetPage()->mGetPageSize();
+    it->mGetPage()->mSetPageSize( intPageSize + intBufSize );
+
+    // Get the target page size
     OffSet intTargetPageSize = it->mGetPage()->mGetTargetPageSize();
 
     // Will this insert mean we will need to split the page ? 
     // ( We Split the page if the page size is twice that of the target page size )
-    if( intPageSize >= ( intTargetPageSize + intTargetPageSize ) ) {
+    if( ( intPageSize + intBufSize ) >= ( intTargetPageSize + intTargetPageSize ) ) {
+
+        // Split the page
         _pageContainer.mSplitPage( it );
     }
 
     // Create a new iterator
     Utf8BufferIterator* itNew = new Utf8BufferIterator( it );
 
-    // Update the pos to the end of the block
+    // Update the position in the new iterator
     itNew->mSetPos( intPos );
 
     return BufferIterator( itNew );
@@ -728,10 +785,21 @@ bool Utf8Block::mSetBlockData( const char* cstrData, OffSet offLen ) {
 
 }
 
+/**
+ * TODO: Consider using std::string::iterators instead of intPos
+ */
 int Utf8Block::mInsert( int intPos, const char* cstrData, int intSize ) {
 
-    // Insert more data 
-    _strBlockData.insert(intPos, cstrData,intSize);
+    // If the intPos requested is larger than the 
+    // size of the string append the data
+    if( _strBlockData.size() < intPos ) {
+        // Append the data
+        _strBlockData.append(cstrData, intSize);
+
+    }else {
+        // Insert more data 
+        _strBlockData.insert(intPos, cstrData, intSize);
+    }
 
     // Update the size
     _sizeBlockSize += intSize;

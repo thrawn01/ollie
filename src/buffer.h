@@ -91,13 +91,11 @@ class BufferIterator : public OllieCommon {
                                     if( this == &right ) return 1; 
                                     return _it->mEqual(_it, right._it);
                                 }
+        virtual int             mEqual( boost::shared_ptr<BufferIterator>,  boost::shared_ptr<BufferIterator> ) { assert( 1 == 0 ); }
 
         // Navigation Methods
-        virtual bool            mNext( void ) { return _it->mNext(); }
-        virtual bool            mPrev( void ) { return _it->mPrev(); }
-        virtual bool            mSetOffSet( OffSet offset ) { return _it->mSetOffSet( offset ); }
-        virtual OffSet          mGetOffSet( void ) { return _it->mGetOffSet( ); }
-        virtual int             mEqual( boost::shared_ptr<BufferIterator>,  boost::shared_ptr<BufferIterator> ) { assert( 1 == 0 ); }
+        virtual int             mNext( int intCount = 1 ) { return _it->mNext( intCount ); }
+        virtual int             mPrev( int intCount = 1 ) { return _it->mPrev( intCount ); }
 
         // NOTES: 
         // The array pointers returned by String() methods should be managed by 

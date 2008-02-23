@@ -27,6 +27,8 @@
 #include <list>
 #include <boost/ptr_container/ptr_list.hpp>
 
+class Utf8Buffer;
+
 /*!
  * Class for handling Utf8 Blocks ( Text Blocks )
  */
@@ -87,7 +89,9 @@ class Utf8Page {
         void                 mSetEndOffSet( OffSet const offset ) { _offEnd = offset; }
         OffSet               mGetEndOffSet( void ) const { return _offEnd; }
 
+        void                 mSetPageSize( OffSet offSize ) { _offPageSize = offSize; }
         OffSet               mGetPageSize( void ) const { return _offPageSize; }
+
         bool                 mCanAcceptBytes( OffSet ) const;
         bool                 mIsFull( void ) const;
         Utf8Block::Iterator  mBegin( void ) { return _blockContainer.begin(); }
@@ -100,21 +104,20 @@ class Utf8Page {
         OffSet                 _offPageSize;
 };
 
+
 class Utf8BufferIterator : public BufferIterator {
 
     public: 
-        Utf8BufferIterator() { }
+        Utf8BufferIterator( Utf8Buffer* buf ) : _buf(buf), _intPos(0) { }
         Utf8BufferIterator( const Utf8BufferIterator* it );
 
         virtual ~Utf8BufferIterator() { }
 
         // Interface specific
         virtual boost::shared_ptr<BufferIterator>   copy( void ) const;
-        virtual bool                                mNext( void ) { return false; }
-        virtual bool                                mPrev( void ) { return false; }
-        virtual bool                                mSetOffSet( OffSet offset ) { return false; }
-        virtual OffSet                              mGetOffSet( void ) { return 0; }
-        virtual char                                mGetUtf8Char( void ) { }
+        virtual int                                 mNext( int intCount = 1 );
+        virtual int                                 mPrev( int intCount = 1 ) { return false; }
+        virtual char                                mGetUtf8Char( void ); 
         virtual const char*                         mGetUtf8String( int intLen, bool boolReverse = false ) {  }
         virtual ushort                              mGetUtf16Char( void ) { }
         virtual const ushort*                       mGetUtf16String( int intLen, bool boolReverse = false ) { }
@@ -132,6 +135,7 @@ class Utf8BufferIterator : public BufferIterator {
         Utf8Block::Iterator     _itBlock;
         OffSet                  _offset;
         int                     _intPos;
+        Utf8Buffer*             _buf;
 
 };
 

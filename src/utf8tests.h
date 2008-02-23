@@ -389,8 +389,8 @@ class Utf8Tests : public CxxTest::TestSuite
 
             TS_ASSERT_EQUALS( it.mGetUtf8Char(), 0 );
 
-            // Insert text At the begining of the file, The iterator returned should be at offset 21
-            TS_ASSERT_EQUALS( buf->mInsert( it, "AAAAAGGGGGDDDDDBBBBB" , 20, attr ).mGetOffSet(), 21 );
+            // Insert text At the begining of the file 
+            buf->mInsert( it, "AAAAAGGGGGDDDDDBBBBB" , 20, attr );
 
             // Get the first Block in the page
             Utf8Block::Iterator itBlock = buf->_pageContainer.mBegin()->mBegin();
@@ -398,8 +398,8 @@ class Utf8Tests : public CxxTest::TestSuite
             // The block should contain the file contents
             TS_ASSERT_EQUALS( itBlock->mGetBlockData().substr(0,20) , "AAAAAGGGGGDDDDDBBBBB" );
 
-            // Set the offset to the end of our inserted text
-            it.mSetOffSet( 21 );
+            // Move the iterator up to the end of our insert
+            it.mNext( 21 );
 
             // Insert At the end of the current text
             buf->mInsert( it, "CCCCCZZZZZXXXXXBBBBB" , 20, attr ); 
@@ -471,7 +471,7 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it.mGetUtf8String( 10 ), "AAAAGGGGD" );
 
             // Move the cursor 20th position in the buffer
-            TS_ASSERT_EQUALS( it.mSetOffSet(20), true );
+            TS_ASSERT_EQUALS( it.mNext(19), true );
 
             // Get the character the iterator points 2
             TS_ASSERT_EQUALS( it.mGetUtf8Char(), 'B' );
@@ -480,14 +480,14 @@ class Utf8Tests : public CxxTest::TestSuite
             // the last char since this is the end of the buffer
             TS_ASSERT_EQUALS( it.mGetUtf8String( 10 ), "B" );
 
-            // Move the cursor 21th position in the buffer ( Just after the last char )
-            TS_ASSERT_EQUALS( it.mSetOffSet(21), true );
+            // Move the cursor next 1 position in the buffer ( Just after the last char )
+            TS_ASSERT_EQUALS( it.mNext(), true );
 
             // Get the character the iterator points 2
             TS_ASSERT_EQUALS( it.mGetUtf8Char(), 0 );
 
             // Move the cursor 22th position in the buffer should fail
-            TS_ASSERT_EQUALS( it.mSetOffSet(22), false );
+            TS_ASSERT_EQUALS( it.mNext(21), false );
 
             // Should be an error
             TS_ASSERT_EQUALS( it.mGetError(), "Internal Error: Requested OffSet out of bounds" );

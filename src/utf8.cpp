@@ -731,8 +731,67 @@ BufferIterator Utf8Buffer::mInsert( BufferIterator& itBuffer, const char* cstrBu
 /**
  * Split the page the iterator points to and update the iterator before returning
  */
-void Utf8PageContainer::mSplitPage( Utf8BufferIterator *it ) {
-    return;
+void Utf8PageContainer::mSplitPage( Utf8BufferIterator *itBuffer ) {
+
+    // Get the page the iterator points to
+    Utf8Page::Iterator itOldPage = itBuffer->mGetPage();
+
+    // Insert a new page right before the old page
+    Utf8Page::Iterator itNewPage = mInsertPage( itOldPage, new Utf8Page() );
+
+    // Get the target page size
+    OffSet intTargetSize = itOldPage->mGetTargetPageSize();
+    OffSet intCurSize = 0;
+
+    // Move blocks into the new page until we hit our target size
+    Utf8Block::Iterator itBlock;
+    for( itBlock = itOldPage->mBegin() ; itBlock != itOldPage->mEnd() ; ) {
+        int intSplitPos = 0;
+        Utf8Block::Iterator itNewBlock;
+        
+        // If we have hit our target size, break
+        if( intCurSize >= intTargetSize ) break;
+
+        // If this block will put us over the target block size
+        if( ( intCurSize + itBlock->mGetSize() ) > intTargetSize ) {
+
+            // Figure out where to split the block
+            intSplitPos = intTargetSize - intCurSize;
+
+            // Split the block, appending the new block to the page
+            itNewBlock = itNewPage->mAppendBlock( itBlock->mSplit( intSplitPos ) );
+
+        } else {
+            // Append the block to the new page
+            itNewBlock = itNewPage->mAppendBlock( *itBlock );
+        }
+
+        // If the buffer iterator points to the block just copied
+        if( itBlock == itBuffer->mGetBlock() ) {
+            // And we split this block
+            if( intSplitPos ) {
+                // If the pos points to the new block
+                if( itBuffer->mGetPos() < intSplitPos ) {
+                    // Update the iterator to point to the new block
+                    itBuffer->mSetBlock( itNewBlock );
+                } else {
+                    // Adjust the pos for the split block
+                    itBuffer->mSetPos( intSplitPos - itBuffer->mGetPos() );
+                }
+            }
+        }
+
+        // If we split the block, don't delete it
+        if( ! intSplitPos ) {
+            // Remove the old block
+            itBlock = itOldPage->mDeleteBlock( itBlock );
+        }
+
+        // Update our current size
+        intCurSize += itNewBlock->mGetSize();
+
+    }
+
 }
 
 /*!
@@ -748,6 +807,19 @@ Utf8Block::Iterator Utf8Page::mAppendBlock( const Utf8Block &block ) {
 
     // Return an iterator to the last element
     return --(_blockContainer.end());
+
+}
+
+/*!
+ * Remove a block from the page
+ */
+Utf8Block::Iterator Utf8Page::mDeleteBlock( const Utf8Block::Iterator& itBlock ) {
+
+    // Shrink the size of the page by the block size removed
+    _offPageSize -= itBlock->mGetSize();
+
+    // Remove this block from the container
+    return _blockContainer.erase( itBlock );
 
 }
 
@@ -775,13 +847,26 @@ bool Utf8Page::mCanAcceptBytes( OffSet offBytes ) const {
 /*! 
  * Assign the char* of data to the internal structure of the block
  */
-bool Utf8Block::mSetBlockData( const char* cstrData, OffSet offLen ) {
+void Utf8Block::mSetBlockData( const char* cstrData, OffSet offLen ) {
 
     // Assign the new data
     _strBlockData.assign( cstrData, offLen ); 
 
     // Update the size
     _sizeBlockSize = offLen;
+
+}
+
+/*! 
+ * Assign the char* of data to the internal structure of the block
+ */
+void Utf8Block::mSetBlockData( const std::string& string ) {
+
+    // Assign the new data
+    _strBlockData.assign( string ); 
+
+    // Update the size
+    _sizeBlockSize = string.size();
 
 }
 
@@ -807,6 +892,27 @@ int Utf8Block::mInsert( int intPos, const char* cstrData, int intSize ) {
     return intPos + intSize;
 }
 
+/**
+ * Split this block starting at intPos, The characters after intPos
+ * will remain in the block, the characters before intPos will make 
+ * up the new block
+ */
+Utf8Block Utf8Block::mSplit( int intPos ) {
+
+    Utf8Block newBlock;
+
+    // Set the new block data
+    newBlock.mSetBlockData( _strBlockData.substr( 0, intPos ) );
+
+    // Erase the copied block data
+    _strBlockData.erase( 0, intPos );
+
+    // Copy the attributes from this block into the new block
+    newBlock.mSetAttributes( mGetAttributes() );
+
+    return newBlock;
+
+}
 
 Utf8Block::Utf8Block( char* cstrData, OffSet offLen ) { 
     _offOffSet        = 0; 
@@ -819,7 +925,7 @@ Utf8Block::Utf8Block( char* cstrData, OffSet offLen ) {
 /*!
  * Add a page to the container 
  */
-void Utf8PageContainer::mAppendPage( Utf8Page *page ) { 
+Utf8Page::Iterator Utf8PageContainer::mAppendPage( Utf8Page *page ) { 
     
     // Add the new page to the list
     _listContainer.push_back( page );
@@ -827,21 +933,23 @@ void Utf8PageContainer::mAppendPage( Utf8Page *page ) {
     // Incr the size of the page container
     _longSize++;
 
+    // Return an iterator to the last element
+    return --(_listContainer.end());
 }
 
 /*!
  * Insert a page to the container
  */
-void Utf8PageContainer::mInsertPage( Utf8Page::Iterator const it, Utf8Page *page) {
+Utf8Page::Iterator Utf8PageContainer::mInsertPage( Utf8Page::Iterator const it, Utf8Page *page) {
 
     // Did we mean append?
     if( ! _longSize ) { 
         return mAppendPage( page );
     }
 
-    // Insert the new page
-    _listContainer.insert( it , page );
-
+    // Update the length of the container
     _longSize++;
+
+    return _listContainer.insert( it , page );
 }
 

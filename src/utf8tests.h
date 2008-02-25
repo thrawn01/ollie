@@ -69,6 +69,12 @@ class Utf8Tests : public CxxTest::TestSuite
             // Data should be there
             TS_ASSERT_EQUALS( block.mGetBlockData(), "AAAAABBBBBGGGGGCCCCCDDDDD" );
 
+            // Split the block, the returning block should have the first 15 bytes of data
+            TS_ASSERT_EQUALS( block.mSplit(15).mGetBlockData(), "AAAAABBBBBGGGGG" );
+
+            // The remaining blocks still be in the original block
+            TS_ASSERT_EQUALS( block.mGetBlockData(), "CCCCCDDDDD" );
+
             // Clear the block of data
             block.mClear();
 
@@ -135,7 +141,7 @@ class Utf8Tests : public CxxTest::TestSuite
             // Add the block to the page
             page.mAppendBlock( block2 );
             
-            // Page size should be 100
+            // Page size should be 120
             TS_ASSERT_EQUALS( page.mGetPageSize() , 120 );
 
             // Page should be full
@@ -156,6 +162,18 @@ class Utf8Tests : public CxxTest::TestSuite
             // The next block should contain all G's
             TS_ASSERT_EQUALS( it->mGetBlockData().substr(0,10) , "GGGGGGGGGG" );
 
+            // Go back to the first block on the page
+            --it; 
+
+            // Delete that block
+            it = page.mDeleteBlock( it );
+
+            // The only block in the page should contain all G's
+            TS_ASSERT_EQUALS( it->mGetBlockData().substr(0,10) , "GGGGGGGGGG" );
+
+            // Page size should be 100
+            TS_ASSERT_EQUALS( page.mGetPageSize() , 100 );
+            
         }
 
         // --------------------------------
@@ -395,7 +413,7 @@ class Utf8Tests : public CxxTest::TestSuite
             // Get the first Block in the page
             Utf8Block::Iterator itBlock = buf->_pageContainer.mBegin()->mBegin();
 
-            // The block should contain the file contents
+            // The block should contain the inserted contents
             TS_ASSERT_EQUALS( itBlock->mGetBlockData().substr(0,20) , "AAAAAGGGGGDDDDDBBBBB" );
 
             // Move the iterator up to the end of our insert
@@ -418,7 +436,7 @@ class Utf8Tests : public CxxTest::TestSuite
             // Get the next Page
             ++itPage;
 
-            // There should be another page in the container
+            // This page should not be the end of the container
             TS_ASSERT( itPage != buf->_pageContainer.mEnd() );
 
             // Get the block 
@@ -450,7 +468,7 @@ class Utf8Tests : public CxxTest::TestSuite
             // and the iterator will not move
             TS_ASSERT_EQUALS( it.mNext(), false );
 
-            // mGetError() should tells us what happend
+            // mGetError() should tell us what happend
             TS_ASSERT_EQUALS( it.mGetError(), "Internal Error: Requested OffSet out of bounds" );
 
             // Insert text At the begining of the file

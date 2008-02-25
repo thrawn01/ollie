@@ -42,7 +42,8 @@ class Utf8Block {
         typedef std::list<Utf8Block>::iterator Iterator;
 
 
-        bool                mSetBlockData( const char* cstrData, OffSet offLen );
+        void                mSetBlockData( const char* cstrData, OffSet offLen );
+        void                mSetBlockData( const std::string& );
         const std::string&  mGetBlockData( void ) const { return _strBlockData; }
         bool                mSetAttributes( const Attributes &attr ) { return false; } //TODO Add Support for attributes
         Attributes&         mGetAttributes( void ) { return _attr; } //TODO Add Support for attributes
@@ -51,6 +52,7 @@ class Utf8Block {
         void                mClear( void ) { _strBlockData.clear(); }
         size_t              mGetSize( void ) const { return _sizeBlockSize; }
         int                 mInsert( int, const char*, int );
+        Utf8Block           mSplit( int );
 
         // members
         std::string _strBlockData;
@@ -78,7 +80,8 @@ class Utf8Page {
 
         typedef boost::ptr_list<Utf8Page>::iterator Iterator;  
 
-        Utf8Block::Iterator  mAppendBlock( const Utf8Block &block );
+        Utf8Block::Iterator  mAppendBlock( const Utf8Block& );
+        Utf8Block::Iterator  mDeleteBlock( const Utf8Block::Iterator& ) ;
 
         void                 mSetTargetPageSize( OffSet const offSize ) { _offTargetPageSize = offSize; }
         OffSet               mGetTargetPageSize( void ) const { return _offTargetPageSize; }
@@ -148,13 +151,13 @@ class Utf8PageContainer {
         Utf8PageContainer() { _longSize = 0; };
         ~Utf8PageContainer() {  };
 
-        Utf8Page::Iterator mBegin() { return _listContainer.begin(); }
-        Utf8Page::Iterator mEnd()   { return _listContainer.end();   }
+        Utf8Page::Iterator  mBegin() { return _listContainer.begin(); }
+        Utf8Page::Iterator  mEnd()   { return _listContainer.end();   }
 
-        void mClear( void ) { _listContainer.clear(); }
-        void mAppendPage( Utf8Page *page );
-        void mInsertPage( Utf8Page::Iterator const it, Utf8Page *page);
-        void mSplitPage( Utf8BufferIterator *it );
+        void                mClear( void ) { _listContainer.clear(); }
+        Utf8Page::Iterator  mAppendPage( Utf8Page *page );
+        Utf8Page::Iterator  mInsertPage( Utf8Page::Iterator const it, Utf8Page *page);
+        void                mSplitPage( Utf8BufferIterator *it );
         
         boost::ptr_list<Utf8Page> _listContainer;
         long                      _longSize;

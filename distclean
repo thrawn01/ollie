@@ -16,6 +16,13 @@ MAIN: {
     getopts( "$opt_string", \%opt ) or &usage();
     if($opt{h}){ &usage(); }
 
+    `git-status > /dev/null 2> /dev/null`;
+    if( $? != 0 ) {
+        print "You must have an active 'git clone' of the sources for distclean to work\n";
+        exit -1;
+    }
+
+
     open(INPUT, "git-ls-files -o --directory |") or die("Couldn't run git-ls-files, Do you have the latest git version?");
 
     if( $opt{a} ) { print "Cleaning all files not under git control...\n"; }

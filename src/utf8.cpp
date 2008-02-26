@@ -43,6 +43,8 @@ void Utf8Buffer::init( OffSet offPageSize  ) {
     // Append a new empty block to the page
     page->mAppendBlock( Utf8Block() );
 
+    page->mSetOffSet( 0 );
+
     // Append to the page to the container
     _pageContainer.mAppendPage( page );
 
@@ -475,7 +477,8 @@ OffSet Utf8Buffer::mLoadPage( OffSet offSet ) {
     Utf8Page *page = new Utf8Page();
 
     // Record the offset for this page
-    page->mSetStartOffSet( offSet );
+    page->mSetFileOffSet( offSet );
+    page->mSetOffSet( offSet );
 
     // Create an array of data to read to
     char* arrBlockData = new char[ _fileHandle->mGetBlockSize() ];
@@ -510,9 +513,6 @@ OffSet Utf8Buffer::mLoadPage( OffSet offSet ) {
 
     // Only append a new page if the page has some data
     if( page->mGetPageSize() != 0 ) {
-
-        // Add the Start offset with the size of the page to set the End Offset
-        page->mSetEndOffSet( page->mGetStartOffSet() + page->mGetPageSize() );
 
         // Append the page to the page container
         _pageContainer.mAppendPage( page );
@@ -692,7 +692,7 @@ BufferIterator Utf8Buffer::mInsert( BufferIterator& itBuffer, const char* cstrBu
     Utf8BufferIterator* it = itBuffer.mGetPtrAs<Utf8BufferIterator*>();
 
     // Get the block the iterator points to
-    Utf8Block::Iterator itBlock = it->mGetBlock();
+    Utf8Page::Iterator itPage = it->mGetPage();
 
     // Do the attributes of this insert match the block the iterator points to ?
     //if( itBlock->mGetAttributes() == attr ) { TODO
@@ -701,98 +701,32 @@ BufferIterator Utf8Buffer::mInsert( BufferIterator& itBuffer, const char* cstrBu
         // Spliting the current block if nessary
     //}
     
-    // Insert the data into the block
-    int intPos = itBlock->mInsert( it->mGetPos(), cstrBuffer, intBufSize );
-    
-    // Update the page size TODO: This should be done in the pageContainer
-    OffSet intPageSize = it->mGetPage()->mGetPageSize();
-    it->mGetPage()->mSetPageSize( intPageSize + intBufSize );
-
+    // Insert the data into the page at this block
+    itPage->mInsert( it->mGetBlock() , it->mGetPos(), cstrBuffer, intBufSize );
+   
     // Get the target page size
-    OffSet intTargetPageSize = it->mGetPage()->mGetTargetPageSize();
+    OffSet intTargetPageSize = itPage->mGetTargetPageSize();
 
     // Will this insert mean we will need to split the page ? 
     // ( We Split the page if the page size is twice that of the target page size )
-    if( ( intPageSize + intBufSize ) >= ( intTargetPageSize + intTargetPageSize ) ) {
+    if( itPage->mGetPageSize() >= ( intTargetPageSize * 2 ) ) {
 
-        // Split the page
-        _pageContainer.mSplitPage( it );
+        // Split the page, and return an iterator to the new page
+        itPage = _pageContainer.mSplitPage( it );
     }
+
+    // Now that we inserted new data the offsets for the pages need to be adjusted 
+    _pageContainer.mUpdateOffSets( itPage );
 
     // Create a new iterator
     Utf8BufferIterator* itNew = new Utf8BufferIterator( it );
 
     // Update the position in the new iterator
-    itNew->mSetPos( intPos );
+    itNew->mSetPos( it->mGetPos() + intBufSize );
 
     return BufferIterator( itNew );
 }
 
-/**
- * Split the page the iterator points to and update the iterator before returning
- */
-void Utf8PageContainer::mSplitPage( Utf8BufferIterator *itBuffer ) {
-
-    // Get the page the iterator points to
-    Utf8Page::Iterator itOldPage = itBuffer->mGetPage();
-
-    // Insert a new page right before the old page
-    Utf8Page::Iterator itNewPage = mInsertPage( itOldPage, new Utf8Page() );
-
-    // Get the target page size
-    OffSet intTargetSize = itOldPage->mGetTargetPageSize();
-    OffSet intCurSize = 0;
-
-    // Move blocks into the new page until we hit our target size
-    Utf8Block::Iterator itBlock;
-    for( itBlock = itOldPage->mBegin() ; itBlock != itOldPage->mEnd() ; ) {
-        int intSplitPos = 0;
-        Utf8Block::Iterator itNewBlock;
-        
-        // If we have hit our target size, break
-        if( intCurSize >= intTargetSize ) break;
-
-        // If this block will put us over the target block size
-        if( ( intCurSize + itBlock->mGetSize() ) > intTargetSize ) {
-
-            // Figure out where to split the block
-            intSplitPos = intTargetSize - intCurSize;
-
-            // Split the block, appending the new block to the page
-            itNewBlock = itNewPage->mAppendBlock( itBlock->mSplit( intSplitPos ) );
-
-        } else {
-            // Append the block to the new page
-            itNewBlock = itNewPage->mAppendBlock( *itBlock );
-        }
-
-        // If the buffer iterator points to the block just copied
-        if( itBlock == itBuffer->mGetBlock() ) {
-            // And we split this block
-            if( intSplitPos ) {
-                // If the pos points to the new block
-                if( itBuffer->mGetPos() < intSplitPos ) {
-                    // Update the iterator to point to the new block
-                    itBuffer->mSetBlock( itNewBlock );
-                } else {
-                    // Adjust the pos for the split block
-                    itBuffer->mSetPos( intSplitPos - itBuffer->mGetPos() );
-                }
-            }
-        }
-
-        // If we split the block, don't delete it
-        if( ! intSplitPos ) {
-            // Remove the old block
-            itBlock = itOldPage->mDeleteBlock( itBlock );
-        }
-
-        // Update our current size
-        intCurSize += itNewBlock->mGetSize();
-
-    }
-
-}
 
 /*!
  * Append a block to the page and return an iterator to the block
@@ -821,6 +755,19 @@ Utf8Block::Iterator Utf8Page::mDeleteBlock( const Utf8Block::Iterator& itBlock )
     // Remove this block from the container
     return _blockContainer.erase( itBlock );
 
+}
+
+/**
+ * Insert Data into the page
+ */
+void  Utf8Page::mInsert( const Utf8Block::Iterator& it, int intPos, const char* cstrBuffer, int intLen ) {
+  
+    // Insert the data into the buffer
+    it->mInsert(intPos, cstrBuffer, intLen);
+
+    // Update the page size
+    _offPageSize += intLen;
+    
 }
 
 /*! 
@@ -873,7 +820,7 @@ void Utf8Block::mSetBlockData( const std::string& string ) {
 /**
  * TODO: Consider using std::string::iterators instead of intPos
  */
-int Utf8Block::mInsert( int intPos, const char* cstrData, int intSize ) {
+void Utf8Block::mInsert( int intPos, const char* cstrData, int intSize ) {
 
     // If the intPos requested is larger than the 
     // size of the string append the data
@@ -889,7 +836,6 @@ int Utf8Block::mInsert( int intPos, const char* cstrData, int intSize ) {
     // Update the size
     _sizeBlockSize += intSize;
 
-    return intPos + intSize;
 }
 
 /**
@@ -937,10 +883,87 @@ Utf8Page::Iterator Utf8PageContainer::mAppendPage( Utf8Page *page ) {
     return --(_listContainer.end());
 }
 
+/**
+ * Split the page the iterator points to and update the iterator before returning
+ */
+Utf8Page::Iterator Utf8PageContainer::mSplitPage( Utf8BufferIterator *itBuffer ) {
+
+    // Get the page the iterator points to
+    Utf8Page::Iterator itOldPage = itBuffer->mGetPage();
+
+    // Get the target page size
+    OffSet intTargetSize = itOldPage->mGetTargetPageSize();
+    OffSet intCurSize = 0;
+
+    // Can not split unless the page is over the target page size
+    assert( itOldPage->mGetPageSize() > itOldPage->mGetTargetPageSize() );
+
+    // Insert a new page right before the old page
+    Utf8Page::Iterator itNewPage = mInsertPage( itOldPage, new Utf8Page() );
+
+
+    // Move blocks into the new page until we hit our target size
+    Utf8Block::Iterator itBlock;
+    for( itBlock = itOldPage->mBegin() ; itBlock != itOldPage->mEnd() ; ) {
+        int intSplitPos = 0;
+        Utf8Block::Iterator itNewBlock;
+        
+        // If we have hit our target size, break
+        if( intCurSize >= intTargetSize ) break;
+
+        // If this block will put us over the target block size
+        if( ( intCurSize + itBlock->mGetSize() ) > intTargetSize ) {
+
+            // Figure out where to split the block
+            intSplitPos = intTargetSize - intCurSize;
+
+            // Split the block, appending the new block to the page
+            itNewBlock = itNewPage->mAppendBlock( itBlock->mSplit( intSplitPos ) );
+
+        } else {
+            // Append the block to the new page
+            itNewBlock = itNewPage->mAppendBlock( *itBlock );
+        }
+
+        // If the buffer iterator points to the block just copied
+        if( itBlock == itBuffer->mGetBlock() ) {
+            // And we split this block
+            if( intSplitPos ) {
+                // If the pos points to the new block
+                if( itBuffer->mGetPos() < intSplitPos ) {
+                    // Update the iterator to point to the new block
+                    itBuffer->mSetBlock( itNewBlock );
+                } else {
+                    // Adjust the pos for the split block
+                    itBuffer->mSetPos( intSplitPos - itBuffer->mGetPos() );
+                }
+            }
+        }
+
+        // If we split the block, don't delete it
+        if( ! intSplitPos ) {
+            // Remove the old block
+            itBlock = itOldPage->mDeleteBlock( itBlock );
+        }
+
+        // Update our current size
+        intCurSize += itNewBlock->mGetSize();
+
+    }
+
+    // Update the offsets of the pages
+    itNewPage->mSetOffSet( itOldPage->mGetOffSet() );
+    itNewPage->mSetFileOffSet( itOldPage->mGetFileOffSet() );
+    itOldPage->mSetOffSet( intCurSize );
+    itOldPage->mSetFileOffSet( -1 );
+
+    return itNewPage;
+}
+
 /*!
  * Insert a page to the container
  */
-Utf8Page::Iterator Utf8PageContainer::mInsertPage( Utf8Page::Iterator const it, Utf8Page *page) {
+Utf8Page::Iterator Utf8PageContainer::mInsertPage( Utf8Page::Iterator const &it, Utf8Page *page) {
 
     // Did we mean append?
     if( ! _longSize ) { 
@@ -951,5 +974,30 @@ Utf8Page::Iterator Utf8PageContainer::mInsertPage( Utf8Page::Iterator const it, 
     _longSize++;
 
     return _listContainer.insert( it , page );
+}
+
+/**
+ * Update all the offsets for the pages that follow
+ * one the iterator points to
+ */
+void Utf8PageContainer::mUpdateOffSets( Utf8Page::Iterator const &it ) {
+  
+    assert( it != mEnd() );
+
+    // Get the offset of the first page ( Should be correct )
+    OffSet offset = it->mGetOffSet() + it->mGetPageSize();
+
+    Utf8Page::Iterator i = it; 
+
+    // Update the pages until we hit the last page
+    while( ++i != mEnd() ) {
+
+        // Set the offset from the previous page
+        i->mSetOffSet( offset );
+
+        // Calculate the offset of the next page from the size of the previous page
+        offset += i->mGetPageSize();
+    } 
+
 }
 

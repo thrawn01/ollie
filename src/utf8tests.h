@@ -64,7 +64,7 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( block.mGetSize() , 20 );
 
             // Insert some data into the block
-            TS_ASSERT_EQUALS( block.mInsert( 10 , "GGGGG", 5 ), 15 );
+            block.mInsert( 10 , "GGGGG", 5 );
 
             // Data should be there
             TS_ASSERT_EQUALS( block.mGetBlockData(), "AAAAABBBBBGGGGGCCCCCDDDDD" );
@@ -192,9 +192,8 @@ class Utf8Tests : public CxxTest::TestSuite
             block.mSetBlockData( arrBlockData, 100 );
             page->mAppendBlock( block );
 
-            page->mSetStartOffSet( offSet );
-
-            page->mSetEndOffSet( page->mGetStartOffSet() + page->mGetPageSize() );
+            page->mSetFileOffSet( offSet );
+            page->mSetOffSet( offSet );
 
             delete arrBlockData;
 
@@ -219,11 +218,11 @@ class Utf8Tests : public CxxTest::TestSuite
             // Get an Iterator to the Pages
             Utf8Page::Iterator it = pages.mBegin(); 
 
-            // The starting offset for this page should be 0
-            TS_ASSERT_EQUALS( it->mGetStartOffSet(), 0 );
+            // The file offset for this page should be 0
+            TS_ASSERT_EQUALS( it->mGetFileOffSet(), 0 );
 
-            // This ending offset for this page should be 100, since its 100 bytes long
-            TS_ASSERT_EQUALS( it->mGetEndOffSet(), 100 );
+            // The starting offset for this page should be 0
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 0 );
 
             // Get the first Block in the page
             Utf8Block::Iterator itBlock = it->mBegin();
@@ -235,10 +234,7 @@ class Utf8Tests : public CxxTest::TestSuite
             ++it;
        
             // The starting offset for this page should be 100
-            TS_ASSERT_EQUALS( it->mGetStartOffSet(), 100 );
-
-            // This ending offset for this page should be 200, since its 100 bytes long
-            TS_ASSERT_EQUALS( it->mGetEndOffSet(), 200 );
+            TS_ASSERT_EQUALS( it->mGetFileOffSet(), 100 );
 
             // Get the first block in the page
             itBlock = it->mBegin();
@@ -364,16 +360,12 @@ class Utf8Tests : public CxxTest::TestSuite
             // The Buffer should be 20,500 bytes in size ( the size of our file )
             TS_ASSERT_EQUALS( buf->mGetBufferSize(), 20500 );
 
-            //TODO Replace these tests with buffer access methods
-            
             // Get the page iterator
             Utf8Page::Iterator it = buf->_pageContainer.mBegin();
 
             // The starting offset for this page should be 0
-            TS_ASSERT_EQUALS( it->mGetStartOffSet(), 0 );
-
-            // The ending offset for this page should be the same as the DEFAULT_PAGE_SIZE
-            TS_ASSERT_EQUALS( it->mGetEndOffSet(), DEFAULT_PAGE_SIZE );
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 0 );
+            TS_ASSERT_EQUALS( it->mGetFileOffSet(), 0 );
 
             // Get the first Block in the page
             Utf8Block::Iterator itBlock = it->mBegin();
@@ -385,9 +377,8 @@ class Utf8Tests : public CxxTest::TestSuite
             ++it;
 
             // The starting offset for this page should be the same as the DEFAULT_PAGE_SIZE
-            TS_ASSERT_EQUALS( it->mGetStartOffSet(), DEFAULT_PAGE_SIZE );
-
-            TS_ASSERT_EQUALS( it->mGetEndOffSet(), DEFAULT_PAGE_SIZE * 2 );
+            TS_ASSERT_EQUALS( it->mGetOffSet(), DEFAULT_PAGE_SIZE );
+            TS_ASSERT_EQUALS( it->mGetFileOffSet(), DEFAULT_PAGE_SIZE );
 
         }
 
@@ -427,6 +418,9 @@ class Utf8Tests : public CxxTest::TestSuite
             Utf8Page::Iterator itPage = buf->_pageContainer.mBegin();
             itBlock = itPage->mBegin();
 
+            // This page should start at the begining of the buffer
+            TS_ASSERT_EQUALS( itPage->mGetOffSet() , 0 );
+
             // Inserted data should be there
             TS_ASSERT_EQUALS( itBlock->mGetBlockData() , "AAAAAGGGGGDDDDDBBBBB" );
 
@@ -438,6 +432,9 @@ class Utf8Tests : public CxxTest::TestSuite
 
             // This page should not be the end of the container
             TS_ASSERT( itPage != buf->_pageContainer.mEnd() );
+
+            // This page should start at offset 20
+            TS_ASSERT_EQUALS( itPage->mGetOffSet() , 20 );
 
             // Get the block 
             itBlock = itPage->mBegin();

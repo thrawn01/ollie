@@ -51,7 +51,7 @@ class Utf8Block {
         bool                mIsEmpty( void ) const { return _strBlockData.empty(); }
         void                mClear( void ) { _strBlockData.clear(); }
         size_t              mGetSize( void ) const { return _sizeBlockSize; }
-        int                 mInsert( int, const char*, int );
+        void                mInsert( int, const char*, int );
         Utf8Block           mSplit( int );
 
         // members
@@ -74,7 +74,7 @@ class Utf8Page {
             _offTargetPageSize = DEFAULT_PAGE_SIZE;
             _offPageSize    = 0;
             _offStart       = -1; 
-            _offEnd         = -1; 
+            _offFileStart   = -1; 
         }
         virtual ~Utf8Page( void ) { }
 
@@ -82,15 +82,17 @@ class Utf8Page {
 
         Utf8Block::Iterator  mAppendBlock( const Utf8Block& );
         Utf8Block::Iterator  mDeleteBlock( const Utf8Block::Iterator& ) ;
+        void                 mInsert( const Utf8Block::Iterator& , int, const char*, int );
 
         void                 mSetTargetPageSize( OffSet const offSize ) { _offTargetPageSize = offSize; }
         OffSet               mGetTargetPageSize( void ) const { return _offTargetPageSize; }
 
-        void                 mSetStartOffSet( OffSet const offset ) { _offStart = offset; }
-        OffSet               mGetStartOffSet( void ) const { return _offStart; }
+        void                 mSetOffSet( OffSet const offset ) { _offStart = offset; }
+        OffSet               mGetOffSet( void ) const { return _offStart; }
 
-        void                 mSetEndOffSet( OffSet const offset ) { _offEnd = offset; }
-        OffSet               mGetEndOffSet( void ) const { return _offEnd; }
+        void                 mSetFileOffSet( OffSet const offset ) { _offFileStart = offset; }
+        OffSet               mGetFileOffSet( void ) const { return _offFileStart; }
+
 
         void                 mSetPageSize( OffSet offSize ) { _offPageSize = offSize; }
         OffSet               mGetPageSize( void ) const { return _offPageSize; }
@@ -101,8 +103,8 @@ class Utf8Page {
         Utf8Block::Iterator  mEnd( void ) { return _blockContainer.end(); }
 
         std::list<Utf8Block>   _blockContainer;
+        OffSet                 _offFileStart;
         OffSet                 _offStart;
-        OffSet                 _offEnd;
         OffSet                 _offTargetPageSize;
         OffSet                 _offPageSize;
 };
@@ -156,8 +158,9 @@ class Utf8PageContainer {
 
         void                mClear( void ) { _listContainer.clear(); }
         Utf8Page::Iterator  mAppendPage( Utf8Page *page );
-        Utf8Page::Iterator  mInsertPage( Utf8Page::Iterator const it, Utf8Page *page);
-        void                mSplitPage( Utf8BufferIterator *it );
+        Utf8Page::Iterator  mInsertPage( Utf8Page::Iterator const &it, Utf8Page *page);
+        Utf8Page::Iterator  mSplitPage( Utf8BufferIterator *it );
+        void                mUpdateOffSets( Utf8Page::Iterator const &it );
         
         boost::ptr_list<Utf8Page> _listContainer;
         long                      _longSize;

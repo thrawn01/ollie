@@ -345,12 +345,12 @@ BufferIterator Utf8Buffer::mEnd( void ) {
 
     Utf8BufferIterator *it = new Utf8BufferIterator( this );
 
-    Utf8Page::Iterator itPage = _pageContainer.mEnd();
-    Utf8Block::Iterator itBlock = itPage->mEnd();
+    Utf8Page::Iterator itPage = (--_pageContainer.mEnd());
+    Utf8Block::Iterator itBlock = (--itPage->mEnd());
     
     it->mSetPage( itPage );
     it->mSetBlock( itBlock );
-    it->mSetPos( itBlock->mGetSize()+1 );
+    it->mSetPos( itBlock->mGetSize() );
 
     BufferIterator itBuf( it );
 
@@ -605,9 +605,16 @@ bool Utf8BufferIterator::mNext( int intCount ) {
             // if this is the last page in the buffer
             if( _itPage == (--( _buf->_pageContainer.mEnd() ) ) ) {
 
-                // Update our location in the block to the end of the block
-                _intPos = _itBlock->mGetBlockData().size();
-                mSetError("Internal Error: Requested OffSet out of bounds");
+                // If this move puts us at the end of the buffer
+                if( ( _intPos + intCount ) == _itBlock->mGetBlockData().size()  ) {
+
+                    // Update our location in the block to the end of the block
+                    _intPos = _itBlock->mGetBlockData().size();
+                    return true;
+                }
+           
+                // Else, ignore the move command and throw an error
+                mSetError("Buffer Error: Requested OffSet in buffer out of bounds");
                 return false;
 
             }
@@ -633,7 +640,11 @@ char Utf8BufferIterator::mGetUtf8Char( void ) {
     if( _itBlock->mGetBlockData().empty() ) {
         return 0;
     }
-
+    
+    // If the pos is at the end of the buffer return 0
+    if( _intPos == _itBlock->mGetSize() ) {
+        return 0;
+    }
 
     // Return the char at the position requested
     return _itBlock->mGetBlockData().at(_intPos);

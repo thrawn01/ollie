@@ -474,7 +474,7 @@ class Utf8Tests : public CxxTest::TestSuite
             // The first character in the buffer should be an 'A'
             TS_ASSERT_EQUALS( it.mGetUtf8Char(), 'A' );
 
-            TS_ASSERT_EQUALS( it.mGetUtf8String( 20 ), "AAAAAGGGGGDDDDDEFGHB" );
+            TS_ASSERT_EQUALS( string( it.mGetUtf8String( 20 ) ), "AAAAAGGGGGDDDDDEFGHB" );
 
             // Move to the next char in the buffer
             TS_ASSERT_EQUALS( it.mNext(), true );
@@ -483,13 +483,13 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it.mGetUtf8Char(), 'A' );
 
             // Get the first 10 chars in the buffer
-            TS_ASSERT_EQUALS( it.mGetUtf8String( 10 ), "AAAAGGGGD" );
+            TS_ASSERT_EQUALS( string( it.mGetUtf8String( 10 ) ), "AAAAGGGGGD" );
 
             // Move the cursor 20th position in the buffer
             TS_ASSERT_EQUALS( it.mNext(19), true );
 
             // Get the character the iterator points 2
-            TS_ASSERT_EQUALS( it.mGetUtf8Char(), 'B' );
+            TS_ASSERT_EQUALS( it.mGetUtf8Char(), 'B' ); // <-- Exception thrown here
 
             // Get 10 chars in the buffer, String returned only returns 
             // the last char since this is the end of the buffer

@@ -120,10 +120,10 @@ class Utf8BufferIterator : public BufferIterator {
 
         // Interface specific
         virtual boost::shared_ptr<BufferIterator>   copy( void ) const;
-        virtual int                                 mNext( int intCount = 1 );
-        virtual int                                 mPrev( int intCount = 1 ) { return false; }
+        virtual bool                                mNext( int intCount = 1 );
+        virtual bool                                mPrev( int intCount = 1 ) { return false; }
         virtual char                                mGetUtf8Char( void ); 
-        virtual const char*                         mGetUtf8String( int intLen, bool boolReverse = false ) {  }
+        virtual const char*                         mGetUtf8String( int intLen, bool boolReverse = false );
         virtual ushort                              mGetUtf16Char( void ) { }
         virtual const ushort*                       mGetUtf16String( int intLen, bool boolReverse = false ) { }
         virtual int                                 mEqual( boost::shared_ptr<BufferIterator>,  boost::shared_ptr<BufferIterator> );
@@ -141,6 +141,7 @@ class Utf8BufferIterator : public BufferIterator {
         OffSet                  _offset;
         int                     _intPos;
         Utf8Buffer*             _buf;
+        std::string             _strTemp;
 
 };
 

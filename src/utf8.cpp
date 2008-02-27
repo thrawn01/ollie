@@ -594,10 +594,10 @@ bool Utf8Buffer::mLoadFileTask( void ) {
 /**
  * Move the iterator up intCount number of characters
  */
-int Utf8BufferIterator::mNext( int intCount ) { 
+bool Utf8BufferIterator::mNext( int intCount ) { 
 
     // If we are asking to move past the current block
-    if( ( _intPos + intCount ) > _itBlock->mGetBlockData().size()+1  ) {
+    if( ( _intPos + intCount ) > _itBlock->mGetBlockData().size()  ) {
        
         // if this is the last block in the page
         if( _itBlock == (--( _itPage->mEnd() ) ) ) {
@@ -606,7 +606,8 @@ int Utf8BufferIterator::mNext( int intCount ) {
             if( _itPage == (--( _buf->_pageContainer.mEnd() ) ) ) {
 
                 // Update our location in the block to the end of the block
-                _intPos = _itBlock->mGetBlockData().size()+1;
+                _intPos = _itBlock->mGetBlockData().size();
+                mSetError("Internal Error: Requested OffSet out of bounds");
                 return false;
 
             }
@@ -624,18 +625,30 @@ int Utf8BufferIterator::mNext( int intCount ) {
  */
 char Utf8BufferIterator::mGetUtf8Char( void ) { 
 
+    // The iterator should never point to a position
+    // greater than the size of the current block
+    assert( _intPos <= _itBlock->mGetSize() );
+
     // If the block is empty
     if( _itBlock->mGetBlockData().empty() ) {
         return 0;
     }
 
-    // If the size is larger than the size 
-    if( _itBlock->mGetBlockData().size() > _intPos ) {
-        return 0;
-    }
 
     // Return the char at the position requested
     return _itBlock->mGetBlockData().at(_intPos);
+
+}
+
+/**
+ * Convienince function to get a string in the buffer
+ */
+const char* Utf8BufferIterator::mGetUtf8String( int intLen, bool boolReverse ) {
+
+    if( boolReverse ) {
+        return (_strTemp = _itBlock->mGetBlockData().substr(_intPos-intLen, intLen)).c_str();
+    } 
+    return (_strTemp = _itBlock->mGetBlockData().substr(_intPos, intLen)).c_str();
 
 }
 

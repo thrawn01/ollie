@@ -94,8 +94,8 @@ class BufferIterator : public OllieCommon {
         virtual int             mEqual( boost::shared_ptr<BufferIterator>,  boost::shared_ptr<BufferIterator> ) { assert( 1 == 0 ); }
 
         // Navigation Methods
-        virtual int             mNext( int intCount = 1 ) { return _it->mNext( intCount ); }
-        virtual int             mPrev( int intCount = 1 ) { return _it->mPrev( intCount ); }
+        virtual bool            mNext( int intCount = 1 ) { return _it->mNext( intCount ); }
+        virtual bool            mPrev( int intCount = 1 ) { return _it->mPrev( intCount ); }
 
         // NOTES: 
         // The array pointers returned by String() methods should be managed by 
@@ -106,6 +106,7 @@ class BufferIterator : public OllieCommon {
         virtual const char*     mGetUtf8String( int intLen, bool boolReverse = false ) { return _it->mGetUtf8String( intLen, boolReverse ); }
         virtual ushort          mGetUtf16Char( void ) { return _it->mGetUtf16Char(); }
         virtual const ushort*   mGetUtf16String( int intLen, bool boolReverse = false ) { return _it->mGetUtf16String( intLen, boolReverse ); }
+        virtual std::string mGetError( void ) { return _it->_streamErrorMsg.str(); }
 
         // The assert here warns us if we get called by accident, if the base class 
         // copy() is called we are doing something very wrong.

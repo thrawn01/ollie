@@ -487,6 +487,9 @@ class Utf8Tests : public CxxTest::TestSuite
 
         // --------------------------------
         // Test BufferIteratorClass
+        // TODO: Add tests for reverse Utf8String
+        // TODO: After we add attribute support, 
+        // test iterator movement between blocks
         // --------------------------------
         void testmBufferIterator( void ) {
             long longPercent = 0; 
@@ -560,8 +563,60 @@ class Utf8Tests : public CxxTest::TestSuite
             // The Iterator should be at the end of the buffer
             TS_ASSERT( it == buf->mEnd() );
 
-            //TODO Add tests that push the iterator across blocks and pages
-            //TODO Add tests for moving the iterator by offset
+        }
+
+        // --------------------------------
+        // Test BufferIterator offsets and multipage buffers
+        // --------------------------------
+        void testmBufferIteratorOffsets( void ) {
+            Attributes attr;
+
+            // Create a new Buffer Called "buffer1"
+            Utf8Buffer* buf = new Utf8Buffer("buffer1", 20);
+            TS_ASSERT( buf );
+
+            // Get the iterator for this buffer
+            BufferIterator it = buf->mBegin(); 
+
+            // Add 4 pages of text
+            it = buf->mInsert( it, "11111GGGGGDDDDDEFGHB" , 20, attr );
+            it = buf->mInsert( it, "2222212345DDDDDEFGHB" , 20, attr );
+            it = buf->mInsert( it, "3333367890DDDDDEFGHB" , 20, attr );
+            it = buf->mInsert( it, "44444GGGGGDDDDDEFGHB" , 20, attr );
+  
+            // Iterator should point to the end of the buffer
+            TS_ASSERT( it == buf->mEnd() );
+
+            // Reset the iterator to the begining of the buffer
+            it = buf->mBegin();
+           
+            // Advance forward 29 positions
+            TS_ASSERT_EQUALS( it.mNext( 29 ), true );
+
+            // Iterator should point to the 30th position
+            TS_ASSERT_EQUALS( it.mGetUtf8Char(), '5' );
+            TS_ASSERT_EQUALS( it.mGetOffSet( ), 30 );
+
+            // Set the iterator to offset 50 in the buffer
+            TS_ASSERT_EQUALS( it.mSetOffSet( 50 ), true );
+
+            // Iterator should point to the 50th position
+            TS_ASSERT_EQUALS( it.mGetUtf8Char(), '0' );
+            TS_ASSERT_EQUALS( it.mGetOffSet( ), 50 );
+
+            // Move the iterator forward 6 characters
+            TS_ASSERT_EQUALS( it.mNext( 6 ), true );
+
+            // Iterator should point to the 56th position
+            TS_ASSERT_EQUALS( it.mGetUtf8Char(), 'E' );
+            TS_ASSERT_EQUALS( it.mGetOffSet( ), 56 );
+
+            TS_ASSERT_EQUALS( it.mPrev( 10 ), true );
+
+            // Iterator should point to the 46th position
+            TS_ASSERT_EQUALS( it.mGetUtf8Char(), 'E' );
+            TS_ASSERT_EQUALS( it.mGetOffSet( ), 46 );
+
         }
 
         // --------------------------------

@@ -113,7 +113,7 @@ class Utf8Page {
 class Utf8BufferIterator : public BufferIterator {
 
     public: 
-        Utf8BufferIterator( Utf8Buffer* buf ) : _buf(buf), _intPos(0) { }
+        Utf8BufferIterator( Utf8Buffer* buf ) : _buf(buf), _intPos(0), _offCurrent(0) { }
         Utf8BufferIterator( const Utf8BufferIterator* it );
 
         virtual ~Utf8BufferIterator() { }
@@ -121,7 +121,9 @@ class Utf8BufferIterator : public BufferIterator {
         // Interface specific
         virtual boost::shared_ptr<BufferIterator>   copy( void ) const;
         virtual bool                                mNext( int intCount = 1 );
-        virtual bool                                mPrev( int intCount = 1 ) { return false; }
+        virtual bool                                mPrev( int intCount = 1 );
+        virtual bool                                mSetOffSet( OffSet );
+        virtual OffSet                              mGetOffSet( void ) { return _offCurrent; }
         virtual char                                mGetUtf8Char( void ); 
         virtual const char*                         mGetUtf8String( int intLen, bool boolReverse = false );
         virtual ushort                              mGetUtf16Char( void ) { }
@@ -142,6 +144,7 @@ class Utf8BufferIterator : public BufferIterator {
         int                     _intPos;
         Utf8Buffer*             _buf;
         std::string             _strTemp;
+        OffSet                  _offCurrent;
 
 };
 
@@ -160,7 +163,7 @@ class Utf8PageContainer {
         void                mClear( void ) { _listContainer.clear(); }
         Utf8Page::Iterator  mAppendPage( Utf8Page *page );
         Utf8Page::Iterator  mInsertPage( Utf8Page::Iterator const &it, Utf8Page *page);
-        Utf8Page::Iterator  mSplitPage( Utf8BufferIterator *it );
+        Utf8Page::Iterator  mSplitPage( Utf8BufferIterator*, Utf8Page::Iterator& );
         void                mUpdateOffSets( Utf8Page::Iterator const &it );
         
         boost::ptr_list<Utf8Page> _listContainer;

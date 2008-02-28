@@ -592,39 +592,143 @@ bool Utf8Buffer::mLoadFileTask( void ) {
 }
 
 /**
- * Move the iterator up intCount number of characters
+ * Move the iterator to a specific offset in the buffer,
+ * TODO: Improve preformance for large buffers
+ */
+bool Utf8BufferIterator::mSetOffSet( OffSet offset ) {
+
+    // Sanity Check, Are we asking for an offset bigger than the buffer?
+    if( offset > _buf->mGetBufferSize() ) {
+        mSetError("Buffer Error: Requested OffSet in buffer out of bounds" );
+        return false;
+    }
+
+    // Get an iterator to the begining of the page containers
+    Utf8Page::Iterator itPage = _buf->_pageContainer.mBegin();
+
+    // Searching thru the buffer
+    while( itPage != _buf->_pageContainer.mEnd() ) {
+
+        // If the current page contains our offset, Stop searching
+        if( ( itPage->mGetOffSet() + itPage->mGetPageSize() ) > offset ) break;
+
+        // Move to the next page
+        itPage++;
+    }
+
+    // This should never happen... right?
+    assert( itPage != _buf->_pageContainer.mEnd() );
+
+    // Update the page iterator and block iterator
+    _itPage = itPage;
+    _itBlock = itPage->mBegin();
+
+    // Figure out how far into the page our offset is
+    offset -= itPage->mGetOffSet();
+
+    // Set our offset to the begining of the page, mNext() will update it 
+    // once it finds the correct block
+    _offCurrent = itPage->mGetOffSet();
+
+    // Move to the appropriate offset
+    return mNext( offset );
+
+}
+
+/**
+ * Move the iterator back intCount number of characters
+ */
+bool Utf8BufferIterator::mPrev( int intCount ) { 
+    // Remeber the requested positions
+    int intRequested = intCount;
+    
+    // If we are asking to move to the previous block
+    while( intCount > _intPos ) {
+        // if this is the first block in the page
+        if( _itBlock == _itPage->mBegin() ) {
+            // if this is the first page in the buffer
+            if( _itPage == _buf->_pageContainer.mBegin() ) {
+                // If this move puts us before the begining of the buffer
+                if( intCount > _intPos ) {
+                    // ignore the move command and set an error
+                    mSetError("Buffer Error: Requested OffSet in buffer out of bounds");
+                    return false;
+
+                }
+                // Update our location in the block to the begining of the block
+                _intPos = 0;
+                return true;
+            }
+            // Move back 1 page
+            _itPage--;
+            // Set the block to the end of the page
+            _itBlock = _itPage->mEnd();
+        }
+        // Move back 1 block
+        _itBlock--;
+        // Subtract the number of positions to move back
+        intCount -= _intPos;
+        // Set the new position to the end of the new block
+        _intPos = _itBlock->mGetSize();
+    }
+
+    // Update our position in the block
+    _intPos -= intCount;
+
+    // Update our offset
+    _offCurrent -= intRequested;
+
+    return true;
+}
+
+/**
+ * Move the iterator over intCount number of characters
  */
 bool Utf8BufferIterator::mNext( int intCount ) { 
+    // Remeber the requested positions
+    int intRequested = intCount;
+   
+    // Figure out how many positions we have left till the end of the block
+    int intPosLeft = _intPos - _itBlock->mGetSize();
 
     // If we are asking to move past the current block
-    if( ( _intPos + intCount ) > _itBlock->mGetBlockData().size()  ) {
-       
+    while( intCount > intPosLeft ) {
         // if this is the last block in the page
         if( _itBlock == (--( _itPage->mEnd() ) ) ) {
-
             // if this is the last page in the buffer
             if( _itPage == (--( _buf->_pageContainer.mEnd() ) ) ) {
-
                 // If this move puts us at the end of the buffer
                 if( ( _intPos + intCount ) == _itBlock->mGetBlockData().size()  ) {
-
                     // Update our location in the block to the end of the block
                     _intPos = _itBlock->mGetBlockData().size();
                     return true;
                 }
-           
                 // Else, ignore the move command and throw an error
                 mSetError("Buffer Error: Requested OffSet in buffer out of bounds");
                 return false;
 
             }
+            // Move to the next page
+            _itPage++;
+            // Set the block to the begining block
+            _itBlock = _itPage->mEnd();
+        } else {
+            // Move to the next block
+            _itBlock++;
         }
+        // Subtract the number of positions to move forward
+        intCount -= intPosLeft;
+        // Set the new position to the end of the new block
+        intPosLeft = _itBlock->mGetSize();
     }
 
-    // Update out position in the block
+    // Update our position in the block
     _intPos += intCount;
-    return true;
 
+    // Update our offset
+    _offCurrent -= intRequested;
+
+    return true;
 }
 
 /**
@@ -733,10 +837,11 @@ BufferIterator Utf8Buffer::mInsert( BufferIterator& itBuffer, const char* cstrBu
 
     // Will this insert mean we will need to split the page ? 
     // ( We Split the page if the page size is twice that of the target page size )
-    if( itPage->mGetPageSize() >= ( intTargetPageSize * 2 ) ) {
+    // If we inserted more than 1 page of data, keep spliting
+    while( itPage->mGetPageSize() >= ( intTargetPageSize * 2 ) ) {
 
         // Split the page, and return an iterator to the new page
-        itPage = _pageContainer.mSplitPage( it );
+        itPage = _pageContainer.mSplitPage( it, itPage );
     }
 
     // Now that we inserted new data the offsets for the pages need to be adjusted 
@@ -750,6 +855,9 @@ BufferIterator Utf8Buffer::mInsert( BufferIterator& itBuffer, const char* cstrBu
 
     // Update the size of the buffer
     _offBufferSize += intBufSize;
+
+    // Notify the buffer was modified
+    _boolModified = true;
 
     return BufferIterator( itNew );
 }
@@ -916,10 +1024,7 @@ Utf8Page::Iterator Utf8PageContainer::mAppendPage( Utf8Page *page ) {
 /**
  * Split the page the iterator points to and update the iterator before returning
  */
-Utf8Page::Iterator Utf8PageContainer::mSplitPage( Utf8BufferIterator *itBuffer ) {
-
-    // Get the page the iterator points to
-    Utf8Page::Iterator itOldPage = itBuffer->mGetPage();
+Utf8Page::Iterator Utf8PageContainer::mSplitPage( Utf8BufferIterator *itBuffer, Utf8Page::Iterator &itOldPage ) {
 
     // Get the target page size
     OffSet intTargetSize = itOldPage->mGetTargetPageSize();
@@ -930,7 +1035,6 @@ Utf8Page::Iterator Utf8PageContainer::mSplitPage( Utf8BufferIterator *itBuffer )
 
     // Insert a new page right before the old page
     Utf8Page::Iterator itNewPage = mInsertPage( itOldPage, new Utf8Page() );
-
 
     // Move blocks into the new page until we hit our target size
     Utf8Block::Iterator itBlock;
@@ -984,7 +1088,7 @@ Utf8Page::Iterator Utf8PageContainer::mSplitPage( Utf8BufferIterator *itBuffer )
     // Update the offsets of the pages
     itNewPage->mSetOffSet( itOldPage->mGetOffSet() );
     itNewPage->mSetFileOffSet( itOldPage->mGetFileOffSet() );
-    itOldPage->mSetOffSet( intCurSize );
+    itOldPage->mSetOffSet( intCurSize + itNewPage->mGetOffSet() );
     itOldPage->mSetFileOffSet( -1 );
 
     return itNewPage;

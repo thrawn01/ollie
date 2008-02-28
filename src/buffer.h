@@ -96,6 +96,8 @@ class BufferIterator : public OllieCommon {
         // Navigation Methods
         virtual bool            mNext( int intCount = 1 ) { return _it->mNext( intCount ); }
         virtual bool            mPrev( int intCount = 1 ) { return _it->mPrev( intCount ); }
+        virtual bool            mSetOffSet( OffSet offset ) { return _it->mSetOffSet( offset ); }
+        virtual OffSet          mGetOffSet( void ) { return _it->mGetOffSet(); }
 
         // NOTES: 
         // The array pointers returned by String() methods should be managed by 

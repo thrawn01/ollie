@@ -401,6 +401,9 @@ class Utf8Tests : public CxxTest::TestSuite
             // Insert text At the begining of the file 
             buf->mInsert( it, "AAAAAGGGGGDDDDD12345" , 20, attr );
 
+            // The buffer should now have a size of 20
+            TS_ASSERT_EQUALS( buf->mGetBufferSize(), 20 );
+
             // Get the first Block in the page
             Utf8Block::Iterator itBlock = buf->_pageContainer.mBegin()->mBegin();
 
@@ -427,6 +430,8 @@ class Utf8Tests : public CxxTest::TestSuite
             // Inserted data should be there
             TS_ASSERT_EQUALS( itBlock->mGetBlockData() , "AAAAAGGGGGDDDDD12345" );
 
+            TS_ASSERT_EQUALS( itBlock->mGetSize() , 20 );
+
             // If we move to the next block that should be the end of the buffer
             TS_ASSERT( ++itBlock == itPage->mEnd() );
 
@@ -445,6 +450,7 @@ class Utf8Tests : public CxxTest::TestSuite
             // This block should have the second insert
             TS_ASSERT_EQUALS( itBlock->mGetBlockData() , "CCCCCZZZZZXXXXX12345" );
 
+            TS_ASSERT_EQUALS( itBlock->mGetSize() , 20 );
         }
 
         // --------------------------------
@@ -472,7 +478,10 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it.mGetError(), "Buffer Error: Requested OffSet in buffer out of bounds" );
 
             // Insert text At the begining of the file
-            buf->mInsert( it, "A1234GGGGGDDDDDEFGHB" , 20, attr );
+            BufferIterator itNew = buf->mInsert( it, "A1234GGGGGDDDDDEFGHB" , 20, attr );
+
+            // New iterator should point to the end of the buffer, rdy for the next insert
+            TS_ASSERT( itNew == buf->mEnd() );
 
             // The first character in the buffer should be an 'A'
             TS_ASSERT_EQUALS( it.mGetUtf8Char(), 'A' );
@@ -618,7 +627,7 @@ class Utf8Tests : public CxxTest::TestSuite
             BufferIterator it2 = buf2->mBegin(); 
 
             // The data we load from the file should be the same
-            TS_ASSERT_EQUALS( it2.mGetUtf8String( 40 ), "AAAAAGGGGGDDDDDEFGHBCCCCCZZZZZXXXXXBBBBB" );
+            TS_ASSERT_EQUALS( string( it2.mGetUtf8String( 40 ) ), "AAAAAGGGGGDDDDDEFGHBCCCCCZZZZZXXXXXBBBBB" );
         }
 
         // --------------------------------

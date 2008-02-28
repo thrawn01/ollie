@@ -451,7 +451,7 @@ bool Utf8Buffer::mSaveFileTask( void ) {
     }
 
     // Record the current progress
-    _longCurProgress = long( offset / ( _offBufferSize / 100 ) );
+    _longCurProgress = long( offset / float( _offBufferSize / 100 ) );
 
     // Move to the next page
     _itCurSavePage++;
@@ -586,7 +586,7 @@ bool Utf8Buffer::mLoadFileTask( void ) {
     }
 
     // Record the current progress
-    _longCurProgress = long( _offBufferSize / ( _fileHandle->mGetFileSize() / 100 ) );
+    _longCurProgress = long( _offBufferSize / float( _fileHandle->mGetFileSize() / 100 ) );
 
     return true;
 }
@@ -748,6 +748,9 @@ BufferIterator Utf8Buffer::mInsert( BufferIterator& itBuffer, const char* cstrBu
     // Update the position in the new iterator
     itNew->mSetPos( it->mGetPos() + intBufSize );
 
+    // Update the size of the buffer
+    _offBufferSize += intBufSize;
+
     return BufferIterator( itNew );
 }
 
@@ -876,6 +879,9 @@ Utf8Block Utf8Block::mSplit( int intPos ) {
 
     // Erase the copied block data
     _strBlockData.erase( 0, intPos );
+
+    // Update the block size
+    _sizeBlockSize = _strBlockData.size();
 
     // Copy the attributes from this block into the new block
     newBlock.mSetAttributes( mGetAttributes() );

@@ -1,6 +1,17 @@
+===================================
+  Compile instructions
+===================================
 
-========================================
-Ubuntu Gutsy packages for source compile
-========================================
+* Ubuntu Gutsy packages for source compile
+    sudo aptitude install build-essential libboost-serialization-dev libboost-dev cmake 
 
-sudo aptitude install build-essential libboost-serialization-dev libboost-dev cmake 
+* Compile Commands 
+    cmake .
+    make 
+
+* Run Test suite
+    make test
+
+
+Information on this project can be found at http://ollie.thrawn01.org
+

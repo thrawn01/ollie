@@ -17,7 +17,7 @@ MAIN: {
     if($opt{h}){ &usage(); }
 
     `git-status > /dev/null 2> /dev/null`;
-    if( $? != 0 ) {
+    if( $? == 128 ) {
         print "You must have an active 'git clone' of the sources for distclean to work\n";
         exit -1;
     }

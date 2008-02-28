@@ -8,6 +8,8 @@
 ADD_LIBRARY(ollie ollie.cpp file.cpp iohandle.cpp utf8.cpp )
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 
+ENABLE_TESTING()
+
 # Add our Tests
 # -----------------
 ADD_CXXTEST(utf8Tests utf8tests.h )

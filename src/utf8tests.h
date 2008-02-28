@@ -579,9 +579,9 @@ class Utf8Tests : public CxxTest::TestSuite
             BufferIterator it = buf->mBegin(); 
 
             // Add 4 pages of text
-            it = buf->mInsert( it, "11111GGGGGDDDDDEFGHB" , 20, attr );
-            it = buf->mInsert( it, "2222212345DDDDDEFGHB" , 20, attr );
-            it = buf->mInsert( it, "3333367890DDDDDEFGHB" , 20, attr );
+            it = buf->mInsert( it, "12345GGGGGDDDDDEFGHB" , 20, attr );
+            it = buf->mInsert( it, "222221234567890EFGHB" , 20, attr );
+            it = buf->mInsert( it, "333336789012345EFGHB" , 20, attr );
             it = buf->mInsert( it, "44444GGGGGDDDDDEFGHB" , 20, attr );
   
             // Iterator should point to the end of the buffer
@@ -589,33 +589,40 @@ class Utf8Tests : public CxxTest::TestSuite
 
             // Reset the iterator to the begining of the buffer
             it = buf->mBegin();
-           
+
+            // Iterator should point to the first char in the buffer
+            TS_ASSERT_EQUALS( it.mGetUtf8Char(), '1' );
+
+            // offset should be 0
+            TS_ASSERT_EQUALS( it.mGetOffSet( ), 0 );
+          
             // Advance forward 29 positions
             TS_ASSERT_EQUALS( it.mNext( 29 ), true );
 
             // Iterator should point to the 30th position
             TS_ASSERT_EQUALS( it.mGetUtf8Char(), '5' );
-            TS_ASSERT_EQUALS( it.mGetOffSet( ), 30 );
+            TS_ASSERT_EQUALS( it.mGetOffSet( ), 29 );
 
-            // Set the iterator to offset 50 in the buffer
-            TS_ASSERT_EQUALS( it.mSetOffSet( 50 ), true );
+            // Set the iterator to position 50 in the buffer 
+            // ( buffer starts at 0, so position 50 is actually 49 )
+            TS_ASSERT_EQUALS( it.mSetOffSet( 49 ), true );
 
             // Iterator should point to the 50th position
             TS_ASSERT_EQUALS( it.mGetUtf8Char(), '0' );
-            TS_ASSERT_EQUALS( it.mGetOffSet( ), 50 );
+            TS_ASSERT_EQUALS( it.mGetOffSet( ), 49 );
 
             // Move the iterator forward 6 characters
             TS_ASSERT_EQUALS( it.mNext( 6 ), true );
 
             // Iterator should point to the 56th position
             TS_ASSERT_EQUALS( it.mGetUtf8Char(), 'E' );
-            TS_ASSERT_EQUALS( it.mGetOffSet( ), 56 );
+            TS_ASSERT_EQUALS( it.mGetOffSet( ), 55 );
 
             TS_ASSERT_EQUALS( it.mPrev( 10 ), true );
 
             // Iterator should point to the 46th position
-            TS_ASSERT_EQUALS( it.mGetUtf8Char(), 'E' );
-            TS_ASSERT_EQUALS( it.mGetOffSet( ), 46 );
+            TS_ASSERT_EQUALS( it.mGetUtf8Char(), '6' );
+            TS_ASSERT_EQUALS( it.mGetOffSet( ), 45 );
 
         }
 

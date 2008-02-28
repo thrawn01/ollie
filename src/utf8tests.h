@@ -69,11 +69,39 @@ class Utf8Tests : public CxxTest::TestSuite
             // Data should be there
             TS_ASSERT_EQUALS( block.mGetBlockData(), "AAAAABBBBBGGGGGCCCCCDDDDD" );
 
-            // Split the block, the returning block should have the first 15 bytes of data
-            TS_ASSERT_EQUALS( block.mSplit(15).mGetBlockData(), "AAAAABBBBBGGGGG" );
+            // Ensure the size is correct
+            TS_ASSERT_EQUALS( block.mGetSize() , 25 );
+
+            // Insert data at the begining of the block
+            block.mInsert( 0 , "12345", 5 );
+
+            TS_ASSERT_EQUALS( block.mGetBlockData(), "12345AAAAABBBBBGGGGGCCCCCDDDDD" );
+
+            // Ensure the size is correct
+            TS_ASSERT_EQUALS( block.mGetSize() , 30 );
+
+            // Append data to the end of the block
+            block.mInsert( 30 , "ZZZZZ", 5 );
+
+            TS_ASSERT_EQUALS( block.mGetBlockData(), "12345AAAAABBBBBGGGGGCCCCCDDDDDZZZZZ" );
+
+            // Ensure the size is correct
+            TS_ASSERT_EQUALS( block.mGetSize() , 35 );
+
+            // Split the block 
+            Utf8Block newBlock = block.mSplit(15);
+
+            // The returning block should have the first 15 bytes of data
+            TS_ASSERT_EQUALS( newBlock.mGetBlockData(), "12345AAAAABBBBB" );
+
+            // Ensure the size is correct
+            TS_ASSERT_EQUALS( newBlock.mGetSize() , 15 );
 
             // The remaining blocks still be in the original block
-            TS_ASSERT_EQUALS( block.mGetBlockData(), "CCCCCDDDDD" );
+            TS_ASSERT_EQUALS( block.mGetBlockData(), "GGGGGCCCCCDDDDDZZZZZ" );
+
+            // Ensure the size is correct
+            TS_ASSERT_EQUALS( block.mGetSize() , 20 );
 
             // Clear the block of data
             block.mClear();
@@ -221,7 +249,7 @@ class Utf8Tests : public CxxTest::TestSuite
             // The file offset for this page should be 0
             TS_ASSERT_EQUALS( it->mGetFileOffSet(), 0 );
 
-            // The starting offset for this page should be 0
+            // The offset for this page should be 0
             TS_ASSERT_EQUALS( it->mGetOffSet(), 0 );
 
             // Get the first Block in the page
@@ -396,6 +424,7 @@ class Utf8Tests : public CxxTest::TestSuite
 
             BufferIterator it = buf->mBegin(); 
 
+            // Asking for a char in an empty buffer should return 0
             TS_ASSERT_EQUALS( it.mGetUtf8Char(), 0 );
 
             // Insert text At the begining of the file 
@@ -404,11 +433,14 @@ class Utf8Tests : public CxxTest::TestSuite
             // The buffer should now have a size of 20
             TS_ASSERT_EQUALS( buf->mGetBufferSize(), 20 );
 
+            // Buffer should report modified
+            TS_ASSERT_EQUALS( buf->mIsModified(), true );
+
             // Get the first Block in the page
             Utf8Block::Iterator itBlock = buf->_pageContainer.mBegin()->mBegin();
 
             // The block should contain the inserted contents
-            TS_ASSERT_EQUALS( itBlock->mGetBlockData().substr(0,20) , "AAAAAGGGGGDDDDD12345" );
+            TS_ASSERT_EQUALS( itBlock->mGetBlockData() , "AAAAAGGGGGDDDDD12345" );
 
             // Move the iterator up to the end of our insert
             TS_ASSERT_EQUALS( it.mNext( 20 ) , true );
@@ -529,6 +561,7 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT( it == buf->mEnd() );
 
             //TODO Add tests that push the iterator across blocks and pages
+            //TODO Add tests for moving the iterator by offset
         }
 
         // --------------------------------
@@ -553,6 +586,8 @@ class Utf8Tests : public CxxTest::TestSuite
             // Insert At the end of the current text
             buf->mInsert( it, "CCCCCZZZZZXXXXXBBBBB" , 20, attr ); 
 
+            TS_ASSERT_EQUALS( buf->mIsModified(), true );
+
             // Get the default IO handler for this Operating System
             IOHandle* ioHandle = IOHandle::mGetDefaultIOHandler();
             TS_ASSERT( ioHandle ); 
@@ -566,8 +601,8 @@ class Utf8Tests : public CxxTest::TestSuite
             // Assign a file to the buffer
             TS_ASSERT_EQUALS(buf->mAssignFile(file), true );
             
-            // The Assignment updated the 
-            TS_ASSERT_EQUALS(buf->_strName, TEST_FILE ); 
+            // The Assignment updated the buffer name
+            TS_ASSERT_EQUALS(buf->mGetName(), TEST_FILE ); 
 
             // Save the buffer to the file
             TS_ASSERT_EQUALS(buf->mSaveBuffer(), true );

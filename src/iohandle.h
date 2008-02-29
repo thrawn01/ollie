@@ -40,23 +40,25 @@ class IOHandle : public OllieCommon {
 
         // Open / Close 
         virtual bool        mOpen( std::string &strFileName , OpenMode mode );
-        virtual bool        mOpen( const char*, OpenMode mode ) { return false; }
-        virtual bool        mClose( void ) { return false; }
+        virtual bool        mOpen( const char*, OpenMode mode )  = 0;
+        virtual bool        mClose( void ) = 0;
 
         //! Does the IO offer int64 for large files?
-        virtual bool        mOffersLargeFileSupport( void ) { return false; }
+        virtual bool        mOffersLargeFileSupport( void ) = 0;
 
         //! Does the IO offer seek()?
-        virtual bool        mOffersSeek( void ) { return false; }
+        virtual bool        mOffersSeek( void )  = 0;
 
-        // Read Methods
-        virtual int         mWaitForClearToRead( int ) { return false; }
-        virtual int         mWaitForClearToWrite( int ) { return false; }
-        virtual OffSet      mSeek( OffSet ) { return false; }
-        virtual OffSet      mRead( char*, OffSet ) { return false; }
-        virtual OffSet      mWrite( const char*, OffSet  ) { return false; }
+        // Read/Write Methods
+        virtual int         mWaitForClearToRead( int ) = 0;
+        virtual int         mWaitForClearToWrite( int )  = 0;
+        virtual OffSet      mSeek( OffSet )  = 0;
+        virtual OffSet      mRead( char*, OffSet ) = 0;
+        virtual OffSet      mWrite( const char*, OffSet  ) = 0;
+        virtual bool        mTruncate( OffSet offset ) = 0;
         OffSet              mRead( std::string&, OffSet );
         OffSet              mWrite( std::string&, OffSet );
+        
 
         //! Return the name of the iohandle ( IE: filename, network address )
         std::string& mGetName( void ) { return _strName; }
@@ -77,15 +79,16 @@ class PosixIOHandle : public IOHandle {
         virtual ~PosixIOHandle( void );
 
         // Methods
-        bool    mOpen( const char*, OpenMode mode );
-        bool    mClose( void );
-        bool    mOffersLargeFileSupport( void ) { return true; }
-        bool    mOffersSeek( void ) { return true; }
-        int     mWaitForClearToRead( int );
-        int     mWaitForClearToWrite( int );
-        OffSet  mSeek( OffSet );
-        OffSet  mRead( char*, OffSet );
-        OffSet  mWrite( const char*, OffSet );
+        virtual bool    mOpen( const char*, OpenMode mode );
+        virtual bool    mClose( void );
+        virtual bool    mOffersLargeFileSupport( void ) { return true; }
+        virtual bool    mOffersSeek( void ) { return true; }
+        virtual int     mWaitForClearToRead( int );
+        virtual int     mWaitForClearToWrite( int );
+        virtual bool    mTruncate( OffSet offset );
+        virtual OffSet  mSeek( OffSet );
+        virtual OffSet  mRead( char*, OffSet );
+        virtual OffSet  mWrite( const char*, OffSet );
 };
 
 #endif // IOHANDLE_INCLUDE_H

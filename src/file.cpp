@@ -27,7 +27,7 @@
 File::File( IOHandle* const ioHandle ) {
     _ioHandle       = ioHandle;
     _offBlockSize   = DEFAULT_BLOCK_SIZE;
-    _offCurOffSet   = 0;
+    _offCurrent     = 0;
     _intTimeout     = 0;
 }
 

@@ -274,10 +274,10 @@ class Utf8File : public File {
        virtual OffSet  mWriteBlock( OffSet, const char*, OffSet, Attributes& );
        virtual OffSet  mWriteNextBlock( const char*, OffSet, Attributes& );
        virtual OffSet  mSetOffSet( OffSet );
-       virtual void    mPrepareSave( void );
-       virtual void    mPrepareLoad( void );
-       virtual void    mFinalizeSave( void );
-       virtual void    mFinalizeLoad( void );
+       virtual bool    mPrepareSave( void );
+       virtual bool    mPrepareLoad( void );
+       virtual bool    mFinalizeSave( void );
+       virtual bool    mFinalizeLoad( void );
 
 };
 

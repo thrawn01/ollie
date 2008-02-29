@@ -186,6 +186,28 @@ class IOTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( ioHandle->mRead(strBuffer, 4 ), 4 );
            
             TS_ASSERT_EQUALS( strBuffer, "DDDD" );
+
+            // Truncate the file to 10 bytes
+            TS_ASSERT_EQUALS( ioHandle->mTruncate( 10 ), true );
+
+            struct stat sb;
+            if (stat(TEST_FILE, &sb) == -1) {
+                TS_FAIL( string(" Unable to stat file: ") + strerror( errno ) );
+            }
+
+            // Size of the file should be 10 bytes
+            TS_ASSERT_EQUALS( sb.st_size , 10 );
+
+            // This should expand the file to 50 bytes
+            TS_ASSERT_EQUALS( ioHandle->mTruncate( 50 ), true );
+
+            if (stat(TEST_FILE, &sb) == -1) {
+                TS_FAIL( string(" Unable to stat file: ") + strerror( errno ) );
+            }
+
+            // Size of the file should be 50 bytes
+            TS_ASSERT_EQUALS( sb.st_size , 50 );
+
         }
 
         // --------------------------------

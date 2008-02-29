@@ -200,6 +200,19 @@ OffSet PosixIOHandle::mWrite( const char* cstrBuffer, OffSet offSize ) {
 
 }
 
+/**
+ * Truncates a file to the specified offset
+ */
+bool PosixIOHandle::mTruncate( OffSet offset ) {
+    
+    if( ftruncate( _ioFile, offset ) == -1 ) { 
+        mSetError() << "IO Error: Unable to truncate '" << _strName << "' to offset '" << offset << "' - " <<  strerror( errno );
+        return false;
+    }
+    
+    return true;
+}
+
 // --- End posixfile.cpp ---
 
 

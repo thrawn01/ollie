@@ -24,6 +24,8 @@
 #include <iostream>
 #include <fstream>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 using namespace std;
 
@@ -46,6 +48,10 @@ class BufferTests : public CxxTest::TestSuite
             }
 
             // Add some Text to the file
+            ioFile << "AAAABBBBCCCCDDDDEEEE11223344\n";
+            ioFile << "AAAABBBBCCCCDDDDEEEE11223344\n";
+            ioFile << "AAAABBBBCCCCDDDDEEEE11223344\n";
+            ioFile << "AAAABBBBCCCCDDDDEEEE11223344\n";
             ioFile << "AAAABBBBCCCCDDDDEEEE11223344\n";
 
             ioFile.close();
@@ -72,26 +78,27 @@ class BufferTests : public CxxTest::TestSuite
 
             char* arrBlockData = new char[file->mGetBlockSize()];
 
-            // Prepare to save 
-            file->mPrepareLoad();
+            // Reset the offset to the begining of the file
+            TS_ASSERT_EQUALS( file->mPrepareLoad(), true );
 
             // Offset should be the begining of the file
             TS_ASSERT_EQUALS( file->mGetOffSet(), 0 );
 
-            // The block read should return the entire file contents, 29 bytes.
-            TS_ASSERT_EQUALS( file->mReadNextBlock( arrBlockData, attr ), 29 );
+            // The block read should return the entire file 145 bytes
+            TS_ASSERT_EQUALS( file->mReadNextBlock( arrBlockData, attr ), 145 );
 
-            TS_ASSERT_EQUALS( file->mGetOffSet() , 29 );
+            TS_ASSERT_EQUALS( file->mGetOffSet() , 145 );
 
             // TODO Add Check for empty attributes
            
             // No Errors should have occured
             TS_ASSERT_EQUALS( file->mGetError(), "" );
           
-            // The data returned should be 29 bytes and should match the data we created for the test
+            // The first row should match
             TS_ASSERT_EQUALS( string( arrBlockData, 29 ), "AAAABBBBCCCCDDDDEEEE11223344\n" );
 
-            file->mFinalizeLoad();
+            // This currently does nothing, but might for other file handle types
+            TS_ASSERT_EQUALS( file->mFinalizeLoad(), true );
 
             // Clean up the blockdata
             delete arrBlockData;
@@ -121,7 +128,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT( file );
 
             // Prepare to save 
-            file->mPrepareSave();
+            TS_ASSERT_EQUALS( file->mPrepareSave(), true );
 
             // Offset should be the begining of the file
             TS_ASSERT_EQUALS( file->mGetOffSet(), 0 );
@@ -133,28 +140,40 @@ class BufferTests : public CxxTest::TestSuite
 
             // No Errors should have occured
             TS_ASSERT_EQUALS( file->mGetError(), "" );
+
+            // Finalize the save before reading again
+            TS_ASSERT_EQUALS( file->mFinalizeSave(), true );
             
             char* arrBlockData = new char[file->mGetBlockSize()];
 
-            // Offset should be the begining of the file
-            TS_ASSERT_EQUALS( file->mSetOffSet(0), 0 );
+            // Reset the offset to the begining of the file
+            TS_ASSERT_EQUALS( file->mPrepareLoad(), true );
 
+            // Offset should be the begining of the file
             TS_ASSERT_EQUALS( file->mGetOffSet() , 0 );
 
+            // should read in 40 bytes
             TS_ASSERT_EQUALS( file->mReadNextBlock( arrBlockData, attr ), 40 );
 
+            // offset should now be at 40
             TS_ASSERT_EQUALS( file->mGetOffSet() , 40 );
 
             // No Errors should have occured
             TS_ASSERT_EQUALS( file->mGetError(), "" );
           
-            // The data returned should be 29 bytes and should match the data we created for the test
+            // The data returned should be 40 bytes and should match the data we created for the test
             TS_ASSERT_EQUALS( string( arrBlockData, 40 ), "DDDDDFFFFFGGGGGHHHHHJJJJJKKKKKLLLLL:::::" );
 
-            file->mFinalizeSave();
+            // This currently does nothing, but might for other file handle types
+            TS_ASSERT_EQUALS( file->mFinalizeLoad(), true );
 
-            //FIXME: Should check the output file size matches what we wrote
-            TS_ASSERT( 1 == 0 );
+            struct stat sb;
+            if (stat(TEST_FILE, &sb) == -1) {
+                TS_FAIL( string(" Unable to stat file: ") + strerror( errno ) );
+            }
+
+            // Size of the file should be 40 bytes
+            TS_ASSERT_EQUALS( sb.st_size , 40 );
 
             // Delete the test file
             if ( unlink(TEST_FILE) ) {

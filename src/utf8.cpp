@@ -195,7 +195,7 @@ OffSet Utf8File::mWriteBlock( OffSet offset, const char* arrBlockData, OffSet of
     }
 
     // Record our offset
-    _offCurOffSet = offset;
+    _offCurrent = offset;
 
     return mWriteNextBlock( arrBlockData, offBlockSize, attr );
 }
@@ -224,7 +224,7 @@ OffSet Utf8File::mWriteNextBlock( const char* arrBlockData, OffSet offBlockSize,
     }
 
     // Keep track of where in the file we are
-    _offCurOffSet += offLen;
+    _offCurrent += offLen;
 
     // Tell the caller how many bytes we wrote
     return offLen;
@@ -240,9 +240,9 @@ OffSet Utf8File::mWriteNextBlock( const char* arrBlockData, OffSet offBlockSize,
 OffSet Utf8File::mPeekNextBlock( void ) {
 
     // If we were to read the next block would we hit the end of the file?
-    if( ( _ioHandle->mGetFileSize() - _offCurOffSet ) < _offBlockSize ) { 
+    if( ( _ioHandle->mGetFileSize() - _offCurrent ) < _offBlockSize ) { 
         // If so, return how many bytes we would read
-        return _ioHandle->mGetFileSize() - _offCurOffSet;
+        return _ioHandle->mGetFileSize() - _offCurrent;
     }
 
     return _offBlockSize;
@@ -273,7 +273,7 @@ OffSet Utf8File::mReadNextBlock( char* arrBlockData, Attributes &attr ) {
     }
 
     // Keep track of where in the file we are
-    _offCurOffSet += offLen;
+    _offCurrent += offLen;
 
     // Tell the caller how many bytes are in the block of data
     return offLen;
@@ -300,7 +300,7 @@ OffSet Utf8File::mSetOffSet( OffSet offset ) {
     assert( _ioHandle != 0 ); 
   
     // Return if the requested location is the same
-    if( _offCurOffSet == offset ) return _offCurOffSet;
+    if( _offCurrent == offset ) return _offCurrent;
 
     // If the IO handle we are using does not offer Seek
     // and we are not asking to seek the begining of the file
@@ -316,43 +316,55 @@ OffSet Utf8File::mSetOffSet( OffSet offset ) {
     }
 
     // Record our offset
-    _offCurOffSet = offset;
+    _offCurrent = offset;
 
-    return _offCurOffSet;
+    return _offCurrent;
 }
 
 /**
  * Prepare to save a file
  */
-void Utf8File::mPrepareSave( void ) {
+bool Utf8File::mPrepareSave( void ) {
 
     // Set the file offset to the begining of the file
-    mSetOffSet( 0 );
+    if( mSetOffSet( 0 ) != 0 ) return false;
+    return true;
 
 }
 
 /**
  * Prepare to load a file
  */
-void Utf8File::mPrepareLoad( void ) {
+bool Utf8File::mPrepareLoad( void ) {
 
     // Set the file offset to the begining of the file
-    mSetOffSet( 0 );
+    if( mSetOffSet( 0 ) != 0 ) return false;
+    return true;
 
 }
 
 /**
- * Finalize the save
+ * Truncate the file to the offset of _offCurrent
+ * This is needed to shorten the file if wrote a smaller
+ * file in place of a larger file
  */
-void Utf8File::mFinalizeSave( void ) {
+bool Utf8File::mFinalizeSave( void ) {
 
+    //Truncate the file up to our last offset
+    if( _ioHandle->mTruncate( _offCurrent) == false ){
+        mSetError( _ioHandle->mGetError() );
+        return false;
+    }
+
+    return true;
 }
 
 /**
  * Finalize the load
  */
-void Utf8File::mFinalizeLoad( void ) {
+bool Utf8File::mFinalizeLoad( void ) {
 
+    return true;
 }
 
 /**

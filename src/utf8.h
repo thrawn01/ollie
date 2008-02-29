@@ -209,6 +209,7 @@ class Utf8Buffer : public BufferInterface {
         virtual BufferIterator               mInsert( BufferIterator&, const char*, int, Attributes &attr  );
         virtual BufferIterator               mInsert( BufferIterator&, const std::string&, Attributes &attr  ) { return false; }
         virtual bool                         mDelete( BufferIterator& , BufferIterator& ) { return false; }
+        virtual bool                         mDelete( BufferIterator& , OffSet ) { return false; }
         virtual bool                         mDelete( OffSet , OffSet ) { return false; }
         virtual bool                         mSaveBuffer( void );
         virtual bool                         mLoadBuffer( void );
@@ -273,6 +274,10 @@ class Utf8File : public File {
        virtual OffSet  mWriteBlock( OffSet, const char*, OffSet, Attributes& );
        virtual OffSet  mWriteNextBlock( const char*, OffSet, Attributes& );
        virtual OffSet  mSetOffSet( OffSet );
+       virtual void    mPrepareSave( void );
+       virtual void    mPrepareLoad( void );
+       virtual void    mFinalizeSave( void );
+       virtual void    mFinalizeLoad( void );
 
 };
 

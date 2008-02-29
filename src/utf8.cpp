@@ -31,6 +31,9 @@ void Utf8Buffer::init( OffSet offPageSize  ) {
     _offBufferSize        = 0;
     _currentTask          = 0;
     _offTargetPageSize    = offPageSize;
+    _offCurSaveOffSet     = 0;
+    _offCurLoadOffSet     = 0;
+    _longCurProgress      = 0;
 
     // Append an empty page to the buffer
     Utf8Page *page = new Utf8Page();
@@ -319,6 +322,40 @@ OffSet Utf8File::mSetOffSet( OffSet offset ) {
 }
 
 /**
+ * Prepare to save a file
+ */
+void Utf8File::mPrepareSave( void ) {
+
+    // Set the file offset to the begining of the file
+    mSetOffSet( 0 );
+
+}
+
+/**
+ * Prepare to load a file
+ */
+void Utf8File::mPrepareLoad( void ) {
+
+    // Set the file offset to the begining of the file
+    mSetOffSet( 0 );
+
+}
+
+/**
+ * Finalize the save
+ */
+void Utf8File::mFinalizeSave( void ) {
+
+}
+
+/**
+ * Finalize the load
+ */
+void Utf8File::mFinalizeLoad( void ) {
+
+}
+
+/**
  * Returns a itertor to the begining of this this buffer
  */
 BufferIterator Utf8Buffer::mBegin( void ) {
@@ -412,9 +449,10 @@ bool Utf8Buffer::mSaveBuffer( void ) {
     mSetTaskStatus() << "Saving " << _fileHandle->mGetFileName() << "..." ;
     _currentTask = &Utf8Buffer::mSaveFileTask;
 
-    // Set the file offset to the begining of the file
-    _fileHandle->mSetOffSet( 0 );
+    // Prepare the file class for save operation
+    _fileHandle->mPrepareSave();
 
+    _offCurSaveOffSet = 0;
     _longCurProgress = 0;
 
     return true;
@@ -424,7 +462,7 @@ bool Utf8Buffer::mSaveBuffer( void ) {
 bool Utf8Buffer::mSaveFileTask( void ) {
     OffSet offset = 0;
     assert( _fileHandle != 0 );
-
+    
     // Ensure we don't do anything stupid
     if( _itCurSavePage == _pageContainer.mEnd() ) {
         mSetError("Buffer Error: Attempted to save pass last page of data");
@@ -438,6 +476,9 @@ bool Utf8Buffer::mSaveFileTask( void ) {
 
     // Is the file save complete?
     if( _offBufferSize == offset ) {
+
+        // Finalize the save
+        _fileHandle->mFinalizeSave();
 
         // We are no longer in a modified state
         _boolModified = false;
@@ -573,6 +614,9 @@ bool Utf8Buffer::mLoadFileTask( void ) {
 
     // Is the file loaded completely?
     if( _offBufferSize == _fileHandle->mGetFileSize() ) {
+
+        // Finalize the load
+        _fileHandle->mFinalizeLoad();
 
         // Report the entire file loaded into memory
         _boolEntireFileLoaded = true;

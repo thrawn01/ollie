@@ -52,6 +52,10 @@ class File : public OllieCommon {
        virtual OffSet       mWriteBlock( OffSet, const char*, OffSet, Attributes &attr ) = 0;
        virtual OffSet       mWriteNextBlock( const char*,  OffSet, Attributes &attr ) = 0;
        virtual OffSet       mSetOffSet( OffSet ) = 0;
+       virtual void         mPrepareSave( void ) = 0;
+       virtual void         mPrepareLoad( void ) = 0;
+       virtual void         mFinalizeSave( void ) = 0;
+       virtual void         mFinalizeLoad( void ) = 0;
 
        // Methods
        void          mSetBlockSize( OffSet offSize ) { _offBlockSize = offSize; }

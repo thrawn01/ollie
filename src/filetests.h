@@ -72,8 +72,11 @@ class BufferTests : public CxxTest::TestSuite
 
             char* arrBlockData = new char[file->mGetBlockSize()];
 
+            // Prepare to save 
+            file->mPrepareLoad();
+
             // Offset should be the begining of the file
-            TS_ASSERT_EQUALS( file->mSetOffSet(0), 0 );
+            TS_ASSERT_EQUALS( file->mGetOffSet(), 0 );
 
             // The block read should return the entire file contents, 29 bytes.
             TS_ASSERT_EQUALS( file->mReadNextBlock( arrBlockData, attr ), 29 );
@@ -87,6 +90,8 @@ class BufferTests : public CxxTest::TestSuite
           
             // The data returned should be 29 bytes and should match the data we created for the test
             TS_ASSERT_EQUALS( string( arrBlockData, 29 ), "AAAABBBBCCCCDDDDEEEE11223344\n" );
+
+            file->mFinalizeLoad();
 
             // Clean up the blockdata
             delete arrBlockData;
@@ -115,8 +120,11 @@ class BufferTests : public CxxTest::TestSuite
             File* file = new Utf8File( ioHandle );
             TS_ASSERT( file );
 
+            // Prepare to save 
+            file->mPrepareSave();
+
             // Offset should be the begining of the file
-            TS_ASSERT_EQUALS( file->mSetOffSet(0), 0 );
+            TS_ASSERT_EQUALS( file->mGetOffSet(), 0 );
 
             // Write a block of text with no attributes
             TS_ASSERT_EQUALS( file->mWriteNextBlock( "DDDDDFFFFFGGGGGHHHHHJJJJJKKKKKLLLLL:::::", 40, attr ), 40 );
@@ -142,6 +150,11 @@ class BufferTests : public CxxTest::TestSuite
           
             // The data returned should be 29 bytes and should match the data we created for the test
             TS_ASSERT_EQUALS( string( arrBlockData, 40 ), "DDDDDFFFFFGGGGGHHHHHJJJJJKKKKKLLLLL:::::" );
+
+            file->mFinalizeSave();
+
+            //FIXME: Should check the output file size matches what we wrote
+            TS_ASSERT( 1 == 0 );
 
             // Delete the test file
             if ( unlink(TEST_FILE) ) {

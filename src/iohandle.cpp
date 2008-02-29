@@ -35,23 +35,21 @@ PosixIOHandle::PosixIOHandle() { }
 /*!
  * IOHandle Destructor
  */
-PosixIOHandle::~PosixIOHandle() { }
+PosixIOHandle::~PosixIOHandle() { 
+
+    // Close any open file handles
+    mClose(); 
+
+}
 
 /*!
- * Open a file in the requested mode
+ * Close the file
  */
 bool PosixIOHandle::mClose( void ) {
     
-    if( _ioFile ) {
-        close(_ioFile); 
-        _ioFile = 0;
-        return true;
-    }
-
-    // Just fail silently?
-    mSetError() << "IO Error: Can not close un-open file";
-
-    return false;
+    close(_ioFile); 
+    _ioFile = 0;
+    return true;
 }
 
 /*!

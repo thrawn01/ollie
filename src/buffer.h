@@ -145,6 +145,7 @@ class BufferInterface : public OllieCommon {
         virtual BufferIterator               mInsert( BufferIterator&, const char*, int, Attributes& )      = 0;
         virtual BufferIterator               mInsert( BufferIterator&, const std::string&, Attributes& )    = 0;
         virtual bool                         mDelete( BufferIterator& , BufferIterator& )           = 0;
+        virtual bool                         mDelete( BufferIterator& , OffSet )                    = 0;
         virtual bool                         mDelete( OffSet , OffSet )                             = 0;
         virtual bool                         mSaveBuffer( void )                                    = 0;
         virtual bool                         mLoadBuffer( void )                                    = 0;

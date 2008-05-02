@@ -322,9 +322,15 @@ class Utf8Tests : public CxxTest::TestSuite
             // Null out the array
             memset(cstrBuf, 0, 41 );
 
-            // Create a large file
+            // Iterate this 10 times
             while( count < 10 ) {
                 int i = 48;
+
+                // Each line in the file is 40 charaters of 1 ascii character
+                // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+                // BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+
+                // Create 127 lines of characters 
                 while( i < 127 ) {
                     memset(cstrBuf, i, 40 );
                     ioFile << cstrBuf << "\n";
@@ -506,9 +512,9 @@ class Utf8Tests : public CxxTest::TestSuite
 
         // --------------------------------
         // Test BufferIteratorClass
-        // TODO: Add tests for reverse Utf8String
-        // TODO: After we add attribute support, 
-        // test iterator movement between blocks
+        // TODO: Add tests for reverse iterator 
+        // ( For languages that insert right to left instead of left to right )
+        // TODO: After we add attribute support, test iterator movement between blocks
         // --------------------------------
         void testmBufferIterator( void ) {
             long longPercent = 0; 
@@ -822,16 +828,24 @@ class Utf8Tests : public CxxTest::TestSuite
             // This page should start at offset 10
             TS_ASSERT_EQUALS( itPage->mGetOffSet() , 10 );
 
+            // The File OffSet should still be the same
+            TS_ASSERT_EQUALS( itPage->mGetFileOffSet() , 20 );
+
             // Remove the next 10 bytes, the page is now empty
             TS_ASSERT_EQUALS( buf->mDelete( it , 10 ), true );
+
+            // NOTE: itPage and itBlock are now in-validated
             
-            // Iterator should still point to the begining of the buffer
+            // Buffer Iterator should still point to the begining of the buffer
             TS_ASSERT( it == buf->mBegin() );
 
             itPage = buf->_pageContainer.mBegin();
 
             // The offset should now be 0 ( at the start of the buffer )
             TS_ASSERT_EQUALS( itPage->mGetOffSet() , 0 );
+
+            // The file offset should still be the same
+            TS_ASSERT_EQUALS( itPage->mGetFileOffSet() , 20 );
 
             itBlock = itPage->mBegin();
 
@@ -843,8 +857,8 @@ class Utf8Tests : public CxxTest::TestSuite
 
             ++itPage;
 
-            // This page should start at offset 10
-            TS_ASSERT_EQUALS( itPage->mGetOffSet() , 10 );
+            // This page should start at offset 20
+            TS_ASSERT_EQUALS( itPage->mGetOffSet() , 20 );
 
             itBlock = itPage->mBegin();
 

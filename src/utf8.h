@@ -53,6 +53,7 @@ class Utf8Block {
         size_t              mGetSize( void ) const { return _sizeBlockSize; }
         void                mInsert( int, const char*, int );
         Utf8Block           mSplit( int );
+        Utf8Block           mTruncate( int );
 
         // members
         std::string _strBlockData;
@@ -122,6 +123,7 @@ class Utf8BufferIterator : public BufferIterator {
         virtual boost::shared_ptr<BufferIterator>   copy( void ) const;
         virtual bool                                mNext( int intCount = 1 );
         virtual bool                                mPrev( int intCount = 1 );
+        virtual bool                                mNextBlock( int intCount = 1 );
         virtual bool                                mSetOffSet( OffSet );
         virtual OffSet                              mGetOffSet( void ) { return _offCurrent; }
         virtual char                                mGetUtf8Char( void ); 
@@ -163,6 +165,7 @@ class Utf8PageContainer {
         void                mClear( void ) { _listContainer.clear(); }
         Utf8Page::Iterator  mAppendPage( Utf8Page *page );
         Utf8Page::Iterator  mInsertPage( Utf8Page::Iterator const &it, Utf8Page *page);
+        Utf8Page::Iterator  mDeletePage( Utf8Page::Iterator const &it );
         Utf8Page::Iterator  mSplitPage( Utf8BufferIterator*, Utf8Page::Iterator& );
         void                mUpdateOffSets( Utf8Page::Iterator const &it );
         
@@ -208,8 +211,8 @@ class Utf8Buffer : public BufferInterface {
         virtual BufferIterator               mInsert( BufferIterator&, const ushort*, int, Attributes &attr ) { return false; }
         virtual BufferIterator               mInsert( BufferIterator&, const char*, int, Attributes &attr  );
         virtual BufferIterator               mInsert( BufferIterator&, const std::string&, Attributes &attr  ) { return false; }
-        virtual bool                         mDelete( BufferIterator& , BufferIterator& ) { return false; }
-        virtual bool                         mDelete( BufferIterator& , OffSet ) { return false; }
+        virtual bool                         mDelete( BufferIterator& , BufferIterator& );
+        virtual bool                         mDelete( BufferIterator& , OffSet );
         virtual bool                         mDelete( OffSet , OffSet ) { return false; }
         virtual bool                         mSaveBuffer( void );
         virtual bool                         mLoadBuffer( void );

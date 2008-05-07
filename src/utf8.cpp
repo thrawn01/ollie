@@ -739,6 +739,13 @@ bool Utf8BufferIterator::mPrev( int intCount ) {
 }
 
 /**
+ * Move the iterator over intCount number of blocks
+ */
+bool Utf8BufferIterator::mNextBlock( int intCount ) { 
+    return false; 
+}
+
+/**
  * Move the iterator over intCount number of characters
  */
 bool Utf8BufferIterator::mNext( int intCount ) { 
@@ -876,12 +883,12 @@ int Utf8BufferIterator::mEqual( boost::shared_ptr<BufferIterator> sharedLeft,  b
     // If the both point to the same address they are equal!
     if( itLeft == itRight ) return 1; 
 
-    // Are these iterators pointing to the same page?
+    // Are these iterators pointing to the same page, block, pos?
     if( ( itLeft->_itPage  == itRight->_itPage  ) and 
         ( itLeft->_itBlock == itRight->_itBlock ) and
         ( itLeft->_intPos == itRight->_intPos   ) ) return 1;
 
-    return 1;
+    return 0;
 }
 
 /**
@@ -935,6 +942,98 @@ BufferIterator Utf8Buffer::mInsert( BufferIterator& itBuffer, const char* cstrBu
     return BufferIterator( itNew );
 }
 
+/**
+ * Delete a range of characters in the buffer starting at the BufferIterator position
+ * Return true if the delete was successful
+ */
+bool Utf8Buffer::mDelete( BufferIterator& itBuffer, const OffSet offLen ) { 
+
+    // Create a copy of the iterator
+    BufferIterator itEnd( itBuffer );
+
+    // Advance the buffer by offLen
+    itEnd.mNext( offLen );
+
+    return mDelete(itBuffer, itEnd);
+}
+
+/**
+ * Delete a range of characters in the buffer starting at the BufferIterator position
+ * and ending at the second BufferIterator, Return true if the delete was successful
+ * TODO: Think about reverse iterators, maybe 1 method for reverse and 1 for normal
+ */
+bool Utf8Buffer::mDelete( BufferIterator& itBuffer, BufferIterator& itBufferEnd ) {
+    return false;
+    // Make a copy of the starting location, incase something goes wrong
+    // we don't want to in-validate the users iterators
+    BufferIterator itBufferStart ( itBuffer );
+
+    // Ask Buffer Iterators for a pointer to our implementation specific iterators
+    Utf8BufferIterator* itUtf8Buffer = itBuffer.mGetPtrAs<Utf8BufferIterator*>();
+    Utf8BufferIterator* itStart = itBufferStart.mGetPtrAs<Utf8BufferIterator*>();
+    Utf8BufferIterator* itEnd = itBufferEnd.mGetPtrAs<Utf8BufferIterator*>();
+  
+    // Ensure these iterators belong to us
+    assert( itEnd->_buf == this );
+    assert( itStart->_buf == this );
+
+    // Delete blocks and pages until Start and 
+    // End iterators point to the same block
+    while( itStart->mGetBlock() != itEnd->mGetBlock() ) {
+          
+        // If the iterator doesn't point to the 
+        // begining of the block
+        if( itStart->mGetPos() != 0 ) {
+            // Truncate the block starting at intPos 
+            // and return a copy of the bytes that were truncated
+            Utf8Block deletedChars = itStart->mGetBlock()->mTruncate( itStart->mGetPos() );
+            // TODO: Append the deleted characters to the change set
+
+            // Set the pos to the begining of the new block
+            itStart->mSetPos( 0 );
+
+            // Move the iterator to the next block
+            itStart->mNextBlock();
+            continue;
+        }
+      
+        // if the iterator now points to a different page
+        if( itStart->mGetPage() != itUtf8Buffer->mGetPage() ) {
+       
+            // And the ending iterator doesn't point to this page
+            if( itStart->mGetPage() != itEnd->mGetPage() ) {
+                // TODO: Add the page to the change set
+                
+                // Delete the entire page
+                continue;
+            }
+        }
+
+        // TODO: Append the blocks to the changeset
+        
+        // Delete the block, Updating the block iterator with the next block
+        itStart->mSetBlock( itStart->mGetPage()->mDeleteBlock( itStart->mGetBlock() ) );
+
+        // If we deleted the last block on the page
+        if( itStart->mGetBlock() == itStart->mGetPage()->mEnd() ) {
+
+            // If the page is empty
+            if( itStart->mGetPage()->mGetPageSize() == 0 ) {
+
+                // Remove the page from the page container
+                itStart->_buf->_pageContainer.mDeletePage( itStart->mGetPage() );
+            }
+            // TODO: If we want to merge small pages into other pages
+            // we should do it here
+        }
+    }
+
+    // If the iterator doesn't point to the begining of the block
+    
+        // Delete characters from this block 
+        
+    return true;
+}
 
 /*!
  * Append a block to the page and return an iterator to the block
@@ -1071,6 +1170,31 @@ Utf8Block Utf8Block::mSplit( int intPos ) {
 
 }
 
+/**
+ * Truncates the characters starting at intPos till the end of the block
+ * This method is just like mSplit() except it returns the truncated data
+ */
+Utf8Block Utf8Block::mTruncate( int intPos ) {
+
+    Utf8Block newBlock;
+
+    // Set the new block data
+    newBlock.mSetBlockData( _strBlockData.substr( intPos, std::string::npos ) );
+
+    // Erase the copied block data
+    _strBlockData.erase( intPos, std::string::npos );
+
+    // Update the block size
+    _sizeBlockSize = _strBlockData.size();
+
+    // Copy the attributes from this block into the new block
+    newBlock.mSetAttributes( mGetAttributes() );
+
+    return newBlock;
+
+}
+
+
 Utf8Block::Utf8Block( char* cstrData, OffSet offLen ) { 
     _offOffSet        = 0; 
     _sizeBlockSize   = 0;
@@ -1167,6 +1291,16 @@ Utf8Page::Iterator Utf8PageContainer::mSplitPage( Utf8BufferIterator *itBuffer, 
     return itNewPage;
 }
 
+Utf8Page::Iterator Utf8PageContainer::mDeletePage( Utf8Page::Iterator const &it ) { 
+
+    assert( it != _listContainer.end() ); 
+
+    // Update the length of the container
+    --_longSize;
+
+    return _listContainer.erase( it ); 
+}
+
 /*!
  * Insert a page to the container
  */
@@ -1178,7 +1312,7 @@ Utf8Page::Iterator Utf8PageContainer::mInsertPage( Utf8Page::Iterator const &it,
     }
 
     // Update the length of the container
-    _longSize++;
+    ++_longSize;
 
     return _listContainer.insert( it , page );
 }

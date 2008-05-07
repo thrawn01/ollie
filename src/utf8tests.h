@@ -45,6 +45,7 @@ class Utf8Tests : public CxxTest::TestSuite
 
         // --------------------------------
         // Create an block
+        // TODO: Add tests to verify attributes in blocks
         // --------------------------------
         void testmCreateBlock( void ) {
 
@@ -98,11 +99,22 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( newBlock.mGetSize() , 15 );
 
             // The remaining blocks still be in the original block
-            TS_ASSERT_EQUALS( block.mGetBlockData(), "GGGGGCCCCCDDDDDZZZZZ" );
+            TS_ASSERT_EQUALS( block.mGetBlockData(), "GGGGGCCCCC" );
 
             // Ensure the size is correct
             TS_ASSERT_EQUALS( block.mGetSize() , 20 );
 
+            newBlock = block.mTruncate(10);
+
+            // The returning block should have the last 10 bytes of data
+            TS_ASSERT_EQUALS( newBlock.mGetBlockData(), "DDDDDZZZZZ" );
+
+            // Ensure the size is correct
+            TS_ASSERT_EQUALS( newBlock.mGetSize() , 10 );
+
+            // Ensure the size is correct
+            TS_ASSERT_EQUALS( block.mGetSize() , 10 );
+    
             // Clear the block of data
             block.mClear();
 
@@ -286,6 +298,7 @@ class Utf8Tests : public CxxTest::TestSuite
             // The block should contain all E's
             TS_ASSERT_EQUALS( itBlock->mGetBlockData().substr(0,10) , "EEEEEEEEEE" );
 
+            // TODO: Add tests for mDeletePage()
         }
 
         // --------------------------------
@@ -587,6 +600,31 @@ class Utf8Tests : public CxxTest::TestSuite
             
             // The Iterator should be at the end of the buffer
             TS_ASSERT( it == buf->mEnd() );
+
+            // Make a copy of the iterator
+            BufferIterator itCopy = it;
+
+            // Both iterators should be equal
+            TS_ASSERT( itCopy == it );
+
+            // Move the copy back 1 character
+            TS_ASSERT_EQUALS( itCopy.mPrev(), true );
+
+            // Iterators should not be equal
+            TS_ASSERT( itCopy != it );
+          
+            // Should point to the last character in the buffer
+            TS_ASSERT_EQUALS( itCopy.mGetUtf8Char(), 'B' ); 
+
+            // The first iterator should still 
+            // point beyond the last character in the buffer
+            TS_ASSERT( it == buf->mEnd() );
+
+            // FIXME: Should the iterator have an insertBlock() method?
+            //BufferIterator itNew = buf->mInsertBlock( it, newBlock );
+
+            // TODO Add a tests for mNextBlock()
+            // TODO Add a tests for mPrevBlock()
 
             delete buf;
         }

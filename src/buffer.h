@@ -87,10 +87,11 @@ class BufferIterator : public OllieCommon {
                                     if( &i != this ) _it = i._it->copy(); 
                                     return *this; 
                                 }
-        int                     operator==(const BufferIterator& right ) { 
+        int                    operator==(const BufferIterator& right ) { 
                                     if( this == &right ) return 1; 
                                     return _it->mEqual(_it, right._it);
                                 }
+        int                    operator!=(const BufferIterator& right ) { return !( *this == right ); }
         virtual int             mEqual( boost::shared_ptr<BufferIterator>,  boost::shared_ptr<BufferIterator> ) { assert( 1 == 0 ); }
 
         // Navigation Methods
@@ -100,10 +101,11 @@ class BufferIterator : public OllieCommon {
         virtual OffSet          mGetOffSet( void ) { return _it->mGetOffSet(); }
 
         // NOTES: 
-        // The array pointers returned by String() methods should be managed by 
+        // The array pointers returned by mGetString() methods should be managed by 
         // the implementation, The caller is not responsible for freeing this memory ( See Utf8Buffer )
         // The caller should make a copy of the data returned by the String() methods before 
         // calling any other iterator method, the implementation may invalidate the pointer at any time
+        // TODO: Change the string = mGetString() methods to mGetString(int length, &string);
         virtual char            mGetUtf8Char( void ) { return _it->mGetUtf8Char(); }
         virtual const char*     mGetUtf8String( int intLen, bool boolReverse = false ) { return _it->mGetUtf8String( intLen, boolReverse ); }
         virtual ushort          mGetUtf16Char( void ) { return _it->mGetUtf16Char(); }

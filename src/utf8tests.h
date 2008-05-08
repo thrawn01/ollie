@@ -648,9 +648,6 @@ class Utf8Tests : public CxxTest::TestSuite
             // point beyond the last character in the buffer
             TS_ASSERT( it == buf->mEnd() );
 
-            // TODO Add a tests for mNextBlock()
-            // TODO Add a tests for mPrevBlock()
-
             delete buf;
         }
 
@@ -673,10 +670,12 @@ class Utf8Tests : public CxxTest::TestSuite
             // So lets delete the first block here
             TS_ASSERT_EQUALS( it->mDeleteBlock(), true );
 
+            TS_ASSERT_EQUALS( buf->mIsModified(), true );
+
             // Iterator should point to the end of the buffer
             TS_ASSERT( itBuffer == buf->mEnd() );
 
-            // Trying to get the first block in and empty buffer
+            // Trying to get the first block in an empty buffer
             itBuffer = buf->mBegin();
 
             // Should result in a iterator that points to the end
@@ -762,6 +761,25 @@ class Utf8Tests : public CxxTest::TestSuite
             ++itPage;
             TS_ASSERT_EQUALS( itPage->mGetOffSet(), 250 );
 
+            // Trying to move to a block that does not 
+            // exist, will return false and the iterator will not move
+            TS_ASSERT_EQUALS( it->mNextBlock( 5 ), false );
+
+            // mGetError() should tell us what happend
+            TS_ASSERT_EQUALS( it->mGetError(), "Buffer Error: Requested OffSet in buffer out of bounds" );
+
+            // Should be on block 'F'
+            TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().substr(0,10) , "FFFFFFFFFF" );
+
+            // Trying to move to a block that does not 
+            // exist, will return false and the iterator will not move
+            TS_ASSERT_EQUALS( it->mPrevBlock( 10 ), false );
+
+            // mGetError() should tell us what happend
+            TS_ASSERT_EQUALS( it->mGetError(), "Buffer Error: Requested OffSet in buffer out of bounds" );
+
+            // Should be on block 'F'
+            TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().substr(0,10) , "FFFFFFFFFF" );
             delete buf;
         }
         

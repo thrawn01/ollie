@@ -746,6 +746,37 @@ bool Utf8BufferIterator::mNextBlock( int intCount ) {
 }
 
 /**
+ * Move the iterator back intCount number of blocks
+ */
+bool Utf8BufferIterator::mPrevBlock( int intCount ) { 
+    return false; 
+}
+
+/**
+ * Delete the block the iterator is currently pointing to
+ */
+bool Utf8BufferIterator::mDeleteBlock( void ) { 
+    return false; 
+}
+
+/**
+ * Insert a new block before the iterator location
+ *
+ * NOTE: If the user inserts a block into an empty buffer 
+ * mAppendBlock() is called instead
+ */
+bool Utf8BufferIterator::mInsertBlock( const Utf8Block &block ) { 
+    return false; 
+}
+
+/**
+ * Append a new block before the iterator location
+ */
+bool Utf8BufferIterator::mAppendBlock( const Utf8Block &block ) { 
+    return false; 
+}
+
+/**
  * Move the iterator over intCount number of characters
  */
 bool Utf8BufferIterator::mNext( int intCount ) { 

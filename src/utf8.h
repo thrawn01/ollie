@@ -124,6 +124,7 @@ class Utf8BufferIterator : public BufferIterator {
         virtual bool                                mNext( int intCount = 1 );
         virtual bool                                mPrev( int intCount = 1 );
         virtual bool                                mNextBlock( int intCount = 1 );
+        virtual bool                                mPrevBlock( int intCount = 1 );
         virtual bool                                mSetOffSet( OffSet );
         virtual OffSet                              mGetOffSet( void ) { return _offCurrent; }
         virtual char                                mGetUtf8Char( void ); 
@@ -133,6 +134,9 @@ class Utf8BufferIterator : public BufferIterator {
         virtual int                                 mEqual( boost::shared_ptr<BufferIterator>,  boost::shared_ptr<BufferIterator> );
 
         // Implementation specific
+        bool                                        mDeleteBlock( void );
+        bool                                        mInsertBlock( const Utf8Block &block );
+        bool                                        mAppendBlock( const Utf8Block &block );
         const Utf8Page::Iterator&                   mGetPage( void ) { return _itPage; }
         void                                        mSetPage( const Utf8Page::Iterator &it ) { _itPage = it; }
         const Utf8Block::Iterator&                  mGetBlock( void ) { return _itBlock; }

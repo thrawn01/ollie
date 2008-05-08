@@ -97,6 +97,8 @@ class BufferIterator : public OllieCommon {
         // Navigation Methods
         virtual bool            mNext( int intCount = 1 ) { return _it->mNext( intCount ); }
         virtual bool            mPrev( int intCount = 1 ) { return _it->mPrev( intCount ); }
+        virtual bool            mNextBlock( int intCount = 1 ) { return _it->mPrevBlock( intCount ); }
+        virtual bool            mPrevBlock( int intCount = 1 ) { return _it->mPrevBlock( intCount ); }
         virtual bool            mSetOffSet( OffSet offset ) { return _it->mSetOffSet( offset ); }
         virtual OffSet          mGetOffSet( void ) { return _it->mGetOffSet(); }
 

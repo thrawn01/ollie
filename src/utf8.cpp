@@ -399,7 +399,7 @@ BufferIterator Utf8Buffer::mEnd( void ) {
     
     it->mSetPage( itPage );
     it->mSetBlock( itBlock );
-    it->mSetPos( itBlock->mGetSize() );
+    it->mSetPos( itBlock->mGetBlockSize() );
 
     BufferIterator itBuf( it );
 
@@ -427,14 +427,14 @@ OffSet Utf8Buffer::mSavePage( Utf8Page::Iterator &itPage, OffSet offSet ) {
     for( it = itPage->mBegin() ; it != itPage->mEnd() ; it++ ) {
 
         // Attempt to write the block
-        if( ( offLen = _fileHandle->mWriteNextBlock( it->mGetBlockData().c_str(), it->mGetSize(), it->mGetAttributes() ) ) == -1 ) {
+        if( ( offLen = _fileHandle->mWriteNextBlock( it->mGetBlockData().c_str(), it->mGetBlockSize(), it->mGetAttributes() ) ) == -1 ) {
             mSetError( _fileHandle->mGetError() );
             return -1;
         }
 
         // Did we write all the bytes we expected?
-        if( offLen != it->mGetSize() ) {
-            mSetError() << "Buffer Error: Attempted to write '" << it->mGetSize() << "' bytes, however '" 
+        if( offLen != it->mGetBlockSize() ) {
+            mSetError() << "Buffer Error: Attempted to write '" << it->mGetBlockSize() << "' bytes, however '" 
                         << offLen << "' where actually written";
             return -1;
         }
@@ -726,7 +726,7 @@ bool Utf8BufferIterator::mPrev( int intCount ) {
         // Subtract the number of positions to move back
         intCount -= _intPos;
         // Set the new position to the end of the new block
-        _intPos = _itBlock->mGetSize();
+        _intPos = _itBlock->mGetBlockSize();
     }
 
     // Update our position in the block
@@ -756,7 +756,26 @@ bool Utf8BufferIterator::mPrevBlock( int intCount ) {
  * Delete the block the iterator is currently pointing to
  */
 bool Utf8BufferIterator::mDeleteBlock( void ) { 
-    return false; 
+
+    // If the block iterator points to the end of the page
+    if( mGetBlock() == mGetPage()->mEnd() ) {
+        mSetError("Buffer Error: Requested Deletion of block out of bounds");
+        return false;
+    }
+
+    // Update the size of the buffer
+    _buf->_offBufferSize -= mGetBlock()->mGetBlockSize();
+
+    // Update the current offset
+    _offCurrent -= mGetPos();
+
+    // Delete the block and set the next block in the buffer as current
+    mSetBlock( mGetPage()->mDeleteBlock( mGetBlock() ) );
+
+    // Set the pos to the begining of the block
+    mSetPos(0);
+
+    return true; 
 }
 
 /**
@@ -766,14 +785,69 @@ bool Utf8BufferIterator::mDeleteBlock( void ) {
  * mAppendBlock() is called instead
  */
 bool Utf8BufferIterator::mInsertBlock( const Utf8Block &block ) { 
-    return false; 
+
+    // If the block iterator points to the end of the page
+    if( mGetBlock() == mGetPage()->mEnd() ) {
+
+        // We should append instead of insert the block
+        return mAppendBlock( block );
+
+    }
+
+    // If the current block is empty
+    if( mGetBlock()->mIsEmpty() ) {
+        // Replace the block, Delete the block, so the insert will
+        // take it's place
+        mSetBlock( mGetPage()->mDeleteBlock( mGetBlock() ) );
+    }else {
+
+        // The result is the offset points to the beginning of the 
+        // inserted block, which is infront of the previously 
+        // pointed to block
+        _offCurrent -= mGetPos();
+    }
+
+    // Insert the new block into the page
+    mSetBlock( mGetPage()->mInsertBlock( mGetBlock(), block ) );
+
+    // Update the size of the buffer
+    _buf->_offBufferSize += block.mGetBlockSize();
+
+    // Set the pos to the begining of the block
+    mSetPos(0);
+
+    return true; 
 }
 
 /**
  * Append a new block before the iterator location
  */
 bool Utf8BufferIterator::mAppendBlock( const Utf8Block &block ) { 
-    return false; 
+
+    // If the current block is empty 
+    // ( This is here, incase mAppendBlock() was called on an empty buffer )
+    if( mGetBlock()->mIsEmpty() ) {
+        // Replace the block, Delete the block
+        mGetPage()->mDeleteBlock( mGetBlock() );
+    }
+
+    // Since this is an append, it doesn't matter what block we 
+    // pointed to before the append
+    _offCurrent = _buf->mGetBufferSize();
+
+    // Append a new block and set the iterator to the new block
+    mSetBlock( mGetPage()->mAppendBlock( block ) );
+
+    // Update the size of the buffer
+    _buf->_offBufferSize += block.mGetBlockSize();
+
+    // Update the current offset
+    _offCurrent += mGetPos();
+
+    // Set the pos to the begining of the block
+    mSetPos(0);
+
+    return true; 
 }
 
 /**
@@ -786,7 +860,7 @@ bool Utf8BufferIterator::mNext( int intCount ) {
     int intRequested = intCount;
    
     // Figure out how many positions we have left till the end of the block
-    int intPosLeft = _itBlock->mGetSize() - _intPos;
+    int intPosLeft = _itBlock->mGetBlockSize() - _intPos;
 
     // If we are asking to move past the current block
     while( intCount > intPosLeft ) {
@@ -816,7 +890,7 @@ bool Utf8BufferIterator::mNext( int intCount ) {
         // Subtract the number of positions to move forward
         intCount -= intPosLeft;
         // Set the new position to the end of the new block
-        intPosLeft = _itBlock->mGetSize();
+        intPosLeft = _itBlock->mGetBlockSize();
     }
 
     // Update our position in the block
@@ -838,7 +912,7 @@ char Utf8BufferIterator::mGetUtf8Char( void ) {
 
     // The iterator should never point to a position
     // greater than the size of the current block
-    assert( _intPos <= _itBlock->mGetSize() );
+    assert( _intPos <= _itBlock->mGetBlockSize() );
 
     // If the block is empty
     if( _itBlock->mIsEmpty() ) {
@@ -846,7 +920,7 @@ char Utf8BufferIterator::mGetUtf8Char( void ) {
     }
     
     // If the pos is at the end of the buffer return 0
-    if( _intPos == _itBlock->mGetSize() ) {
+    if( _intPos == _itBlock->mGetBlockSize() ) {
         return 0;
     }
 
@@ -871,7 +945,7 @@ const char* Utf8BufferIterator::mGetUtf8String( int intLen, bool boolReverse ) {
         return (_strTemp = _itBlock->mGetBlockData().substr(_intPos-intLen, intLen)).c_str();
     } 
 
-    assert( _intPos <= _itBlock->mGetSize() );
+    assert( _intPos <= _itBlock->mGetBlockSize() );
 
     // Get a substring of the datablock and return a const char* to it
     return (_strTemp = _itBlock->mGetBlockData().substr(_intPos, intLen)).c_str();
@@ -1075,7 +1149,7 @@ Utf8Block::Iterator Utf8Page::mAppendBlock( const Utf8Block &block ) {
     _blockContainer.push_back( block ); 
    
     // Record Incr the Cur size of our page
-    _offPageSize += block.mGetSize();
+    _offPageSize += block.mGetBlockSize();
 
     // Return an iterator to the last element
     return --(_blockContainer.end());
@@ -1088,11 +1162,25 @@ Utf8Block::Iterator Utf8Page::mAppendBlock( const Utf8Block &block ) {
 Utf8Block::Iterator Utf8Page::mDeleteBlock( const Utf8Block::Iterator& itBlock ) {
 
     // Shrink the size of the page by the block size removed
-    _offPageSize -= itBlock->mGetSize();
+    _offPageSize -= itBlock->mGetBlockSize();
 
     // Remove this block from the container
     return _blockContainer.erase( itBlock );
 
+}
+
+/**
+ * Insert a block into the page
+ */
+Utf8Block::Iterator Utf8Page::mInsertBlock( const Utf8Block::Iterator& it, const Utf8Block& block ) {
+
+    // Record Incr the Cur size of our page
+    _offPageSize += block.mGetBlockSize();
+
+    // insert the block to our page and 
+    // return an iterator to the inserted element
+    return _blockContainer.insert( it, block ); 
+  
 }
 
 /**
@@ -1274,7 +1362,7 @@ Utf8Page::Iterator Utf8PageContainer::mSplitPage( Utf8BufferIterator *itBuffer, 
         if( intCurSize >= intTargetSize ) break;
 
         // If this block will put us over the target block size
-        if( ( intCurSize + itBlock->mGetSize() ) > intTargetSize ) {
+        if( ( intCurSize + itBlock->mGetBlockSize() ) > intTargetSize ) {
 
             // Figure out where to split the block
             intSplitPos = intTargetSize - intCurSize;
@@ -1309,7 +1397,7 @@ Utf8Page::Iterator Utf8PageContainer::mSplitPage( Utf8BufferIterator *itBuffer, 
         }
 
         // Update our current size
-        intCurSize += itNewBlock->mGetSize();
+        intCurSize += itNewBlock->mGetBlockSize();
 
     }
 

@@ -50,7 +50,7 @@ class Utf8Block {
         bool                mSetOffSet( OffSet offset ) { _offOffSet = offset; }
         bool                mIsEmpty( void ) const { return _strBlockData.empty(); }
         void                mClear( void ) { _strBlockData.clear(); }
-        size_t              mGetSize( void ) const { return _sizeBlockSize; }
+        size_t              mGetBlockSize( void ) const { return _sizeBlockSize; }
         void                mInsert( int, const char*, int );
         Utf8Block           mSplit( int );
         Utf8Block           mTruncate( int );
@@ -81,6 +81,7 @@ class Utf8Page {
 
         typedef boost::ptr_list<Utf8Page>::iterator Iterator;  
 
+        Utf8Block::Iterator  mInsertBlock( const Utf8Block::Iterator&, const Utf8Block& );
         Utf8Block::Iterator  mAppendBlock( const Utf8Block& );
         Utf8Block::Iterator  mDeleteBlock( const Utf8Block::Iterator& ) ;
         void                 mInsert( const Utf8Block::Iterator& , int, const char*, int );

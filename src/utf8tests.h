@@ -671,7 +671,7 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize() , 0 );
             TS_ASSERT_EQUALS( buf->mGetBufferSize(), 0 );
 
-            // Ensure we start out at zero
+            // Append a block
             TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'A' ) ), true );
 
             // Ensure the append was succesful
@@ -683,8 +683,13 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it->mGetOffSet(), 0 );
             TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize() , 50 );
             TS_ASSERT_EQUALS( buf->mGetBufferSize(), 50 );
+
+            // Move into the block
+            TS_ASSERT_EQUALS( it->mNext( 45 ), true );
+            // Ensure we are into the block
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 45 );
+            TS_ASSERT_EQUALS( string( it->mGetUtf8String( 10 ) ), "AAAAA" );
     
-            // Ensure we start out at zero
             // Append a new block to the end of the buffer
             TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'B' ) ), true );
 
@@ -748,6 +753,12 @@ class Utf8Tests : public CxxTest::TestSuite
             // Append a new block to the end of the buffer
             TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'C' ) ), true );
 
+            // Move into the block
+            TS_ASSERT_EQUALS( it->mNext( 45 ), true );
+            // Ensure we are into the block
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 45 );
+            TS_ASSERT_EQUALS( string( it->mGetUtf8String( 10 ) ), "CCCCC" );
+
             // Insert a new block before 'C' block
             TS_ASSERT_EQUALS( it->mInsertBlock( createBlock( 50, 'B' ) ), true );
 
@@ -763,6 +774,93 @@ class Utf8Tests : public CxxTest::TestSuite
 
             delete buf;
         }
+
+        // --------------------------------
+        // Test buffer iterator mPrevBlock() and mNextBlock()
+        // --------------------------------
+        void testmBufferIteratormPrevNextBlock( void ) {
+
+            // Create a new Buffer Called "buffer1"
+            Utf8Buffer* buf = new Utf8Buffer("buffer1", 200);
+            TS_ASSERT( buf );
+
+            // Get our implementation specific iterator
+            BufferIterator itBuffer = buf->mBegin();
+            Utf8BufferIterator* it = itBuffer.mGetPtrAs<Utf8BufferIterator*>();
+
+            // Try to move in an empty buffer
+            TS_ASSERT_EQUALS( it->mPrevBlock( ), false );
+            TS_ASSERT_EQUALS( it->mGetError( ), "Buffer Error: Requested Prevous Block in buffer out of bounds");
+
+            TS_ASSERT_EQUALS( it->mNextBlock( ), false );
+            TS_ASSERT_EQUALS( it->mGetError( ), "Buffer Error: Requested Block Block in buffer out of bounds");
+
+            TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'A' ) ), true );
+            TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'B' ) ), true );
+            TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'C' ) ), true );
+            TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'D' ) ), true );
+
+            TS_ASSERT_EQUALS( it->mPrevBlock( ), true );
+
+            // Should be pointing to 'C' block
+            TS_ASSERT_EQUALS( it->mGetPos(), 0 );
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 100 );
+            TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().substr(0,10) , "CCCCCCCCCC" );
+
+            //TODO: finish these tests
+            TS_ASSERT_EQUALS( it->mPrevBlock(  ), true );
+
+            delete buf;
+        }
+
+        // --------------------------------
+        // Test buffer iterator mDeleteBlock()
+        // --------------------------------
+        void testmBufferIteratormDeleteBlock( void ) {
+
+            // Create a new Buffer Called "buffer1"
+            Utf8Buffer* buf = new Utf8Buffer("buffer1", 100);
+            TS_ASSERT( buf );
+
+            // Get our implementation specific iterator
+            BufferIterator itBuffer = buf->mBegin();
+            Utf8BufferIterator* it = itBuffer.mGetPtrAs<Utf8BufferIterator*>();
+
+            // Attempt to delete a block from an empty buffer
+            TS_ASSERT_EQUALS( it->mDeleteBlock(), false );
+
+            // Should tell us what happend
+            TS_ASSERT_EQUALS( it->mGetError(), "Buffer Error: Can not delete blocks from an empty buffer" );
+
+            TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'A' ) ), true );
+
+            // Delete a legit block
+            TS_ASSERT_EQUALS( it->mDeleteBlock(), true );
+
+            // Offset should point to the beginning of the first block
+            TS_ASSERT_EQUALS( it->mGetPos(), 0 );
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 0 );
+            TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize() , 0 );
+            TS_ASSERT_EQUALS( buf->mGetBufferSize(), 0 );
+
+            TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'A' ) ), true );
+            TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'B' ) ), true );
+            TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'C' ) ), true );
+
+            // Move back to 'B' Block
+            TS_ASSERT_EQUALS( it->mPrevBlock( ), true );
+
+            TS_ASSERT_EQUALS( it->mDeleteBlock(), true );
+
+            // Offset should point to the beginning of 'C' block
+            TS_ASSERT_EQUALS( it->mGetPos(), 0 );
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 50 );
+            TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize() , 100 );
+            TS_ASSERT_EQUALS( buf->mGetBufferSize(), 100 );
+
+            delete buf;
+        }
+
 
         // --------------------------------
         // Test buffer iterator mNextBlock() mPrevBlock() methods

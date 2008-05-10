@@ -763,6 +763,12 @@ bool Utf8BufferIterator::mDeleteBlock( void ) {
         return false;
     }
 
+    // If the buffer is empty
+    if( _buf->mGetBufferSize() == 0 ) {
+        mSetError("Buffer Error: Can not delete blocks from an empty buffer");
+        return false;
+    }
+
     // Update the size of the buffer
     _buf->_offBufferSize -= mGetBlock()->mGetBlockSize();
 

@@ -696,6 +696,7 @@ bool Utf8BufferIterator::mSetOffSet( OffSet offset ) {
  * Move the iterator back intCount number of characters
  */
 bool Utf8BufferIterator::mPrev( int intCount ) { 
+
     // Remeber the requested positions
     int intRequested = intCount;
     
@@ -805,13 +806,11 @@ bool Utf8BufferIterator::mInsertBlock( const Utf8Block &block ) {
         // Replace the block, Delete the block, so the insert will
         // take it's place
         mSetBlock( mGetPage()->mDeleteBlock( mGetBlock() ) );
-    }else {
-
-        // The result is the offset points to the beginning of the 
-        // inserted block, which is infront of the previously 
-        // pointed to block
-        _offCurrent -= mGetPos();
     }
+
+    // The result is the offset points to the beginning of the 
+    // inserted block, which is infront of the previously pointed to block
+    _offCurrent -= mGetPos();
 
     // Insert the new block into the page
     mSetBlock( mGetPage()->mInsertBlock( mGetBlock(), block ) );
@@ -830,11 +829,15 @@ bool Utf8BufferIterator::mInsertBlock( const Utf8Block &block ) {
  */
 bool Utf8BufferIterator::mAppendBlock( const Utf8Block &block ) { 
 
-    // If the current block is empty 
-    // ( This is here, incase mAppendBlock() was called on an empty buffer )
-    if( mGetBlock()->mIsEmpty() ) {
-        // Replace the block, Delete the block
-        mGetPage()->mDeleteBlock( mGetBlock() );
+    // If we are pointing to the end of the buffer
+    if( mGetBlock() != mGetPage()->mEnd() ) {
+
+        // If the current block is empty 
+        // ( This is here, incase mAppendBlock() was called on an empty buffer )
+        if( mGetBlock()->mIsEmpty() ) {
+            // Replace the block, Delete the block
+            mGetPage()->mDeleteBlock( mGetBlock() );
+        }
     }
 
     // Since this is an append, it doesn't matter what block we 
@@ -844,11 +847,11 @@ bool Utf8BufferIterator::mAppendBlock( const Utf8Block &block ) {
     // Append a new block and set the iterator to the new block
     mSetBlock( mGetPage()->mAppendBlock( block ) );
 
+    // Update the current offset
+    _offCurrent = _buf->_offBufferSize;
+
     // Update the size of the buffer
     _buf->_offBufferSize += block.mGetBlockSize();
-
-    // Update the current offset
-    _offCurrent += mGetPos();
 
     // Set the pos to the begining of the block
     mSetPos(0);
@@ -870,6 +873,28 @@ bool Utf8BufferIterator::mNext( int intCount ) {
 
     // If we are asking to move past the current block
     while( intCount > intPosLeft ) {
+
+        // if we are pointing to end of the page
+        if( _itBlock == _itPage->mEnd()  ) {
+            // and if we are pointing to the end of the buffer
+            if( _itPage ==  _buf->_pageContainer.mEnd() ) {
+                mSetError("Buffer Error: Requested OffSet in buffer out of bounds");
+                return false;
+            }
+            //TODO: The page is empty Mark page for deletion
+           
+            // Go to the next page
+            ++_itPage;
+
+            // If we are now pointing to the end of the buffer
+            if( _itPage ==  _buf->_pageContainer.mEnd() ) {
+                mSetError("Buffer Error: Requested OffSet in buffer out of bounds");
+                return false;
+            }
+            // Set the current block to the beginning
+            _itBlock = _itPage->mBegin();
+        }
+
         // if this is the last block in the page
         if( _itBlock == (--( _itPage->mEnd() ) ) ) {
             // if this is the last page in the buffer
@@ -912,13 +937,15 @@ bool Utf8BufferIterator::mNext( int intCount ) {
  * Return the charater the iterator points to in utf8 encoding
  */
 char Utf8BufferIterator::mGetUtf8Char( void ) { 
-   
-    // the block should never never point to the end
-    assert( _itBlock != _itPage->mEnd() );
 
     // The iterator should never point to a position
     // greater than the size of the current block
     assert( _intPos <= _itBlock->mGetBlockSize() );
+   
+    // If the block points to the end return 0
+    if( mGetBlock() == mGetPage()->mEnd() ) {
+        return 0;
+    }
 
     // If the block is empty
     if( _itBlock->mIsEmpty() ) {
@@ -940,8 +967,10 @@ char Utf8BufferIterator::mGetUtf8Char( void ) {
  */
 const char* Utf8BufferIterator::mGetUtf8String( int intLen, bool boolReverse ) {
 
-    // the block should never never point to the end
-    assert( _itBlock != _itPage->mEnd() );
+    // If the block points to the end return 0
+    if( mGetBlock() == mGetPage()->mEnd() ) {
+        return "\0"; // Will this work?
+    }
 
     if( boolReverse ) {
         

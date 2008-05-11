@@ -133,6 +133,7 @@ class Utf8BufferIterator : public BufferIterator {
         virtual ushort                              mGetUtf16Char( void ) { }
         virtual const ushort*                       mGetUtf16String( int intLen, bool boolReverse = false ) { }
         virtual int                                 mEqual( boost::shared_ptr<BufferIterator>,  boost::shared_ptr<BufferIterator> );
+        virtual std::string                         mGetError( void ) { return _streamErrorMsg.str(); }
 
         // Implementation specific
         bool                                        mDeleteBlock( void );

@@ -756,7 +756,7 @@ class Utf8Tests : public CxxTest::TestSuite
             // Move into the block
             TS_ASSERT_EQUALS( it->mNext( 45 ), true );
             // Ensure we are into the block
-            TS_ASSERT_EQUALS( it->mGetOffSet(), 45 );
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 95 );
             TS_ASSERT_EQUALS( string( it->mGetUtf8String( 10 ) ), "CCCCC" );
 
             // Insert a new block before 'C' block
@@ -779,7 +779,6 @@ class Utf8Tests : public CxxTest::TestSuite
         // Test buffer iterator mPrevBlock() and mNextBlock()
         // --------------------------------
         void testmBufferIteratormPrevNextBlock( void ) {
-
             // Create a new Buffer Called "buffer1"
             Utf8Buffer* buf = new Utf8Buffer("buffer1", 200);
             TS_ASSERT( buf );

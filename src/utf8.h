@@ -127,6 +127,8 @@ class Utf8BufferIterator : public BufferIterator {
         virtual bool                                mPrev( int intCount = 1 );
         virtual bool                                mNextBlock( int intCount = 1 );
         virtual bool                                mPrevBlock( int intCount = 1 );
+        virtual bool                                _mNextBlock( void );
+        virtual bool                                _mPrevBlock( void );
         virtual bool                                mSetOffSet( OffSet );
         virtual OffSet                              mGetOffSet( void ) { return _offCurrent; }
         virtual char                                mGetUtf8Char( void ); 

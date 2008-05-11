@@ -806,8 +806,45 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it->mGetOffSet(), 100 );
             TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().substr(0,10) , "CCCCCCCCCC" );
 
-            //TODO: finish these tests
-            TS_ASSERT_EQUALS( it->mPrevBlock(  ), true );
+            TS_ASSERT_EQUALS( it->mPrevBlock( 2 ), true );
+
+            // Should be pointing to 'A' block
+            TS_ASSERT_EQUALS( it->mGetPos(), 0 );
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 0 );
+            TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().substr(0,10) , "AAAAAAAAAA" );
+
+            // Try to move past the beginning of the buffer
+            TS_ASSERT_EQUALS( it->mPrevBlock( ), false );
+            TS_ASSERT_EQUALS( it->mGetError( ), "Buffer Error: Requested mPrevBlock in buffer out of bounds");
+
+            // Should STILL be pointing to 'A' block
+            TS_ASSERT_EQUALS( it->mGetPos(), 0 );
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 0 );
+            TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().substr(0,10) , "AAAAAAAAAA" );
+
+            TS_ASSERT_EQUALS( it->mNextBlock( ), true );
+
+            // Should be pointing to 'B' block
+            TS_ASSERT_EQUALS( it->mGetPos(), 0 );
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 50 );
+            TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().substr(0,10) , "BBBBBBBBBB" );
+
+            TS_ASSERT_EQUALS( it->mNextBlock( 2 ), true );
+
+            // Should be pointing to 'D' block
+            TS_ASSERT_EQUALS( it->mGetPos(), 0 );
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 150 );
+            TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().substr(0,10) , "DDDDDDDDDD" );
+
+            // Try to move past the end of the buffer
+            TS_ASSERT_EQUALS( it->mNextBlock( ), false );
+
+            // Should STILL be pointing to 'D' block
+            TS_ASSERT_EQUALS( it->mGetPos(), 0 );
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 150 );
+            TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().substr(0,10) , "DDDDDDDDDD" );
+
+            TS_ASSERT_EQUALS( buf->mGetBufferSize(), 200 );
 
             delete buf;
         }

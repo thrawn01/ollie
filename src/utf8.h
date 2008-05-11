@@ -101,6 +101,7 @@ class Utf8Page {
 
         bool                 mCanAcceptBytes( OffSet ) const;
         bool                 mIsFull( void ) const;
+        bool                 mIsEmpty( void ) const;
         Utf8Block::Iterator  mBegin( void ) { return _blockContainer.begin(); }
         Utf8Block::Iterator  mEnd( void ) { return _blockContainer.end(); }
 
@@ -133,7 +134,7 @@ class Utf8BufferIterator : public BufferIterator {
         virtual ushort                              mGetUtf16Char( void ) { }
         virtual const ushort*                       mGetUtf16String( int intLen, bool boolReverse = false ) { }
         virtual int                                 mEqual( boost::shared_ptr<BufferIterator>,  boost::shared_ptr<BufferIterator> );
-        virtual std::string                         mGetError( void ) { return _streamErrorMsg.str(); }
+        virtual std::string                         mGetError( void ) { std::string msg = _streamErrorMsg.str(); _streamErrorMsg.str(""); return msg; }
 
         // Implementation specific
         bool                                        mDeleteBlock( void );
@@ -174,6 +175,7 @@ class Utf8PageContainer {
         Utf8Page::Iterator  mDeletePage( Utf8Page::Iterator const &it );
         Utf8Page::Iterator  mSplitPage( Utf8BufferIterator*, Utf8Page::Iterator& );
         void                mUpdateOffSets( Utf8Page::Iterator const &it );
+        long                mGetSize() const { return _longSize; }
         
         boost::ptr_list<Utf8Page> _listContainer;
         long                      _longSize;

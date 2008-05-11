@@ -576,7 +576,7 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it.mNext(), false );
 
             // mGetError() should tell us what happend
-            TS_ASSERT_EQUALS( it.mGetError(), "Buffer Error: Requested OffSet in buffer out of bounds" );
+            TS_ASSERT_EQUALS( it.mGetError(), "Buffer Error: Requested mNext in buffer out of bounds" );
 
             // Insert text At the begining of the file
             BufferIterator itNew = buf->mInsert( it, "A1234GGGGGDDDDDEFGHB" , 20, attr );
@@ -618,7 +618,7 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it.mNext(), false );
 
             // Should be an error
-            TS_ASSERT_EQUALS( it.mGetError(), "Buffer Error: Requested OffSet in buffer out of bounds" );
+            TS_ASSERT_EQUALS( it.mGetError(), "Buffer Error: Requested mNext in buffer out of bounds" );
 
             // Iterator still points to 21th position
             TS_ASSERT_EQUALS( it.mGetUtf8Char(), 0 );
@@ -789,10 +789,10 @@ class Utf8Tests : public CxxTest::TestSuite
 
             // Try to move in an empty buffer
             TS_ASSERT_EQUALS( it->mPrevBlock( ), false );
-            TS_ASSERT_EQUALS( it->mGetError( ), "Buffer Error: Requested Prevous Block in buffer out of bounds");
+            TS_ASSERT_EQUALS( it->mGetError( ), "Buffer Error: Requested mPrevBlock in buffer out of bounds");
 
             TS_ASSERT_EQUALS( it->mNextBlock( ), false );
-            TS_ASSERT_EQUALS( it->mGetError( ), "Buffer Error: Requested Block Block in buffer out of bounds");
+            TS_ASSERT_EQUALS( it->mGetError( ), "Buffer Error: Requested mNextBlock in buffer out of bounds");
 
             TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'A' ) ), true );
             TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'B' ) ), true );

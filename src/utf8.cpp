@@ -702,28 +702,18 @@ bool Utf8BufferIterator::mPrev( int intCount ) {
     
     // If we are asking to move to the previous block
     while( intCount > _intPos ) {
-        // if this is the first block in the page
-        if( _itBlock == _itPage->mBegin() ) {
-            // if this is the first page in the buffer
-            if( _itPage == _buf->_pageContainer.mBegin() ) {
-                // If this move puts us before the begining of the buffer
-                if( intCount > _intPos ) {
-                    // ignore the move command and set an error
-                    mSetError("Buffer Error: Requested OffSet in buffer out of bounds");
-                    return false;
+        // Move to the previous block
+        if( ! mPrevBlock() ) {
 
-                }
-                // Update our location in the block to the begining of the block
-                _intPos = 0;
-                return true;
-            }
-            // Move back 1 page
-            _itPage--;
-            // Set the block to the end of the page
-            _itBlock = _itPage->mEnd();
+            // Set the pos to the beginning of the block ( which is now the beginning of the buffer )
+            _intPos = 0;
+            _offCurrent = 0;
+
+            // If we couldn't move back a block, we are at the beginning of the buffer
+            mSetError("Buffer Error: Requested mPrev in buffer out of bounds");
+            return false;
         }
-        // Move back 1 block
-        _itBlock--;
+
         // Subtract the number of positions to move back
         intCount -= _intPos;
         // Set the new position to the end of the new block
@@ -743,14 +733,61 @@ bool Utf8BufferIterator::mPrev( int intCount ) {
  * Move the iterator over intCount number of blocks
  */
 bool Utf8BufferIterator::mNextBlock( int intCount ) { 
-    return false; 
+
+    // if we are pointing to end of the page already
+    if( _itBlock == _itPage->mEnd()  ) {
+        // and if we are pointing to the end of the buffer
+        if( _itPage ==  _buf->_pageContainer.mEnd() ) {
+            mSetError("Buffer Error: Requested mNextBlock in buffer out of bounds");
+            return false;
+        }
+        // This should not happen, if it does, we are in trouble.
+        // This means that there was an empty page in the buffer 
+        // AND its not the only page in the buffer.
+        assert( 0 == 1 );
+    }
+
+    // if this is the last block in the page
+    if( _itBlock == (--( _itPage->mEnd() ) ) ) {
+        // if this is the last page in the buffer
+        if( _itPage == (--( _buf->_pageContainer.mEnd() ) ) ) {
+            // Else, ignore the move command and throw an error
+            mSetError("Buffer Error: Requested mNextBlock in buffer out of bounds");
+            return false;
+        }
+        // Move to the next page
+        _itPage++;
+        // Set the block to the begining block
+        _itBlock = _itPage->mBegin();
+    } else {
+        // Move to the next block
+        _itBlock++;
+    }
+    return true; 
 }
 
 /**
  * Move the iterator back intCount number of blocks
  */
 bool Utf8BufferIterator::mPrevBlock( int intCount ) { 
-    return false; 
+
+    // if this is the first block in the page
+    if( _itBlock == _itPage->mBegin() ) {
+        // if this is the first page in the buffer
+        if( _itPage == _buf->_pageContainer.mBegin() ) {
+            mSetError("Buffer Error: Requested mPrevBlock in buffer out of bounds");
+            return false;
+        }
+        // Move back 1 page
+        _itPage--;
+
+        // Set the block to the last block in the page
+        _itBlock = (--_itPage->mEnd());
+        return true;
+    }
+    // Move back 1 block
+    _itBlock--;
+    return true;
 }
 
 /**
@@ -782,6 +819,22 @@ bool Utf8BufferIterator::mDeleteBlock( void ) {
     // Set the pos to the begining of the block
     mSetPos(0);
 
+    // If the page is empty
+    if( mGetPage()->mIsEmpty() ) {
+        // And this is not the only page in the buffer
+        if( _buf->_pageContainer.mGetSize() != 1 ) {
+            // Delete this page, and point to the next page in the buffer
+            mSetPage( _buf->_pageContainer.mDeletePage( mGetPage() ) );
+            // If we deleted the last page in the buffer
+            if( mGetPage() == _buf->_pageContainer.mEnd() ) {
+                // Move back a page
+                --_itPage;
+                // And set the block as the last block in that page
+                _itBlock = ( --_itPage->mEnd() );
+            }
+        }
+        // If this is the only page in the buffer, it should stay
+    }
     return true; 
 }
 
@@ -874,49 +927,15 @@ bool Utf8BufferIterator::mNext( int intCount ) {
     // If we are asking to move past the current block
     while( intCount > intPosLeft ) {
 
-        // if we are pointing to end of the page
-        if( _itBlock == _itPage->mEnd()  ) {
-            // and if we are pointing to the end of the buffer
-            if( _itPage ==  _buf->_pageContainer.mEnd() ) {
-                mSetError("Buffer Error: Requested OffSet in buffer out of bounds");
-                return false;
-            }
-            //TODO: The page is empty Mark page for deletion
-           
-            // Go to the next page
-            ++_itPage;
+        // Move to the next block
+        if( !mNextBlock() ) {
+            // If the next block move failed, we hit the end of the buffer
+            // Set the pos to the end of the buffer
+            _intPos = _itBlock->mGetBlockSize();
+            _offCurrent = _buf->mGetBufferSize();
 
-            // If we are now pointing to the end of the buffer
-            if( _itPage ==  _buf->_pageContainer.mEnd() ) {
-                mSetError("Buffer Error: Requested OffSet in buffer out of bounds");
-                return false;
-            }
-            // Set the current block to the beginning
-            _itBlock = _itPage->mBegin();
-        }
-
-        // if this is the last block in the page
-        if( _itBlock == (--( _itPage->mEnd() ) ) ) {
-            // if this is the last page in the buffer
-            if( _itPage == (--( _buf->_pageContainer.mEnd() ) ) ) {
-                // If this move puts us at the end of the buffer
-                if( ( _intPos + intCount ) == _itBlock->mGetBlockData().size()  ) {
-                    // Update our location in the block to the end of the block
-                    _intPos = _itBlock->mGetBlockData().size();
-                    return true;
-                }
-                // Else, ignore the move command and throw an error
-                mSetError("Buffer Error: Requested OffSet in buffer out of bounds");
-                return false;
-
-            }
-            // Move to the next page
-            _itPage++;
-            // Set the block to the begining block
-            _itBlock = _itPage->mBegin();
-        } else {
-            // Move to the next block
-            _itBlock++;
+            mSetError("Buffer Error: Requested mNext in buffer out of bounds");
+            return false;
         }
         // Subtract the number of positions to move forward
         intCount -= intPosLeft;
@@ -1237,6 +1256,13 @@ void  Utf8Page::mInsert( const Utf8Block::Iterator& it, int intPos, const char* 
 bool Utf8Page::mIsFull( void ) const {
     if (_offPageSize >= _offTargetPageSize ) { return true; }
     return false;
+}
+
+/*! 
+ * Return true if the page is empty ( has no blocks )
+ */
+bool Utf8Page::mIsEmpty( void ) const {
+    return _blockContainer.empty();
 }
 
 /*! 

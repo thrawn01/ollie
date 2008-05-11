@@ -112,7 +112,7 @@ class BufferIterator : public OllieCommon {
         virtual const char*     mGetUtf8String( int intLen, bool boolReverse = false ) { return _it->mGetUtf8String( intLen, boolReverse ); }
         virtual ushort          mGetUtf16Char( void ) { return _it->mGetUtf16Char(); }
         virtual const ushort*   mGetUtf16String( int intLen, bool boolReverse = false ) { return _it->mGetUtf16String( intLen, boolReverse ); }
-        virtual std::string mGetError( void ) { return _it->_streamErrorMsg.str(); }
+        virtual std::string mGetError( void ) { std::string msg = _it->_streamErrorMsg.str(); _it->_streamErrorMsg.str(""); return msg; }
 
         // The assert here warns us if we get called by accident, if the base class 
         // copy() is called we are doing something very wrong.

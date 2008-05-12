@@ -137,6 +137,8 @@ class Utf8BufferIterator : public BufferIterator {
         virtual const ushort*                       mGetUtf16String( int intLen, bool boolReverse = false ) { }
         virtual int                                 mEqual( boost::shared_ptr<BufferIterator>,  boost::shared_ptr<BufferIterator> );
         virtual std::string                         mGetError( void ) { std::string msg = _streamErrorMsg.str(); _streamErrorMsg.str(""); return msg; }
+        virtual bool                                mDelete( Utf8BufferIterator& );
+        virtual bool                                mDelete( OffSet );
 
         // Implementation specific
         bool                                        mDeleteBlock( void );
@@ -221,9 +223,6 @@ class Utf8Buffer : public BufferInterface {
         virtual BufferIterator               mInsert( BufferIterator&, const ushort*, int, Attributes &attr ) { return false; }
         virtual BufferIterator               mInsert( BufferIterator&, const char*, int, Attributes &attr  );
         virtual BufferIterator               mInsert( BufferIterator&, const std::string&, Attributes &attr  ) { return false; }
-        virtual bool                         mDelete( BufferIterator& , BufferIterator& );
-        virtual bool                         mDelete( BufferIterator& , OffSet );
-        virtual bool                         mDelete( OffSet , OffSet ) { return false; }
         virtual bool                         mSaveBuffer( void );
         virtual bool                         mLoadBuffer( void );
         virtual std::string                  mGetFileName( void );

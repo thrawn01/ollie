@@ -1157,18 +1157,17 @@ BufferIterator Utf8Buffer::mInsert( BufferIterator& itBuffer, const char* cstrBu
 }
 
 /**
- * Delete a range of characters in the buffer starting at the BufferIterator position
- * Return true if the delete was successful
+ * Delete a number of characters starting from the iterator position
  */
-bool Utf8Buffer::mDelete( BufferIterator& itBuffer, const OffSet offLen ) { 
+bool Utf8BufferIterator::mDelete( const OffSet offLen ) { 
 
     // Create a copy of the iterator
-    BufferIterator itEnd( itBuffer );
+    Utf8BufferIterator it( this );
 
-    // Advance the buffer by offLen
-    itEnd.mNext( offLen );
+    // Advance the buffer iterator by offLen
+    it.mNext( offLen );
 
-    return mDelete(itBuffer, itEnd);
+    return mDelete( it );
 }
 
 /**
@@ -1176,76 +1175,58 @@ bool Utf8Buffer::mDelete( BufferIterator& itBuffer, const OffSet offLen ) {
  * and ending at the second BufferIterator, Return true if the delete was successful
  * TODO: Think about reverse iterators, maybe 1 method for reverse and 1 for normal
  */
-bool Utf8Buffer::mDelete( BufferIterator& itBuffer, BufferIterator& itBufferEnd ) {
-    return false;
-    // Make a copy of the starting location, incase something goes wrong
-    // we don't want to in-validate the users iterators
-    BufferIterator itBufferStart ( itBuffer );
+bool Utf8BufferIterator::mDelete( Utf8BufferIterator& itEnd ) {
+   
+    // TODO: Blocks should have a substr() operation that returns a block
+    // Replace mTruncate and mSplit with substr()
+    // TODO: mDelete() should be able to delete only from the current block
+    // it doesn't currently
+    
+    // Ensure the iterator belongs to us
+    assert( itEnd._buf == _buf );
 
-    // Ask Buffer Iterators for a pointer to our implementation specific iterators
-    Utf8BufferIterator* itUtf8Buffer = itBuffer.mGetPtrAs<Utf8BufferIterator*>();
-    Utf8BufferIterator* itStart = itBufferStart.mGetPtrAs<Utf8BufferIterator*>();
-    Utf8BufferIterator* itEnd = itBufferEnd.mGetPtrAs<Utf8BufferIterator*>();
-  
-    // Ensure these iterators belong to us
-    assert( itEnd->_buf == this );
-    assert( itStart->_buf == this );
+    // If the iterator passed was greater than our pointer
+    if( _offCurrent > itEnd.mGetOffSet() ) {
+        mSetError("Buffer Error: mDelete does not support reverse deletions");
+        return false;
+    }
 
-    // Delete blocks and pages until Start and 
-    // End iterators point to the same block
-    while( itStart->mGetBlock() != itEnd->mGetBlock() ) {
-          
-        // If the iterator doesn't point to the 
-        // begining of the block
-        if( itStart->mGetPos() != 0 ) {
-            // Truncate the block starting at intPos 
-            // and return a copy of the bytes that were truncated
-            Utf8Block deletedChars = itStart->mGetBlock()->mTruncate( itStart->mGetPos() );
-            // TODO: Append the deleted characters to the change set
+    // If the iterator doesn't point to the begining of the block
+    if( mGetPos() != 0 ) {
+        // Truncate the block starting at intPos 
+        // and return a copy of the bytes that were truncated
+        Utf8Block deletedChars = mGetBlock()->mTruncate( mGetPos() );
 
-            // Set the pos to the begining of the new block
-            itStart->mSetPos( 0 );
+        // TODO: Append the deleted characters to the change set
+    }
 
-            // Move the iterator to the next block
-            itStart->mNextBlock();
-            continue;
-        }
-      
-        // if the iterator now points to a different page
-        if( itStart->mGetPage() != itUtf8Buffer->mGetPage() ) {
-       
-            // And the ending iterator doesn't point to this page
-            if( itStart->mGetPage() != itEnd->mGetPage() ) {
-                // TODO: Add the page to the change set
-                
-                // Delete the entire page
-                continue;
+    // Delete blocks and pages until the 
+    // End iterator points to the same block
+    while( 1 ) {
+
+        if( _itPage == itEnd.mGetPage() ) {
+            if( _itBlock == itEnd.mGetBlock() ) {
+                break;
             }
         }
-
-        // TODO: Append the blocks to the changeset
-        
-        // Delete the block, Updating the block iterator with the next block
-        itStart->mSetBlock( itStart->mGetPage()->mDeleteBlock( itStart->mGetBlock() ) );
-
-        // If we deleted the last block on the page
-        if( itStart->mGetBlock() == itStart->mGetPage()->mEnd() ) {
-
-            // If the page is empty
-            if( itStart->mGetPage()->mGetPageSize() == 0 ) {
-
-                // Remove the page from the page container
-                itStart->_buf->_pageContainer.mDeletePage( itStart->mGetPage() );
-            }
-            // TODO: If we want to merge small pages into other pages
-            // we should do it here
+        // Delete the current block
+        if( ! mDeleteBlock() ) {
+            // If delete block fails we reached the end of the buffer
+            // without finding our block
+            mSetError("Buffer Error: mDelete reached end of buffer without finding ending iterator");
+            return false;
         }
     }
 
     // If the iterator doesn't point to the begining of the block
+    if( itEnd.mGetPos() != 0 ) {
+        // Split the block starting at intPos and save 
+        // a copy of the bytes that were split from the block
+        Utf8Block deletedChars = itEnd.mGetBlock()->mSplit( mGetPos() );
+
+        // TODO: Append the deleted characters to the change set
+    }
     
-        // Delete characters from this block 
-        
     return true;
 }
 

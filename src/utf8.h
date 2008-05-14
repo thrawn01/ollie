@@ -52,8 +52,7 @@ class Utf8Block {
         void                mClear( void ) { _strBlockData.clear(); }
         size_t              mGetBlockSize( void ) const { return _sizeBlockSize; }
         void                mInsert( int, const char*, int );
-        Utf8Block           mSplit( int );
-        Utf8Block           mTruncate( int );
+        Utf8Block           mSubstr( int, int );
 
         // members
         std::string _strBlockData;
@@ -116,7 +115,7 @@ class Utf8Page {
 class Utf8BufferIterator : public BufferIterator {
 
     public: 
-        Utf8BufferIterator( Utf8Buffer* buf ) : _buf(buf), _intPos(0), _offCurrent(0) { }
+        Utf8BufferIterator( Utf8Buffer* buf );
         Utf8BufferIterator( const Utf8BufferIterator* it );
 
         virtual ~Utf8BufferIterator() { }
@@ -142,6 +141,7 @@ class Utf8BufferIterator : public BufferIterator {
 
         // Implementation specific
         bool                                        mDeleteBlock( void );
+        bool                                        _mDeleteBlock( void );
         bool                                        mInsertBlock( const Utf8Block &block );
         bool                                        mAppendBlock( const Utf8Block &block );
         const Utf8Page::Iterator&                   mGetPage( void ) { return _itPage; }
@@ -153,7 +153,6 @@ class Utf8BufferIterator : public BufferIterator {
 
         Utf8Page::Iterator      _itPage;
         Utf8Block::Iterator     _itBlock;
-        OffSet                  _offset;
         int                     _intPos;
         Utf8Buffer*             _buf;
         std::string             _strTemp;

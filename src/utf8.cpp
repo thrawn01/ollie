@@ -380,9 +380,9 @@ BufferIterator Utf8Buffer::mBegin( void ) {
     it->mSetPage( itPage );
     it->mSetBlock( itBlock );
     it->mSetPos( 0 );
-
+    it->_offCurrent = 0 ;
+    
     BufferIterator itBuf( it );
-
     return itBuf;
 
 }
@@ -400,6 +400,7 @@ BufferIterator Utf8Buffer::mEnd( void ) {
     it->mSetPage( itPage );
     it->mSetBlock( itBlock );
     it->mSetPos( itBlock->mGetBlockSize() );
+    it->_offCurrent = mGetBufferSize();
 
     BufferIterator itBuf( it );
 
@@ -838,11 +839,29 @@ bool Utf8BufferIterator::mPrevBlock( int intCount ) {
     }
     return true;
 }
-
 /**
  * Delete the block the iterator is currently pointing to
  */
 bool Utf8BufferIterator::mDeleteBlock( void ) { 
+
+    // Delete this block
+    if( !_mDeleteBlock() ) {
+        return false;
+    }
+
+    // Update the current offset
+    _offCurrent -= mGetPos();
+    
+    // Set the pos to the begining of the block
+    mSetPos(0);
+
+    return true;
+}
+
+/**
+ * Delete the block the iterator is currently pointing to
+ */
+bool Utf8BufferIterator::_mDeleteBlock( void ) { 
 
     // If the block iterator points to the end of the page
     if( mGetBlock() == mGetPage()->mEnd() ) {
@@ -859,14 +878,8 @@ bool Utf8BufferIterator::mDeleteBlock( void ) {
     // Update the size of the buffer
     _buf->_offBufferSize -= mGetBlock()->mGetBlockSize();
 
-    // Update the current offset
-    _offCurrent -= mGetPos();
-
     // Delete the block and set the next block in the buffer as current
     mSetBlock( mGetPage()->mDeleteBlock( mGetBlock() ) );
-
-    // Set the pos to the begining of the block
-    mSetPos(0);
 
     // If the page is empty
     if( mGetPage()->mIsEmpty() ) {
@@ -1066,12 +1079,20 @@ const char* Utf8BufferIterator::mGetUtf8String( int intLen, bool boolReverse ) {
  */
 Utf8BufferIterator::Utf8BufferIterator( const Utf8BufferIterator* it ) {
 
-    _itPage    = it->_itPage;
-    _itBlock   = it->_itBlock;
-    _offset    = it->_offset;
-    _intPos    = it->_intPos;
-    _buf       = it->_buf;
+    _itPage     = it->_itPage;
+    _itBlock    = it->_itBlock;
+    _offCurrent = it->_offCurrent;
+    _intPos     = it->_intPos;
+    _buf        = it->_buf;
 
+}
+
+/**
+ * Constructor
+ */
+Utf8BufferIterator::Utf8BufferIterator( Utf8Buffer* buf ) : _buf(buf), _intPos(0), _offCurrent(0) { 
+    _itPage = buf->_pageContainer.mBegin();
+    _itBlock = _itPage->mBegin();
 }
 
 /**
@@ -1177,11 +1198,6 @@ bool Utf8BufferIterator::mDelete( const OffSet offLen ) {
  */
 bool Utf8BufferIterator::mDelete( Utf8BufferIterator& itEnd ) {
    
-    // TODO: Blocks should have a substr() operation that returns a block
-    // Replace mTruncate and mSplit with substr()
-    // TODO: mDelete() should be able to delete only from the current block
-    // it doesn't currently
-    
     // Ensure the iterator belongs to us
     assert( itEnd._buf == _buf );
 
@@ -1191,14 +1207,35 @@ bool Utf8BufferIterator::mDelete( Utf8BufferIterator& itEnd ) {
         return false;
     }
 
+    // If the end iterator points to our block
+    if( _itPage == itEnd.mGetPage() ) {
+        if( _itBlock == itEnd.mGetBlock() ) {
+            // Delete the characters from this block and return
+            Utf8Block deletedChars = mGetBlock()->mSubstr( mGetPos(), itEnd.mGetPos() );
+            _buf->_offBufferSize -= deletedChars.mGetBlockSize();
+
+            // the block is now empty, delete it
+            if( _itBlock->mGetBlockSize() == 0 ) {
+                _itBlock = _itPage->mDeleteBlock( _itBlock ); 
+            }
+
+            // TODO: Append the deleted characters to the change set
+            return true;
+        }
+    }
+
     // If the iterator doesn't point to the begining of the block
     if( mGetPos() != 0 ) {
         // Truncate the block starting at intPos 
         // and return a copy of the bytes that were truncated
-        Utf8Block deletedChars = mGetBlock()->mTruncate( mGetPos() );
+        Utf8Block deletedChars = mGetBlock()->mSubstr( mGetPos(), -1 );
+        _buf->_offBufferSize -= deletedChars.mGetBlockSize();
 
         // TODO: Append the deleted characters to the change set
     }
+
+    // We know the end iterator doesn't point to our current block
+    ++_itBlock;
 
     // Delete blocks and pages until the 
     // End iterator points to the same block
@@ -1210,7 +1247,7 @@ bool Utf8BufferIterator::mDelete( Utf8BufferIterator& itEnd ) {
             }
         }
         // Delete the current block
-        if( ! mDeleteBlock() ) {
+        if( ! _mDeleteBlock() ) {
             // If delete block fails we reached the end of the buffer
             // without finding our block
             mSetError("Buffer Error: mDelete reached end of buffer without finding ending iterator");
@@ -1222,11 +1259,20 @@ bool Utf8BufferIterator::mDelete( Utf8BufferIterator& itEnd ) {
     if( itEnd.mGetPos() != 0 ) {
         // Split the block starting at intPos and save 
         // a copy of the bytes that were split from the block
-        Utf8Block deletedChars = itEnd.mGetBlock()->mSplit( mGetPos() );
+        Utf8Block deletedChars = _itBlock->mSubstr( 0, itEnd.mGetPos() );
+        _buf->_offBufferSize -= deletedChars.mGetBlockSize();
 
         // TODO: Append the deleted characters to the change set
+        
+        // if the block is now empty, delete it
+        if( _itBlock->mGetBlockSize() == 0 ) {
+            itEnd.mSetBlock( _itPage->mDeleteBlock( _itBlock ) ); 
+        }
     }
-    
+   
+    // Move back to the block we started the delete from
+    --_itBlock;
+ 
     return true;
 }
 
@@ -1336,7 +1382,7 @@ void Utf8Block::mSetBlockData( const std::string& string ) {
     _strBlockData.assign( string ); 
 
     // Update the size
-    _sizeBlockSize = string.size();
+    _sizeBlockSize = _strBlockData.size();
 
 }
 
@@ -1362,19 +1408,24 @@ void Utf8Block::mInsert( int intPos, const char* cstrData, int intSize ) {
 }
 
 /**
- * Split this block starting at intPos, The characters after intPos
- * will remain in the block, the characters before intPos will make 
- * up the new block
+ * Grab a substring of the current block and return a 
+ * new block containing the 
  */
-Utf8Block Utf8Block::mSplit( int intPos ) {
+Utf8Block Utf8Block::mSubstr( int intPos, int intLen ) {
 
     Utf8Block newBlock;
 
-    // Set the new block data
-    newBlock.mSetBlockData( _strBlockData.substr( 0, intPos ) );
-
-    // Erase the copied block data
-    _strBlockData.erase( 0, intPos );
+    if( intLen < 0 ) { 
+        // Set the new block data
+        newBlock.mSetBlockData( _strBlockData.substr( intPos, std::string::npos ) );
+        // Erase the copied block data
+        _strBlockData.erase( intPos, std::string::npos );
+    } else { 
+        // Set the new block data
+        newBlock.mSetBlockData( _strBlockData.substr( intPos, intLen ) );
+        // Erase the copied block data
+        _strBlockData.erase( intPos, intLen );
+    }
 
     // Update the block size
     _sizeBlockSize = _strBlockData.size();
@@ -1385,31 +1436,6 @@ Utf8Block Utf8Block::mSplit( int intPos ) {
     return newBlock;
 
 }
-
-/**
- * Truncates the characters starting at intPos till the end of the block
- * This method is just like mSplit() except it returns the truncated data
- */
-Utf8Block Utf8Block::mTruncate( int intPos ) {
-
-    Utf8Block newBlock;
-
-    // Set the new block data
-    newBlock.mSetBlockData( _strBlockData.substr( intPos, std::string::npos ) );
-
-    // Erase the copied block data
-    _strBlockData.erase( intPos, std::string::npos );
-
-    // Update the block size
-    _sizeBlockSize = _strBlockData.size();
-
-    // Copy the attributes from this block into the new block
-    newBlock.mSetAttributes( mGetAttributes() );
-
-    return newBlock;
-
-}
-
 
 Utf8Block::Utf8Block( char* cstrData, OffSet offLen ) { 
     _offOffSet        = 0; 
@@ -1465,7 +1491,7 @@ Utf8Page::Iterator Utf8PageContainer::mSplitPage( Utf8BufferIterator *itBuffer, 
             intSplitPos = intTargetSize - intCurSize;
 
             // Split the block, appending the new block to the page
-            itNewBlock = itNewPage->mAppendBlock( itBlock->mSplit( intSplitPos ) );
+            itNewBlock = itNewPage->mAppendBlock( itBlock->mSubstr( 0, intSplitPos ) );
 
         } else {
             // Append the block to the new page

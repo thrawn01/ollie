@@ -131,7 +131,7 @@ class Utf8BufferIterator : public BufferIterator {
         virtual bool                                mSetOffSet( OffSet );
         virtual OffSet                              mGetOffSet( void ) { return _offCurrent; }
         virtual char                                mGetUtf8Char( void ); 
-        virtual const char*                         mGetUtf8String( int intLen, bool boolReverse = false );
+        virtual const char*                         mGetUtf8String( int intLen );
         virtual ushort                              mGetUtf16Char( void ) { }
         virtual const ushort*                       mGetUtf16String( int intLen, bool boolReverse = false ) { }
         virtual int                                 mEqual( boost::shared_ptr<BufferIterator>,  boost::shared_ptr<BufferIterator> );

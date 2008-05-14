@@ -687,7 +687,7 @@ bool Utf8BufferIterator::mSetOffSet( OffSet offset ) {
     // Set our offset to the begining of the page, mNext() will update it 
     // once it finds the correct block
     _offCurrent = itPage->mGetOffSet();
-
+   
     // Move to the appropriate offset
     return mNext( offset );
 
@@ -978,7 +978,12 @@ bool Utf8BufferIterator::mAppendBlock( const Utf8Block &block ) {
  * Move the iterator over intCount number of characters
  */
 bool Utf8BufferIterator::mNext( int intCount ) { 
-    assert( intCount > 0 );
+    assert( intCount >= 0 );
+
+    // We ask to more forward 0 spaces, ok!
+    if( intCount == 0 ) {
+        return true;
+    }
 
     // Remeber the requested positions
     int intRequested = intCount;
@@ -1005,6 +1010,9 @@ bool Utf8BufferIterator::mNext( int intCount ) {
             mSetError("Buffer Error: Requested mNext in buffer out of bounds");
             return false;
         }
+
+        // Pos should point to the begining of the new block
+        _intPos = 0;
         // Subtract the number of positions to move forward
         intCount -= intPosLeft;
         // Set the new position to the end of the new block
@@ -1052,26 +1060,46 @@ char Utf8BufferIterator::mGetUtf8Char( void ) {
 /**
  * Convienince function to get a string in the buffer
  */
-const char* Utf8BufferIterator::mGetUtf8String( int intLen, bool boolReverse ) {
+const char* Utf8BufferIterator::mGetUtf8String( int intCount ) {
+    assert( intCount > 0 );
 
     // If the block points to the end return 0
     if( mGetBlock() == mGetPage()->mEnd() ) {
         return "\0"; // Will this work?
     }
 
-    if( boolReverse ) {
-        
-        assert( ( _intPos - intLen ) > 0 );
+    // Make a copy of our iterator so we can move this iterator and not our own
+    Utf8BufferIterator* itNew = new Utf8BufferIterator( this );
 
-        // Get a substring of the datablock and return a const char* to it
-        return (_strTemp = _itBlock->mGetBlockData().substr(_intPos-intLen, intLen)).c_str();
-    } 
+    // Clear the temp string
+    _strTemp = "";
 
-    assert( _intPos <= _itBlock->mGetBlockSize() );
+    // Figure out how many positions we have left till the end of the block
+    int intPosLeft = itNew->_itBlock->mGetBlockSize() - itNew->_intPos;
 
-    // Get a substring of the datablock and return a const char* to it
-    return (_strTemp = _itBlock->mGetBlockData().substr(_intPos, intLen)).c_str();
+    // If we are asking to move past the current block
+    while( intCount > intPosLeft ) {
 
+        // Grab the internal string of the block and append it to our temp string
+        _strTemp.append( itNew->_itBlock->mGetBlockData().substr( itNew->_intPos, intPosLeft ) );
+
+        // Move to the next block
+        if( !itNew->_mNextBlock() ) {
+            
+            mSetError("Buffer Error: Requested mGetUtf8String() in buffer out of bounds");
+            return _strTemp.c_str();
+        }
+
+        // Subtract the number of positions to move forward
+        intCount -= intPosLeft;
+        // Set the new position to the end of the new block
+        intPosLeft = itNew->_itBlock->mGetBlockSize();
+    }
+
+    // Grab the internal string of the block and append it to our temp string
+    _strTemp.append( itNew->_itBlock->mGetBlockData().substr( itNew->_intPos, intCount ) );
+
+    return _strTemp.c_str();
 }
 
 /**
@@ -1187,7 +1215,6 @@ bool Utf8BufferIterator::mDelete( const OffSet offLen ) {
 
     // Advance the buffer iterator by offLen
     it.mNext( offLen );
-
     return mDelete( it );
 }
 
@@ -1210,6 +1237,9 @@ bool Utf8BufferIterator::mDelete( Utf8BufferIterator& itEnd ) {
     // If the end iterator points to our block
     if( _itPage == itEnd.mGetPage() ) {
         if( _itBlock == itEnd.mGetBlock() ) {
+            std::cout << "offset: " << itEnd.mGetOffSet() << std::endl;
+            std::cout << "mypos: " << mGetPos() << std::endl;
+            std::cout << "pos: " << itEnd.mGetPos() << std::endl;
             // Delete the characters from this block and return
             Utf8Block deletedChars = mGetBlock()->mSubstr( mGetPos(), itEnd.mGetPos() );
             _buf->_offBufferSize -= deletedChars.mGetBlockSize();

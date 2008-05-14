@@ -109,7 +109,7 @@ class BufferIterator : public OllieCommon {
         // calling any other iterator method, the implementation may invalidate the pointer at any time
         // TODO: Change the string = mGetString() methods to mGetString(int length, &string);
         virtual char            mGetUtf8Char( void ) { return _it->mGetUtf8Char(); }
-        virtual const char*     mGetUtf8String( int intLen, bool boolReverse = false ) { return _it->mGetUtf8String( intLen, boolReverse ); }
+        virtual const char*     mGetUtf8String( int intLen ) { return _it->mGetUtf8String( intLen ); }
         virtual ushort          mGetUtf16Char( void ) { return _it->mGetUtf16Char(); }
         virtual const ushort*   mGetUtf16String( int intLen, bool boolReverse = false ) { return _it->mGetUtf16String( intLen, boolReverse ); }
         virtual std::string mGetError( void ) { std::string msg = _it->_streamErrorMsg.str(); _it->_streamErrorMsg.str(""); return msg; }

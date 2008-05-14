@@ -919,9 +919,8 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT( it == buf->mEnd() );
 
             // Reset the iterator to the begining of the buffer
-            cout << __LINE__ << endl;
             it = buf->mBegin();
-            cout << __LINE__ << endl;
+
             TS_ASSERT_EQUALS( it.mGetOffSet( ), 0 );
             // Iterator should point to the first char in the buffer
             TS_ASSERT_EQUALS( it.mGetUtf8Char(), '1' );
@@ -1148,24 +1147,23 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().substr(0,10) , "BBBBBBBBBB" );
             TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().size() , 50 );
 
-            TS_ASSERT_EQUALS( it->mNext( 4 ), true );
-            TS_ASSERT_EQUALS( it->mGetPos(), 4 );
-            TS_ASSERT_EQUALS( it->mGetOffSet(), 4 );
+            TS_ASSERT_EQUALS( it->mNext( 5 ), true );
+            TS_ASSERT_EQUALS( it->mGetPos(), 5 );
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 5 );
 
             // Remove the next 40 bytes
             TS_ASSERT_EQUALS( it->mDelete( 40 ), true );
             
-            // Should be only 6 bytes left
-            TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData() , "BBBBBB" );
-            TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().size() , 6 );
+            // Should be only 5 bytes left
+            TS_ASSERT_EQUALS( string( it->mGetBlock()->mGetBlockData() ) , "BBBBB" );
+            TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().size() , 5 );
             
-            TS_ASSERT_EQUALS( it->mGetPos(), 4 );
-            TS_ASSERT_EQUALS( it->mGetOffSet(), 4 );
-
+            TS_ASSERT_EQUALS( it->mGetPos(), 5 );
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 5 );
             TS_ASSERT_EQUALS( it->mNext( 10 ), true );
 
-            TS_ASSERT_EQUALS( it->mGetPos(), 12 );
-            TS_ASSERT_EQUALS( it->mGetOffSet(), 14 );
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 15 );
+            TS_ASSERT_EQUALS( it->mGetPos(), 10 );
 
             // Get an iterator to the end of the buffer
             BufferIterator itBufferEnd = buf->mEnd();
@@ -1175,18 +1173,25 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it->mDelete( *itEnd ), true );
 
             // Iterator should point to the end of the buffer
-            TS_ASSERT_EQUALS( it->mGetPos(), 12 );
-            TS_ASSERT_EQUALS( it->mGetOffSet(), 14 );
-            TS_ASSERT_EQUALS( buf->mGetBufferSize(), 14 );
+            TS_ASSERT_EQUALS( it->mGetPos(), 10 );
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 15 );
+            TS_ASSERT_EQUALS( buf->mGetBufferSize(), 15 );
 
+            // Reset the iterator to the beginning of the buffer
             TS_ASSERT_EQUALS( it->mSetOffSet( 0 ), true );
-            TS_ASSERT_EQUALS( string( it->mGetUtf8String( 14 ) ), "BBBBBBCCCCCCCC" );
-
-            // Now delete all the text in the buffer
-            TS_ASSERT_EQUALS( it->mDelete( 14 ), true );
 
             TS_ASSERT_EQUALS( it->mGetPos(), 0 );
             TS_ASSERT_EQUALS( it->mGetOffSet(), 0 );
+            TS_ASSERT_EQUALS( string( it->mGetUtf8String( 15 ) ), "BBBBBCCCCCCCCCC" );
+
+            // Now delete all the text in the buffer
+            TS_ASSERT_EQUALS( it->mDelete( 15 ), true );
+
+            TS_ASSERT_EQUALS( it->mGetPos(), 0 );
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 0 );
+            //TODO: I need to go thru all the inserts and deletes and make sure the 
+            //offset at the beginning of each page is getting updated
+            TS_ASSERT_EQUALS( string( it->mGetUtf8String( 10 ) ), "" );
             TS_ASSERT_EQUALS( buf->mGetBufferSize(), 0 );
 
             // The buffer should have 1 page and no blocks

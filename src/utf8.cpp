@@ -880,7 +880,7 @@ bool Utf8BufferIterator::_mDeleteBlock( void ) {
 
     // Delete the block and set the next block in the buffer as current
     mSetBlock( mGetPage()->mDeleteBlock( mGetBlock() ) );
-
+    
     // If the page is empty
     if( mGetPage()->mIsEmpty() ) {
         // And this is not the only page in the buffer
@@ -1237,16 +1237,15 @@ bool Utf8BufferIterator::mDelete( Utf8BufferIterator& itEnd ) {
     // If the end iterator points to our block
     if( _itPage == itEnd.mGetPage() ) {
         if( _itBlock == itEnd.mGetBlock() ) {
-            std::cout << "offset: " << itEnd.mGetOffSet() << std::endl;
-            std::cout << "mypos: " << mGetPos() << std::endl;
-            std::cout << "pos: " << itEnd.mGetPos() << std::endl;
             // Delete the characters from this block and return
-            Utf8Block deletedChars = mGetBlock()->mSubstr( mGetPos(), itEnd.mGetPos() );
+            Utf8Block deletedChars = mGetBlock()->mSubstr( mGetPos(), ( itEnd.mGetPos() - mGetPos() ) );
             _buf->_offBufferSize -= deletedChars.mGetBlockSize();
+            // Update the size of the page
+            _itPage->_offPageSize -= deletedChars.mGetBlockSize();
 
             // the block is now empty, delete it
             if( _itBlock->mGetBlockSize() == 0 ) {
-                _itBlock = _itPage->mDeleteBlock( _itBlock ); 
+                _mDeleteBlock( ); 
             }
 
             // TODO: Append the deleted characters to the change set
@@ -1254,18 +1253,23 @@ bool Utf8BufferIterator::mDelete( Utf8BufferIterator& itEnd ) {
         }
     }
 
-    // If the iterator doesn't point to the begining of the block
-    if( mGetPos() != 0 ) {
+    // If the iterator points to the begining of the block
+    if( mGetPos() == 0 ) {
+        // Delete the current block
+        _mDeleteBlock( ); 
+    } else {
+        // If the iterator doesn't point to the begining of the block
         // Truncate the block starting at intPos 
         // and return a copy of the bytes that were truncated
         Utf8Block deletedChars = mGetBlock()->mSubstr( mGetPos(), -1 );
         _buf->_offBufferSize -= deletedChars.mGetBlockSize();
+        _itPage->_offPageSize -= deletedChars.mGetBlockSize();
 
         // TODO: Append the deleted characters to the change set
-    }
 
-    // We know the end iterator doesn't point to our current block
-    ++_itBlock;
+        // We know the end iterator doesn't point to our current block
+        ++_itBlock;
+    }
 
     // Delete blocks and pages until the 
     // End iterator points to the same block
@@ -1291,12 +1295,13 @@ bool Utf8BufferIterator::mDelete( Utf8BufferIterator& itEnd ) {
         // a copy of the bytes that were split from the block
         Utf8Block deletedChars = _itBlock->mSubstr( 0, itEnd.mGetPos() );
         _buf->_offBufferSize -= deletedChars.mGetBlockSize();
+        _itPage->_offPageSize -= deletedChars.mGetBlockSize();
 
         // TODO: Append the deleted characters to the change set
         
         // if the block is now empty, delete it
         if( _itBlock->mGetBlockSize() == 0 ) {
-            itEnd.mSetBlock( _itPage->mDeleteBlock( _itBlock ) ); 
+            _mDeleteBlock( ); 
         }
     }
    
@@ -1614,3 +1619,22 @@ void Utf8PageContainer::mUpdateOffSets( Utf8Page::Iterator const &it ) {
 
 }
 
+/* 
+ * Print out the contents of the buffer including all pages and blocks
+ */
+void Utf8BufferIterator::printBuffer( void ) {
+
+    Utf8Page::Iterator itPage;
+    Utf8Block::Iterator itBlock;
+
+    // Iterate thru all the pages
+    for( itPage = _buf->_pageContainer.mBegin() ; itPage != _buf->_pageContainer.mEnd() ; itPage++ ) {
+
+        std::cout << "\nPage OffSet: " << itPage->mGetOffSet() << std::endl;
+        // Iterate thru all the pages
+        for( itBlock = itPage->mBegin() ; itBlock != itPage->mEnd() ; itBlock++ ) {
+            std::cout << "\tBlock: " << itBlock->mGetBlockData() << std::endl;
+        }
+
+    }
+}

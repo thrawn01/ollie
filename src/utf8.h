@@ -150,6 +150,7 @@ class Utf8BufferIterator : public BufferIterator {
         void                                        mSetBlock( const Utf8Block::Iterator &it ) { _itBlock = it; }
         int                                         mGetPos( void ) { return _intPos; }
         void                                        mSetPos( const int pos ) { _intPos = pos; }
+        void                                        printBuffer( void );
 
         Utf8Page::Iterator      _itPage;
         Utf8Block::Iterator     _itBlock;

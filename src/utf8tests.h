@@ -1116,6 +1116,9 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'D' ) ), true );
             TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'E' ) ), true );
             TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'F' ) ), true );
+            TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize(), 300 );
+            TS_ASSERT_EQUALS( buf->mGetBufferSize(), 300 );
+            it->printBuffer();
 
             // Reset the iterator to the beginning of the buffer
             itBuffer = buf->mBegin();
@@ -1131,6 +1134,8 @@ class Utf8Tests : public CxxTest::TestSuite
             // Offset should still point to the beginning of the first block
             TS_ASSERT_EQUALS( it->mGetPos(), 0 );
             TS_ASSERT_EQUALS( it->mGetOffSet(), 0 );
+            TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize(), 260 );
+            TS_ASSERT_EQUALS( buf->mGetBufferSize(), 260 );
 
             // The data should be missing
             TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData() , "AAAAAAAAAA" );
@@ -1142,6 +1147,8 @@ class Utf8Tests : public CxxTest::TestSuite
             // Offset should still point to the beginning of the first block
             TS_ASSERT_EQUALS( it->mGetPos(), 0 );
             TS_ASSERT_EQUALS( it->mGetOffSet(), 0 );
+            TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize(), 250 );
+            TS_ASSERT_EQUALS( buf->mGetBufferSize(), 250 );
 
             // We should be pointing to 'B' Block
             TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().substr(0,10) , "BBBBBBBBBB" );
@@ -1150,39 +1157,47 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it->mNext( 5 ), true );
             TS_ASSERT_EQUALS( it->mGetPos(), 5 );
             TS_ASSERT_EQUALS( it->mGetOffSet(), 5 );
-
-            // Remove the next 40 bytes
-            TS_ASSERT_EQUALS( it->mDelete( 40 ), true );
             
-            // Should be only 5 bytes left
-            TS_ASSERT_EQUALS( string( it->mGetBlock()->mGetBlockData() ) , "BBBBB" );
-            TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().size() , 5 );
+            // Remove the next 40 bytes
+            it->printBuffer();
+            TS_ASSERT_EQUALS( it->mDelete( 40 ), true );
+            it->printBuffer();
+
+            TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize(), 210 );
+            TS_ASSERT_EQUALS( buf->mGetBufferSize(), 210 );
+            
+            // Should be only 10 bytes left
+            TS_ASSERT_EQUALS( string( it->mGetBlock()->mGetBlockData() ) , "BBBBBBBBBB" );
+            TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().size() , 10 );
             
             TS_ASSERT_EQUALS( it->mGetPos(), 5 );
             TS_ASSERT_EQUALS( it->mGetOffSet(), 5 );
             TS_ASSERT_EQUALS( it->mNext( 10 ), true );
 
             TS_ASSERT_EQUALS( it->mGetOffSet(), 15 );
-            TS_ASSERT_EQUALS( it->mGetPos(), 10 );
+            TS_ASSERT_EQUALS( it->mGetPos(), 5 );
 
             // Get an iterator to the end of the buffer
             BufferIterator itBufferEnd = buf->mEnd();
             Utf8BufferIterator* itEnd = itBufferEnd.mGetPtrAs<Utf8BufferIterator*>();
+            TS_ASSERT_EQUALS( buf->mGetBufferSize(), 210 );
 
             // Delete all text till the end of the buffer
             TS_ASSERT_EQUALS( it->mDelete( *itEnd ), true );
 
             // Iterator should point to the end of the buffer
-            TS_ASSERT_EQUALS( it->mGetPos(), 10 );
+            TS_ASSERT_EQUALS( it->mGetPos(), 5 );
             TS_ASSERT_EQUALS( it->mGetOffSet(), 15 );
             TS_ASSERT_EQUALS( buf->mGetBufferSize(), 15 );
+            TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize(), 15 );
 
             // Reset the iterator to the beginning of the buffer
             TS_ASSERT_EQUALS( it->mSetOffSet( 0 ), true );
 
             TS_ASSERT_EQUALS( it->mGetPos(), 0 );
             TS_ASSERT_EQUALS( it->mGetOffSet(), 0 );
-            TS_ASSERT_EQUALS( string( it->mGetUtf8String( 15 ) ), "BBBBBCCCCCCCCCC" );
+            TS_ASSERT_EQUALS( string( it->mGetUtf8String( 15 ) ), "BBBBBBBBBBCCCCC" );
+            it->printBuffer();
 
             // Now delete all the text in the buffer
             TS_ASSERT_EQUALS( it->mDelete( 15 ), true );
@@ -1191,12 +1206,15 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it->mGetOffSet(), 0 );
             //TODO: I need to go thru all the inserts and deletes and make sure the 
             //offset at the beginning of each page is getting updated
+            it->printBuffer();
             TS_ASSERT_EQUALS( string( it->mGetUtf8String( 10 ) ), "" );
-            TS_ASSERT_EQUALS( buf->mGetBufferSize(), 0 );
 
             // The buffer should have 1 page and no blocks
             TS_ASSERT_EQUALS( buf->_pageContainer.mGetSize(), 1 );
+            TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize(), 0 );
+            TS_ASSERT_EQUALS( it->mGetPage()->_blockContainer.size(), 0 );
             TS_ASSERT_EQUALS( it->mGetPage()->mIsEmpty(), true );
+            TS_ASSERT_EQUALS( buf->mGetBufferSize(), 0 );
 
             // Insert should still work
             TS_ASSERT_EQUALS( it->mInsertBlock( createBlock( 50, 'A' ) ), true );

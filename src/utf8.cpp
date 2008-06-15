@@ -48,7 +48,7 @@ void Utf8Buffer::init( OffSet offPageSize  ) {
 
     page->mSetOffSet( 0 );
 
-    // Append to the page to the container
+    // Append the page to the container
     _pageContainer.mAppendPage( page );
 
 }
@@ -839,19 +839,23 @@ bool Utf8BufferIterator::mPrevBlock( int intCount ) {
     }
     return true;
 }
+
 /**
  * Delete the block the iterator is currently pointing to
  */
 bool Utf8BufferIterator::mDeleteBlock( void ) { 
+
+    // Update the current offset
+    _offCurrent -= mGetBlock()->mGetBlockSize();
+    if( mGetPos() == 0 ) {
+        _offCurrent -= mGetPos();
+    }
 
     // Delete this block
     if( !_mDeleteBlock() ) {
         return false;
     }
 
-    // Update the current offset
-    _offCurrent -= mGetPos();
-    
     // Set the pos to the begining of the block
     mSetPos(0);
 
@@ -896,6 +900,20 @@ bool Utf8BufferIterator::_mDeleteBlock( void ) {
             }
         }
         // If this is the only page in the buffer, it should stay
+    }
+
+    // if this is the only page in the buffer
+    if( _buf->_pageContainer.mGetSize() == 1 ) {
+        // And we just deleted the last block in the buffer
+        if( _itPage->mGetPageSize() == 0 ) {
+            // Add an empty block
+            _itPage->mAppendBlock( Utf8Block() );
+        }
+    }
+
+    // If we are pointing to the end of the page
+    if( _itBlock == _itPage->mEnd() ) {
+        _itBlock = ( --_itPage->mEnd() );
     }
     return true; 
 }
@@ -1264,6 +1282,7 @@ bool Utf8BufferIterator::mDelete( Utf8BufferIterator& itEnd ) {
         Utf8Block deletedChars = mGetBlock()->mSubstr( mGetPos(), -1 );
         _buf->_offBufferSize -= deletedChars.mGetBlockSize();
         _itPage->_offPageSize -= deletedChars.mGetBlockSize();
+        _offCurrent -= deletedChars.mGetBlockSize();
 
         // TODO: Append the deleted characters to the change set
 
@@ -1296,6 +1315,7 @@ bool Utf8BufferIterator::mDelete( Utf8BufferIterator& itEnd ) {
         Utf8Block deletedChars = _itBlock->mSubstr( 0, itEnd.mGetPos() );
         _buf->_offBufferSize -= deletedChars.mGetBlockSize();
         _itPage->_offPageSize -= deletedChars.mGetBlockSize();
+        _offCurrent -= deletedChars.mGetBlockSize();
 
         // TODO: Append the deleted characters to the change set
         

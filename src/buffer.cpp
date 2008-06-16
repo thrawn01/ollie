@@ -18,12 +18,13 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
-#include <utf8.h>
+#include <buffer.h>
+#include <file.h>
 
 /*!
  * Initalize class variables
  */
-void Utf8Buffer::init( OffSet offPageSize  ) {
+void Buffer::init( OffSet offPageSize  ) {
     _boolModified         = false;
     _fileHandle           = 0;
     _boolEntireFileLoaded = false;
@@ -36,7 +37,7 @@ void Utf8Buffer::init( OffSet offPageSize  ) {
     _longCurProgress      = 0;
 
     // Append an empty page to the buffer
-    Utf8Page *page = new Utf8Page();
+    Page *page = new Page();
 
     // If the buffer wants to overide the default page size
     if( _offTargetPageSize ) { 
@@ -44,7 +45,7 @@ void Utf8Buffer::init( OffSet offPageSize  ) {
     }
 
     // Append a new empty block to the page
-    page->mAppendBlock( Utf8Block() );
+    page->mAppendBlock( Block() );
 
     page->mSetOffSet( 0 );
 
@@ -56,7 +57,7 @@ void Utf8Buffer::init( OffSet offPageSize  ) {
 /**
  * Construct a buffer with empty pages
  */
-Utf8Buffer::Utf8Buffer( OffSet offPageSize ) { 
+Buffer::Buffer( OffSet offPageSize ) { 
 
     // Initialize class variables
     init( offPageSize );
@@ -66,7 +67,7 @@ Utf8Buffer::Utf8Buffer( OffSet offPageSize ) {
 /**
  * Construct a buffer with a name
  */
-Utf8Buffer::Utf8Buffer( const std::string& strName, OffSet offPageSize ) { 
+Buffer::Buffer( const std::string& strName, OffSet offPageSize ) { 
 
     // Initialize class variables
     init( offPageSize );
@@ -79,7 +80,7 @@ Utf8Buffer::Utf8Buffer( const std::string& strName, OffSet offPageSize ) {
 /*!
  * Construct a buffer from a file and give it a name
  */
-Utf8Buffer::Utf8Buffer( File* const file, OffSet offPageSize ) {
+Buffer::Buffer( File* const file, OffSet offPageSize ) {
     
     // Initialize class variables
     init( offPageSize );
@@ -100,7 +101,7 @@ Utf8Buffer::Utf8Buffer( File* const file, OffSet offPageSize ) {
 /*!
  * Buffer Destructor
  */
-Utf8Buffer::~Utf8Buffer( void ) {
+Buffer::~Buffer( void ) {
 
     // Unallocate the file
     if( _fileHandle ) { 
@@ -114,7 +115,7 @@ Utf8Buffer::~Utf8Buffer( void ) {
  * The file passed must be an open valid file
  */
 
-bool Utf8Buffer::mAssignFile( File* const file ) {
+bool Buffer::mAssignFile( File* const file ) {
     assert( file != 0 );
 
     _strName    = file->mGetFileName();
@@ -126,7 +127,7 @@ bool Utf8Buffer::mAssignFile( File* const file ) {
 /*!
  * Returns the File Name the current buffer represents
  */
-std::string Utf8Buffer::mGetFileName( void ) {
+std::string Buffer::mGetFileName( void ) {
 
     if( _fileHandle ) {
         return _fileHandle->mGetFileName();
@@ -138,7 +139,7 @@ std::string Utf8Buffer::mGetFileName( void ) {
  * Return true if the buffer has room to add data
  */
 
-bool Utf8Buffer::mBufferFull( void ) {
+bool Buffer::mBufferFull( void ) {
 
     // If the buffer size is not greater than the Max Buffer size
     if( _offBufferSize >= _offMaxBufferSize ) {
@@ -152,7 +153,7 @@ bool Utf8Buffer::mBufferFull( void ) {
  * into the buffer for the first time
  */
 
-bool Utf8Buffer::mIsBufferReady( void ) {
+bool Buffer::mIsBufferReady( void ) {
 
     // Are there any active tasks?
     if( _currentTask ) {
@@ -167,7 +168,7 @@ bool Utf8Buffer::mIsBufferReady( void ) {
  * false if there was an error
  */
 
-bool Utf8Buffer::mPreformTask( void ) {
+bool Buffer::mPreformTask( void ) {
     assert( _currentTask != 0 );
 
     return (this->*_currentTask)();
@@ -177,7 +178,7 @@ bool Utf8Buffer::mPreformTask( void ) {
  * Returns the progress of the current task if there is one.
  * If not returns false
  */
-bool Utf8Buffer::mGetProgress( long* longProgress ) { 
+bool Buffer::mGetProgress( long* longProgress ) { 
 
     *longProgress = _longCurProgress; 
     if( _currentTask ) return true;
@@ -370,12 +371,12 @@ bool Utf8File::mFinalizeLoad( void ) {
 /**
  * Returns a itertor to the begining of this this buffer
  */
-BufferIterator Utf8Buffer::mBegin( void ) {
+BufferIterator Buffer::mBegin( void ) {
 
-    Utf8BufferIterator *it = new Utf8BufferIterator( this );
+    BufferIterator *it = new BufferIterator( this );
 
-    Utf8Page::Iterator itPage = _pageContainer.mBegin();
-    Utf8Block::Iterator itBlock = itPage->mBegin();
+    Page::Iterator itPage = _pageContainer.mBegin();
+    Block::Iterator itBlock = itPage->mBegin();
 
     it->mSetPage( itPage );
     it->mSetBlock( itBlock );
@@ -390,12 +391,12 @@ BufferIterator Utf8Buffer::mBegin( void ) {
 /**
  * Returns a itertor to the end of this this buffer
  */
-BufferIterator Utf8Buffer::mEnd( void ) {
+BufferIterator Buffer::mEnd( void ) {
 
-    Utf8BufferIterator *it = new Utf8BufferIterator( this );
+    BufferIterator *it = new BufferIterator( this );
 
-    Utf8Page::Iterator itPage = (--_pageContainer.mEnd());
-    Utf8Block::Iterator itBlock = (--itPage->mEnd());
+    Page::Iterator itPage = (--_pageContainer.mEnd());
+    Block::Iterator itBlock = (--itPage->mEnd());
     
     it->mSetPage( itPage );
     it->mSetBlock( itBlock );
@@ -411,7 +412,7 @@ BufferIterator Utf8Buffer::mEnd( void ) {
 /*! 
  * Saves 1 page of data to a file
  */
-OffSet Utf8Buffer::mSavePage( Utf8Page::Iterator &itPage, OffSet offSet ) {
+OffSet Buffer::mSavePage( Page::Iterator &itPage, OffSet offSet ) {
     OffSet offLen = 0;
 
     assert( _fileHandle != 0 );
@@ -422,7 +423,7 @@ OffSet Utf8Buffer::mSavePage( Utf8Page::Iterator &itPage, OffSet offSet ) {
         return -1;
     }
 
-    Utf8Block::Iterator it = itPage->mBegin();
+    Block::Iterator it = itPage->mBegin();
   
     // Foreach block in the page write it 2 the file
     for( it = itPage->mBegin() ; it != itPage->mEnd() ; it++ ) {
@@ -448,7 +449,7 @@ OffSet Utf8Buffer::mSavePage( Utf8Page::Iterator &itPage, OffSet offSet ) {
  * Set the offset to the begining of the file
  * in prep for saving the file
  */
-bool Utf8Buffer::mSaveBuffer( void ) {
+bool Buffer::mSaveBuffer( void ) {
 
     // Get the first page of the buffer
     _itCurSavePage = _pageContainer.mBegin();
@@ -460,7 +461,7 @@ bool Utf8Buffer::mSaveBuffer( void ) {
 
     // Assign the load Page task and set the status message
     mSetTaskStatus() << "Saving " << _fileHandle->mGetFileName() << "..." ;
-    _currentTask = &Utf8Buffer::mSaveFileTask;
+    _currentTask = &Buffer::mSaveFileTask;
 
     // Prepare the file class for save operation
     _fileHandle->mPrepareSave();
@@ -472,7 +473,7 @@ bool Utf8Buffer::mSaveBuffer( void ) {
 }
 
 
-bool Utf8Buffer::mSaveFileTask( void ) {
+bool Buffer::mSaveFileTask( void ) {
     OffSet offset = 0;
     assert( _fileHandle != 0 );
     
@@ -516,7 +517,7 @@ bool Utf8Buffer::mSaveFileTask( void ) {
 /*!
  * Load 1 page of data from a file
  */
-OffSet Utf8Buffer::mLoadPage( OffSet offSet ) {
+OffSet Buffer::mLoadPage( OffSet offSet ) {
     OffSet offLen = 0;
     Attributes attr;
 
@@ -528,7 +529,7 @@ OffSet Utf8Buffer::mLoadPage( OffSet offSet ) {
         return -1;
     }
 
-    Utf8Page *page = new Utf8Page();
+    Page *page = new Page();
 
     // Record the offset for this page
     page->mSetFileOffSet( offSet );
@@ -553,7 +554,7 @@ OffSet Utf8Buffer::mLoadPage( OffSet offSet ) {
         }
 
         // Create a new block of data
-        Utf8Block block(arrBlockData, offLen );
+        Block block(arrBlockData, offLen );
 
         // Add the attributes to the block
         block.mSetAttributes( attr );
@@ -586,7 +587,7 @@ OffSet Utf8Buffer::mLoadPage( OffSet offSet ) {
 
 }
 
-bool Utf8Buffer::mLoadBuffer( void ) {
+bool Buffer::mLoadBuffer( void ) {
 
     // Sanity check!
     if( ! _fileHandle ) {
@@ -596,7 +597,7 @@ bool Utf8Buffer::mLoadBuffer( void ) {
 
     // Assign the load Page task and set the status message
     mSetTaskStatus() << "Loading " << _fileHandle->mGetFileName() << "..." ;
-    _currentTask = &Utf8Buffer::mLoadFileTask;
+    _currentTask = &Buffer::mLoadFileTask;
 
     // If the buffer contains pages already
     if( _pageContainer.mBegin() != _pageContainer.mEnd() ) {
@@ -616,7 +617,7 @@ bool Utf8Buffer::mLoadBuffer( void ) {
 /*!
  * This task loads the entire file into memory
  */
-bool Utf8Buffer::mLoadFileTask( void ) {
+bool Buffer::mLoadFileTask( void ) {
     OffSet offset = 0;
     assert( _fileHandle != 0 );
 
@@ -652,7 +653,7 @@ bool Utf8Buffer::mLoadFileTask( void ) {
  * Move the iterator to a specific offset in the buffer,
  * TODO: Improve preformance for large buffers
  */
-bool Utf8BufferIterator::mSetOffSet( OffSet offset ) {
+bool BufferIterator::mSetOffSet( OffSet offset ) {
 
     // Sanity Check, Are we asking for an offset bigger than the buffer?
     if( offset > _buf->mGetBufferSize() ) {
@@ -661,7 +662,7 @@ bool Utf8BufferIterator::mSetOffSet( OffSet offset ) {
     }
 
     // Get an iterator to the begining of the page containers
-    Utf8Page::Iterator itPage = _buf->_pageContainer.mBegin();
+    Page::Iterator itPage = _buf->_pageContainer.mBegin();
 
     // Searching thru the buffer
     while( itPage != _buf->_pageContainer.mEnd() ) {
@@ -696,7 +697,7 @@ bool Utf8BufferIterator::mSetOffSet( OffSet offset ) {
 /**
  * Move the iterator back intCount number of characters
  */
-bool Utf8BufferIterator::mPrev( int intCount ) { 
+bool BufferIterator::mPrev( int intCount ) { 
 
     // Remeber the requested positions
     int intRequested = intCount;
@@ -735,7 +736,7 @@ bool Utf8BufferIterator::mPrev( int intCount ) {
  * Move the iterator over intCount number of blocks and update
  * the current offset
  */
-bool Utf8BufferIterator::mNextBlock( int intCount ) { 
+bool BufferIterator::mNextBlock( int intCount ) { 
 
     int intDone = 0;
     while( intCount > intDone ) {
@@ -758,7 +759,7 @@ bool Utf8BufferIterator::mNextBlock( int intCount ) {
 /**
  * Move the iterator over 1 block
  */
-bool Utf8BufferIterator::_mNextBlock( void ) { 
+bool BufferIterator::_mNextBlock( void ) { 
 
     // if we are pointing to end of the page already
     if( _itBlock == _itPage->mEnd()  ) {
@@ -795,7 +796,7 @@ bool Utf8BufferIterator::_mNextBlock( void ) {
 /**
  * Move the iterator back intCount number of blocks 
  */
-bool Utf8BufferIterator::_mPrevBlock( void ) { 
+bool BufferIterator::_mPrevBlock( void ) { 
 
     // if this is the first block in the page
     if( _itBlock == _itPage->mBegin() ) {
@@ -819,7 +820,7 @@ bool Utf8BufferIterator::_mPrevBlock( void ) {
  * Move the iterator back intCount number of blocks and
  * update the current offset
  */
-bool Utf8BufferIterator::mPrevBlock( int intCount ) { 
+bool BufferIterator::mPrevBlock( int intCount ) { 
 
     int intDone = 0;
     while( intCount > intDone ) {
@@ -843,7 +844,7 @@ bool Utf8BufferIterator::mPrevBlock( int intCount ) {
 /**
  * Delete the block the iterator is currently pointing to
  */
-bool Utf8BufferIterator::mDeleteBlock( void ) { 
+bool BufferIterator::mDeleteBlock( void ) { 
 
     // Delete this block
     if( !_mDeleteBlock() ) {
@@ -856,7 +857,7 @@ bool Utf8BufferIterator::mDeleteBlock( void ) {
 /**
  * Delete the block the iterator is currently pointing to
  */
-bool Utf8BufferIterator::_mDeleteBlock( void ) { 
+bool BufferIterator::_mDeleteBlock( void ) { 
 
     // If the block iterator points to the end of the page
     if( mGetBlock() == mGetPage()->mEnd() ) {
@@ -942,7 +943,7 @@ bool Utf8BufferIterator::_mDeleteBlock( void ) {
  * NOTE: If the user inserts a block into an empty buffer 
  * mAppendBlock() is called instead
  */
-bool Utf8BufferIterator::mInsertBlock( const Utf8Block &block ) { 
+bool BufferIterator::mInsertBlock( const Block &block ) { 
 
     // If the block iterator points to the end of the page
     if( mGetBlock() == mGetPage()->mEnd() ) {
@@ -978,7 +979,7 @@ bool Utf8BufferIterator::mInsertBlock( const Utf8Block &block ) {
 /**
  * Append a new block before the iterator location
  */
-bool Utf8BufferIterator::mAppendBlock( const Utf8Block &block ) { 
+bool BufferIterator::mAppendBlock( const Block &block ) { 
 
     // If we are pointing to the end of the buffer
     if( mGetBlock() != mGetPage()->mEnd() ) {
@@ -1013,7 +1014,7 @@ bool Utf8BufferIterator::mAppendBlock( const Utf8Block &block ) {
 /**
  * Move the iterator over intCount number of characters
  */
-bool Utf8BufferIterator::mNext( int intCount ) { 
+bool BufferIterator::mNext( int intCount ) { 
     assert( intCount >= 0 );
 
     // We ask to more forward 0 spaces, ok!
@@ -1067,7 +1068,7 @@ bool Utf8BufferIterator::mNext( int intCount ) {
 /**
  * Return the charater the iterator points to in utf8 encoding
  */
-char Utf8BufferIterator::mGetUtf8Char( void ) { 
+char BufferIterator::mGetUtf8Char( void ) { 
 
     // The iterator should never point to a position
     // greater than the size of the current block
@@ -1096,7 +1097,7 @@ char Utf8BufferIterator::mGetUtf8Char( void ) {
 /**
  * Convienince function to get a string in the buffer
  */
-const char* Utf8BufferIterator::mGetUtf8String( int intCount ) {
+const char* BufferIterator::mGetUtf8String( int intCount ) {
     assert( intCount > 0 );
 
     // If the block points to the end return 0
@@ -1105,22 +1106,22 @@ const char* Utf8BufferIterator::mGetUtf8String( int intCount ) {
     }
 
     // Make a copy of our iterator so we can move this iterator and not our own
-    Utf8BufferIterator* itNew = new Utf8BufferIterator( this );
+    BufferIterator itNew = *this;
 
     // Clear the temp string
     _strTemp = "";
 
     // Figure out how many positions we have left till the end of the block
-    int intPosLeft = itNew->_itBlock->mGetBlockSize() - itNew->_intPos;
+    int intPosLeft = itNew._itBlock->mGetBlockSize() - itNew._intPos;
     
     // If we are asking to move past the current block
     while( intCount > intPosLeft ) {
 
         // Grab the internal string of the block and append it to our temp string
-        _strTemp.append( itNew->_itBlock->mGetBlockData().substr( itNew->_intPos, intPosLeft ) );
+        _strTemp.append( itNew._itBlock->mGetBlockData().substr( itNew._intPos, intPosLeft ) );
 
         // Move to the next block
-        if( !itNew->_mNextBlock() ) {
+        if( !itNew._mNextBlock() ) {
             
             mSetError("Buffer Error: Requested mGetUtf8String() in buffer out of bounds");
             return _strTemp.c_str();
@@ -1129,11 +1130,11 @@ const char* Utf8BufferIterator::mGetUtf8String( int intCount ) {
         // Subtract the number of positions to move forward
         intCount -= intPosLeft;
         // Set the new position to the end of the new block
-        intPosLeft = itNew->_itBlock->mGetBlockSize();
+        intPosLeft = itNew._itBlock->mGetBlockSize();
     }
 
     // Grab the internal string of the block and append it to our temp string
-    _strTemp.append( itNew->_itBlock->mGetBlockData().substr( itNew->_intPos, intCount ) );
+    _strTemp.append( itNew._itBlock->mGetBlockData().substr( itNew._intPos, intCount ) );
 
     return _strTemp.c_str();
 }
@@ -1141,43 +1142,28 @@ const char* Utf8BufferIterator::mGetUtf8String( int intCount ) {
 /**
  * Constructor
  */
-Utf8BufferIterator::Utf8BufferIterator( const Utf8BufferIterator* it ) {
-
-    _itPage     = it->_itPage;
-    _itBlock    = it->_itBlock;
-    _offCurrent = it->_offCurrent;
-    _intPos     = it->_intPos;
-    _buf        = it->_buf;
-
-}
-
-/**
- * Constructor
- */
-Utf8BufferIterator::Utf8BufferIterator( Utf8Buffer* buf ) : _buf(buf), _intPos(0), _offCurrent(0) { 
+BufferIterator::BufferIterator( Buffer* buf ) : _buf(buf), _intPos(0), _offCurrent(0) { 
     _itPage = buf->_pageContainer.mBegin();
     _itBlock = _itPage->mBegin();
 }
 
 /**
- * Create a new copy of the Utf8BufferItertor from the an existing instance
+ * Copy all the vars of the passed BufferIterator to this Iterator
  */
-boost::shared_ptr<BufferIterator> Utf8BufferIterator::copy( ) const {
-   
-    boost::shared_ptr<Utf8BufferIterator> ptr( new Utf8BufferIterator( this ) ); 
+void BufferIterator::copy( const BufferIterator &it  ) {
 
-    return ptr;
-
+    _itPage     = it._itPage;
+    _itBlock    = it._itBlock;
+    _offCurrent = it._offCurrent;
+    _intPos     = it._intPos;
+    _buf        = it._buf;
+  
 }
 
 /**
  * Returns 1 if the Iterators are equal
  */
-int Utf8BufferIterator::mEqual( boost::shared_ptr<BufferIterator> sharedLeft,  boost::shared_ptr<BufferIterator> sharedRight ){
-
-    // Grab the pointers
-    Utf8BufferIterator* itLeft = boost::polymorphic_downcast<Utf8BufferIterator*>( sharedLeft.get() );
-    Utf8BufferIterator* itRight = boost::polymorphic_downcast<Utf8BufferIterator*>( sharedRight.get() );
+int BufferIterator::mEqual( const BufferIterator* itLeft, const BufferIterator* itRight ){
 
     // If the both point to the same address they are equal!
     if( itLeft == itRight ) return 1; 
@@ -1193,13 +1179,7 @@ int Utf8BufferIterator::mEqual( boost::shared_ptr<BufferIterator> sharedLeft,  b
 /**
  * Insert a char* array into the buffer at the BufferIterator position
  */
-BufferIterator Utf8Buffer::mInsert( BufferIterator& itBuffer, const char* cstrBuffer, int intBufSize, Attributes &attr ) { 
-
-    // Ask Buffer Iterator for a pointer to our implementation specific iterator
-    Utf8BufferIterator* it = itBuffer.mGetPtrAs<Utf8BufferIterator*>();
-
-    // Get the block the iterator points to
-    Utf8Page::Iterator itPage = it->mGetPage();
+bool BufferIterator::mInsert( const char* cstrBuffer, int intBufSize, Attributes &attr ) { 
 
     // Do the attributes of this insert match the block the iterator points to ?
     //if( itBlock->mGetAttributes() == attr ) { TODO
@@ -1209,45 +1189,42 @@ BufferIterator Utf8Buffer::mInsert( BufferIterator& itBuffer, const char* cstrBu
     //}
     
     // Insert the data into the page at this block
-    itPage->mInsert( it->mGetBlock() , it->mGetPos(), cstrBuffer, intBufSize );
+    _itPage->mInsert( mGetBlock() , mGetPos(), cstrBuffer, intBufSize );
    
     // Get the target page size
-    OffSet intTargetPageSize = itPage->mGetTargetPageSize();
+    OffSet intTargetPageSize = _itPage->mGetTargetPageSize();
 
     // Will this insert mean we will need to split the page ? 
     // ( We Split the page if the page size is twice that of the target page size )
     // If we inserted more than 1 page of data, keep spliting
-    while( itPage->mGetPageSize() >= ( intTargetPageSize * 2 ) ) {
+    while( _itPage->mGetPageSize() >= ( intTargetPageSize * 2 ) ) {
 
         // Split the page, and return an iterator to the new page
-        itPage = _pageContainer.mSplitPage( it, itPage );
+        _itPage = _buf->_pageContainer.mSplitPage( this , _itPage );
     }
 
     // Now that we inserted new data the offsets for the pages need to be adjusted 
-    _pageContainer.mUpdateOffSets( itPage );
-
-    // Create a new iterator
-    Utf8BufferIterator* itNew = new Utf8BufferIterator( it );
+    _buf->_pageContainer.mUpdateOffSets( _itPage );
 
     // Update the position in the new iterator
-    itNew->mSetPos( it->mGetPos() + intBufSize );
+    mSetPos( mGetPos() + intBufSize );
 
     // Update the size of the buffer
-    _offBufferSize += intBufSize;
+    _buf->_offBufferSize += intBufSize;
 
     // Notify the buffer was modified
-    _boolModified = true;
+    _buf->_boolModified = true;
 
-    return BufferIterator( itNew );
+    return true;
 }
 
 /**
  * Delete a number of characters starting from the iterator position
  */
-bool Utf8BufferIterator::mDelete( const OffSet offLen ) { 
+bool BufferIterator::mDelete( const OffSet offLen ) { 
 
     // Create a copy of the iterator
-    Utf8BufferIterator it( this );
+    BufferIterator it( this );
 
     // Advance the buffer iterator by offLen
     it.mNext( offLen );
@@ -1259,7 +1236,7 @@ bool Utf8BufferIterator::mDelete( const OffSet offLen ) {
  * and ending at the second BufferIterator, Return true if the delete was successful
  * TODO: Think about reverse iterators, maybe 1 method for reverse and 1 for normal
  */
-bool Utf8BufferIterator::mDelete( Utf8BufferIterator& itEnd ) {
+bool BufferIterator::mDelete( BufferIterator& itEnd ) {
    
     // Ensure the iterator belongs to us
     assert( itEnd._buf == _buf );
@@ -1274,7 +1251,7 @@ bool Utf8BufferIterator::mDelete( Utf8BufferIterator& itEnd ) {
     if( _itPage == itEnd.mGetPage() ) {
         if( _itBlock == itEnd.mGetBlock() ) {
             // Delete the characters from this block
-            Utf8Block delBytes = mGetBlock()->mSubstr( mGetPos(), ( itEnd.mGetPos() - mGetPos() ) );
+            Block delBytes = mGetBlock()->mSubstr( mGetPos(), ( itEnd.mGetPos() - mGetPos() ) );
             _mBytesDeleted( delBytes.mGetBlockSize() );
 
             // if the block is now empty, delete it
@@ -1294,7 +1271,7 @@ bool Utf8BufferIterator::mDelete( Utf8BufferIterator& itEnd ) {
     // If the iterator doesn't point to the begining of the block
     // Truncate the block starting at intPos 
     // and return a copy of the bytes that were truncated
-    Utf8Block delBytes = mGetBlock()->mSubstr( mGetPos(), -1 );
+    Block delBytes = mGetBlock()->mSubstr( mGetPos(), -1 );
     _mBytesDeleted( delBytes.mGetBlockSize() );
 
     // TODO: Append the deleted characters to the change set
@@ -1329,7 +1306,7 @@ bool Utf8BufferIterator::mDelete( Utf8BufferIterator& itEnd ) {
     if( itEnd.mGetPos() != 0 ) {
         // Split the block starting at intPos and save 
         // a copy of the bytes that were split from the block
-        Utf8Block delBytes = _itBlock->mSubstr( 0, itEnd.mGetPos() );
+        Block delBytes = _itBlock->mSubstr( 0, itEnd.mGetPos() );
         _mBytesDeleted( delBytes.mGetBlockSize() );
 
         // TODO: Append the deleted characters to the change set
@@ -1354,7 +1331,7 @@ bool Utf8BufferIterator::mDelete( Utf8BufferIterator& itEnd ) {
 /*!
  * Append a block to the page and return an iterator to the block
  */
-Utf8Block::Iterator Utf8Page::mAppendBlock( const Utf8Block &block ) {
+Block::Iterator Page::mAppendBlock( const Block &block ) {
     
     // Add the block to our page
     _blockContainer.push_back( block ); 
@@ -1370,7 +1347,7 @@ Utf8Block::Iterator Utf8Page::mAppendBlock( const Utf8Block &block ) {
 /*!
  * Remove a block from the page
  */
-Utf8Block::Iterator Utf8Page::mDeleteBlock( const Utf8Block::Iterator& itBlock ) {
+Block::Iterator Page::mDeleteBlock( const Block::Iterator& itBlock ) {
 
     // Shrink the size of the page by the block size removed
     _offPageSize -= itBlock->mGetBlockSize();
@@ -1383,7 +1360,7 @@ Utf8Block::Iterator Utf8Page::mDeleteBlock( const Utf8Block::Iterator& itBlock )
 /**
  * Insert a block into the page
  */
-Utf8Block::Iterator Utf8Page::mInsertBlock( const Utf8Block::Iterator& it, const Utf8Block& block ) {
+Block::Iterator Page::mInsertBlock( const Block::Iterator& it, const Block& block ) {
 
     // Record Incr the Cur size of our page
     _offPageSize += block.mGetBlockSize();
@@ -1397,7 +1374,7 @@ Utf8Block::Iterator Utf8Page::mInsertBlock( const Utf8Block::Iterator& it, const
 /**
  * Insert Data into the page
  */
-void  Utf8Page::mInsert( const Utf8Block::Iterator& it, int intPos, const char* cstrBuffer, int intLen ) {
+void  Page::mInsert( const Block::Iterator& it, int intPos, const char* cstrBuffer, int intLen ) {
   
     // Insert the data into the buffer
     it->mInsert(intPos, cstrBuffer, intLen);
@@ -1410,7 +1387,7 @@ void  Utf8Page::mInsert( const Utf8Block::Iterator& it, int intPos, const char* 
 /*! 
  * Return true if the page size is greater or equal to the max page size
  */
-bool Utf8Page::mIsFull( void ) const {
+bool Page::mIsFull( void ) const {
     if (_offPageSize >= _offTargetPageSize ) { return true; }
     return false;
 }
@@ -1418,7 +1395,7 @@ bool Utf8Page::mIsFull( void ) const {
 /*! 
  * Return true if the page is empty ( has no blocks )
  */
-bool Utf8Page::mIsEmpty( void ) const {
+bool Page::mIsEmpty( void ) const {
     return _blockContainer.empty();
 }
 
@@ -1426,7 +1403,7 @@ bool Utf8Page::mIsEmpty( void ) const {
  * Return false if adding offBytes to the page will put it over the TargetPageSize
  * Return true otherwise
  */
-bool Utf8Page::mCanAcceptBytes( OffSet offBytes ) const {
+bool Page::mCanAcceptBytes( OffSet offBytes ) const {
    
     // If the num of bytes will put us over the max page size 
     if( ( offBytes + _offPageSize) > _offTargetPageSize ) {
@@ -1438,7 +1415,7 @@ bool Utf8Page::mCanAcceptBytes( OffSet offBytes ) const {
 /*! 
  * Assign the char* of data to the internal structure of the block
  */
-void Utf8Block::mSetBlockData( const char* cstrData, OffSet offLen ) {
+void Block::mSetBlockData( const char* cstrData, OffSet offLen ) {
 
     // Assign the new data
     _strBlockData.assign( cstrData, offLen ); 
@@ -1451,7 +1428,7 @@ void Utf8Block::mSetBlockData( const char* cstrData, OffSet offLen ) {
 /*! 
  * Assign the char* of data to the internal structure of the block
  */
-void Utf8Block::mSetBlockData( const std::string& string ) {
+void Block::mSetBlockData( const std::string& string ) {
 
     // Assign the new data
     _strBlockData.assign( string ); 
@@ -1464,7 +1441,7 @@ void Utf8Block::mSetBlockData( const std::string& string ) {
 /**
  * TODO: Consider using std::string::iterators instead of intPos
  */
-void Utf8Block::mInsert( int intPos, const char* cstrData, int intSize ) {
+void Block::mInsert( int intPos, const char* cstrData, int intSize ) {
 
     // If the intPos requested is larger than the 
     // size of the string append the data
@@ -1486,9 +1463,9 @@ void Utf8Block::mInsert( int intPos, const char* cstrData, int intSize ) {
  * Grab a substring of the current block and return a 
  * new block containing the 
  */
-Utf8Block Utf8Block::mSubstr( int intPos, int intLen ) {
+Block Block::mSubstr( int intPos, int intLen ) {
 
-    Utf8Block newBlock;
+    Block newBlock;
 
     if( intLen < 0 ) { 
         // Set the new block data
@@ -1512,7 +1489,7 @@ Utf8Block Utf8Block::mSubstr( int intPos, int intLen ) {
 
 }
 
-Utf8Block::Utf8Block( char* cstrData, OffSet offLen ) { 
+Block::Block( char* cstrData, OffSet offLen ) { 
     _offOffSet        = 0; 
     _sizeBlockSize   = 0;
 
@@ -1523,7 +1500,7 @@ Utf8Block::Utf8Block( char* cstrData, OffSet offLen ) {
 /*!
  * Add a page to the container 
  */
-Utf8Page::Iterator Utf8PageContainer::mAppendPage( Utf8Page *page ) { 
+Page::Iterator PageContainer::mAppendPage( Page *page ) { 
     
     // Add the new page to the list
     _listContainer.push_back( page );
@@ -1538,7 +1515,7 @@ Utf8Page::Iterator Utf8PageContainer::mAppendPage( Utf8Page *page ) {
 /**
  * Split the page the iterator points to and update the iterator before returning
  */
-Utf8Page::Iterator Utf8PageContainer::mSplitPage( Utf8BufferIterator *itBuffer, Utf8Page::Iterator &itOldPage ) {
+Page::Iterator PageContainer::mSplitPage( BufferIterator *itBuffer, Page::Iterator &itOldPage ) {
 
     // Get the target page size
     OffSet intTargetSize = itOldPage->mGetTargetPageSize();
@@ -1548,13 +1525,13 @@ Utf8Page::Iterator Utf8PageContainer::mSplitPage( Utf8BufferIterator *itBuffer, 
     assert( itOldPage->mGetPageSize() > itOldPage->mGetTargetPageSize() );
 
     // Insert a new page right before the old page
-    Utf8Page::Iterator itNewPage = mInsertPage( itOldPage, new Utf8Page() );
+    Page::Iterator itNewPage = mInsertPage( itOldPage, new Page() );
 
     // Move blocks into the new page until we hit our target size
-    Utf8Block::Iterator itBlock;
+    Block::Iterator itBlock;
     for( itBlock = itOldPage->mBegin() ; itBlock != itOldPage->mEnd() ; ) {
         int intSplitPos = 0;
-        Utf8Block::Iterator itNewBlock;
+        Block::Iterator itNewBlock;
         
         // If we have hit our target size, break
         if( intCurSize >= intTargetSize ) break;
@@ -1608,7 +1585,7 @@ Utf8Page::Iterator Utf8PageContainer::mSplitPage( Utf8BufferIterator *itBuffer, 
     return itNewPage;
 }
 
-Utf8Page::Iterator Utf8PageContainer::mDeletePage( Utf8Page::Iterator const &it ) { 
+Page::Iterator PageContainer::mDeletePage( Page::Iterator const &it ) { 
 
     assert( it != _listContainer.end() ); 
 
@@ -1621,7 +1598,7 @@ Utf8Page::Iterator Utf8PageContainer::mDeletePage( Utf8Page::Iterator const &it 
 /*!
  * Insert a page to the container
  */
-Utf8Page::Iterator Utf8PageContainer::mInsertPage( Utf8Page::Iterator const &it, Utf8Page *page) {
+Page::Iterator PageContainer::mInsertPage( Page::Iterator const &it, Page *page) {
 
     // Did we mean append?
     if( ! _longSize ) { 
@@ -1638,14 +1615,14 @@ Utf8Page::Iterator Utf8PageContainer::mInsertPage( Utf8Page::Iterator const &it,
  * Update all the offsets for the pages that follow
  * one the iterator points to
  */
-void Utf8PageContainer::mUpdateOffSets( Utf8Page::Iterator const &it ) {
+void PageContainer::mUpdateOffSets( Page::Iterator const &it ) {
   
     assert( it != mEnd() );
 
     // Get the offset of the first page ( Should be correct )
     OffSet offset = it->mGetOffSet() + it->mGetPageSize();
 
-    Utf8Page::Iterator i = it; 
+    Page::Iterator i = it; 
 
     // Update the pages until we hit the last page
     while( ++i != mEnd() ) {
@@ -1662,10 +1639,10 @@ void Utf8PageContainer::mUpdateOffSets( Utf8Page::Iterator const &it ) {
 /* 
  * Print out the contents of the buffer including all pages and blocks
  */
-void Utf8BufferIterator::printBuffer( void ) {
+void BufferIterator::printBuffer( void ) {
 
-    Utf8Page::Iterator itPage;
-    Utf8Block::Iterator itBlock;
+    Page::Iterator itPage;
+    Block::Iterator itBlock;
 
     // Iterate thru all the pages
     for( itPage = _buf->_pageContainer.mBegin() ; itPage != _buf->_pageContainer.mEnd() ; itPage++ ) {
@@ -1684,8 +1661,10 @@ void Utf8BufferIterator::printBuffer( void ) {
  * once we move to a unified buffer interface, this method will be the only means to 
  * update these states
  */
-void Utf8BufferIterator::_mBytesInserted( OffSet offSize ) {
-
+void BufferIterator::_mBytesInserted( OffSet offSize ) {
+    _buf->_offBufferSize += offSize;
+    _itPage->_offPageSize += offSize;
+    _buf->_boolModified = true;
 }
 
 /*
@@ -1693,8 +1672,9 @@ void Utf8BufferIterator::_mBytesInserted( OffSet offSize ) {
  * once we move to a unified buffer interface, this method will be the only means 
  * to update these states
  */
-void Utf8BufferIterator::_mBytesDeleted( OffSet offSize ) {
-            _buf->_offBufferSize -= offSize;
-            _itPage->_offPageSize -= offSize;
+void BufferIterator::_mBytesDeleted( OffSet offSize ) {
+    _buf->_offBufferSize -= offSize;
+    _itPage->_offPageSize -= offSize;
+    _buf->_boolModified = true;
 }
 

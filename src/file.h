@@ -87,4 +87,27 @@ class GzipFile : public File {
 
 };
 
+/*!
+ * This class reads and writes UTF-8 Files
+ */
+class Utf8File : public File {
+    
+    public:
+       Utf8File( IOHandle* const ioHandle ) : File( ioHandle ) { };
+       ~Utf8File() { };
+
+       virtual OffSet  mPeekNextBlock( void );
+       virtual OffSet  mReadBlock( OffSet, char*, Attributes& );
+       virtual OffSet  mReadNextBlock( char*, Attributes& );
+       virtual OffSet  mWriteBlock( OffSet, const char*, OffSet, Attributes& );
+       virtual OffSet  mWriteNextBlock( const char*, OffSet, Attributes& );
+       virtual OffSet  mSetOffSet( OffSet );
+       virtual bool    mPrepareSave( void );
+       virtual bool    mPrepareLoad( void );
+       virtual bool    mFinalizeSave( void );
+       virtual bool    mFinalizeLoad( void );
+
+};
+
+
 #endif // FILE_INCLUDE_H

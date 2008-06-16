@@ -18,156 +18,274 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
-#ifndef BUFFER_INCLUDE_H
-#define BUFFER_INCLUDE_H
+#ifndef UTF8_INCLUDE_H
+#define UTF8_INCLUDE_H
 
 #include <ollie.h>
+#include <buffer.h>
 #include <file.h>
-#include <boost/cast.hpp>
-#include <boost/shared_ptr.hpp>
+#include <list>
+#include <boost/ptr_container/ptr_list.hpp>
+
+class Buffer;
 
 /*!
- *  Base class stores 1 changeset. A change set 
- *  represents eather a delete or an insert
+ * Class for handling Blocks ( Text Blocks )
+ */
+class Block {
+
+    public:
+        Block( void ) { _offOffSet = 0; _sizeBlockSize = 0; } 
+        Block( char* cstrData, OffSet offLen );
+         ~Block( void ) { }
+
+        typedef std::list<Block>::iterator Iterator;
+
+
+        void                mSetBlockData( const char* cstrData, OffSet offLen );
+        void                mSetBlockData( const std::string& );
+        const std::string&  mGetBlockData( void ) const { return _strBlockData; }
+        bool                mSetAttributes( const Attributes &attr ) { return false; } //TODO Add Support for attributes
+        Attributes&         mGetAttributes( void ) { return _attr; } //TODO Add Support for attributes
+        bool                mSetOffSet( OffSet offset ) { _offOffSet = offset; }
+        bool                mIsEmpty( void ) const { return _strBlockData.empty(); }
+        void                mClear( void ) { _strBlockData.clear(); _sizeBlockSize = 0; }
+        size_t              mGetBlockSize( void ) const { return _sizeBlockSize; }
+        void                mInsert( int, const char*, int );
+        Block               mSubstr( int, int );
+
+        // members
+        std::string _strBlockData;
+        OffSet      _offOffSet;
+        size_t      _sizeBlockSize;
+        Attributes  _attr;
+
+};
+
+
+/*!
+ * A Class that holds blocks of data that consitutes a page
+ * ( Not a Literal Page )
+ */
+class Page {
+
+    public:
+        Page( void ) {
+            _offTargetPageSize = DEFAULT_PAGE_SIZE;
+            _offPageSize    = 0;
+            _offStart       = -1; 
+            _offFileStart   = -1; 
+        }
+         ~Page( void ) { }
+
+        typedef boost::ptr_list<Page>::iterator Iterator;  
+
+        Block::Iterator  mInsertBlock( const Block::Iterator&, const Block& );
+        Block::Iterator  mAppendBlock( const Block& );
+        Block::Iterator  mDeleteBlock( const Block::Iterator& ) ;
+        void                 mInsert( const Block::Iterator& , int, const char*, int );
+
+        void                 mSetTargetPageSize( OffSet const offSize ) { _offTargetPageSize = offSize; }
+        OffSet               mGetTargetPageSize( void ) const { return _offTargetPageSize; }
+
+        void                 mSetOffSet( OffSet const offset ) { _offStart = offset; }
+        OffSet               mGetOffSet( void ) const { return _offStart; }
+
+        void                 mSetFileOffSet( OffSet const offset ) { _offFileStart = offset; }
+        OffSet               mGetFileOffSet( void ) const { return _offFileStart; }
+
+
+        void                 mSetPageSize( OffSet offSize ) { _offPageSize = offSize; }
+        OffSet               mGetPageSize( void ) const { return _offPageSize; }
+
+        int                  mGetBlockCount( void ) const { return _blockContainer.size(); }
+
+        bool                 mCanAcceptBytes( OffSet ) const;
+        bool                 mIsFull( void ) const;
+        bool                 mIsEmpty( void ) const;
+        Block::Iterator  mBegin( void ) { return _blockContainer.begin(); }
+        Block::Iterator  mEnd( void ) { return _blockContainer.end(); }
+
+        std::list<Block>       _blockContainer;
+        OffSet                 _offFileStart;
+        OffSet                 _offStart;
+        OffSet                 _offTargetPageSize;
+        OffSet                 _offPageSize;
+};
+
+
+class BufferIterator : public OllieCommon {
+
+    public: 
+        //Constructors
+        BufferIterator() { }
+        BufferIterator( Buffer* buf );
+        BufferIterator( const BufferIterator* it ) { copy(it); };
+
+         ~BufferIterator() { }
+
+        // Copy Constructor
+        BufferIterator( const BufferIterator &it ) { copy(it); }
+
+        const BufferIterator      operator++( void ) { mNext(); return *this; }
+        const BufferIterator      operator--( void ) { mPrev(); return *this; }
+        BufferIterator&           operator=(const BufferIterator& i ) { 
+                                      if( &i != this ) copy(i); 
+                                      return *this; 
+                                  }
+        int                       operator==(const BufferIterator& right ) { 
+                                      if( this == &right ) return 1; 
+                                      return mEqual(this, &right);
+                                  }
+        int                       operator!=(const BufferIterator& right ) { return !( this == &right ); }
+
+        void                      copy( const BufferIterator &it  );
+        bool                      mNext( int intCount = 1 );
+        bool                      mPrev( int intCount = 1 );
+        bool                      mNextBlock( int intCount = 1 );
+        bool                      mPrevBlock( int intCount = 1 );
+        bool                      _mNextBlock( void );
+        bool                      _mPrevBlock( void );
+        bool                      mSetOffSet( OffSet );
+        OffSet                    mGetOffSet( void ) { return _offCurrent; }
+        char                      mGetUtf8Char( void ); 
+        const char*               mGetUtf8String( int intLen );
+        ushort                    mGetUtf16Char( void ) { }
+        const ushort*             mGetUtf16String( int intLen ) { }
+        int                       mEqual( const BufferIterator*, const BufferIterator* );
+        std::string               mGetError( void ) { std::string msg = _streamErrorMsg.str(); _streamErrorMsg.str(""); return msg; }
+        bool                      mInsert( const char*, int, Attributes &attr );
+        bool                      mDelete( BufferIterator& );
+        bool                      mDelete( OffSet );
+
+        // Implementation specific
+        bool                                        mDeleteBlock( void );
+        bool                                        _mDeleteBlock( void );
+        bool                                        mInsertBlock( const Block &block );
+        bool                                        mAppendBlock( const Block &block );
+        const Page::Iterator&                       mGetPage( void ) { return _itPage; }
+        void                                        mSetPage( const Page::Iterator &it ) { _itPage = it; }
+        const Block::Iterator&                      mGetBlock( void ) { return _itBlock; }
+        void                                        mSetBlock( const Block::Iterator &it ) { _itBlock = it; }
+        int                                         mGetPos( void ) { return _intPos; }
+        void                                        mSetPos( const int pos ) { _intPos = pos; }
+        void                                        printBuffer( void );
+        void                                        _mBytesInserted( OffSet );
+        void                                        _mBytesDeleted( OffSet );
+
+        Page::Iterator      _itPage;
+        Block::Iterator     _itBlock;
+        int                 _intPos;
+        Buffer*             _buf;
+        std::string         _strTemp;
+        OffSet              _offCurrent;
+
+};
+
+/*!
+ * A Container class to hold the pages that make up the buffer
+ */
+class PageContainer {
+
+    public:
+        PageContainer() { _longSize = 0; };
+        ~PageContainer() {  };
+
+        Page::Iterator  mBegin() { return _listContainer.begin(); }
+        Page::Iterator  mEnd()   { return _listContainer.end();   }
+
+        void            mClear( void ) { _listContainer.clear(); }
+        Page::Iterator  mAppendPage( Page *page );
+        Page::Iterator  mInsertPage( Page::Iterator const &it, Page *page);
+        Page::Iterator  mDeletePage( Page::Iterator const &it );
+        Page::Iterator  mSplitPage( BufferIterator*, Page::Iterator& );
+        void            mUpdateOffSets( Page::Iterator const &it );
+        long            mGetSize() const { return _longSize; }
+        
+        boost::ptr_list<Page> _listContainer;
+        long                      _longSize;
+         
+};
+
+/*!
+ *  The ChangeSet object.
  */
 class ChangeSet {
 
     public:
-        // Constructor / Destructor  
-        ChangeSet( ) { _ChangeSetType = None; }
-        virtual ~ChangeSet( void ) { }
+        ChangeSet( void ) { };
+         ~ChangeSet( void ) { };
 
-        // The ChangeSet Types
-        enum ChangeSetType { Other, None, Insert, Delete };
+         std::string mGetText();
+         OffSet mGetAbsPosition() { }
+         OffSet mGetLineNum()     { }
+         OffSet mGetStartPos()    { }
+         OffSet mGetEndPos()      { }
 
-        // Methods
-        bool mIsInsert( void ) { return false; }
-        bool mIsDelete( void ) { return false; }
-        virtual std::string mGetText()   { } 
-        virtual OffSet mGetAbsPosition() { }
-        virtual OffSet mGetLineNum()     { }
-        virtual OffSet mGetStartPos()    { }
-        virtual OffSet mGetEndPos()      { }
-
-        // Members
-        ChangeSetType   _ChangeSetType;
-};
-
-class Cursor : public OllieCommon {
-
-
-};
-
-/**
- * This is the base and wrapper class for the implementation 
- * specific buffer iterator
- *
- * To use this Iterator in your implementation, just subclass and implement the virtual methods
- */
-class BufferIterator : public OllieCommon {
-  
-    public:
-        
-        // Constructors / Destructor
-        BufferIterator() { }
-        BufferIterator( BufferIterator *it ) : _it(it) { }
-        BufferIterator( boost::shared_ptr<BufferIterator> it ) : _it(it) { }
-        virtual ~BufferIterator() { }
-
-        // Copy Constructor, Calls the implementation version of copy(), Only the 
-        // implementation knows how to make a copy of it self properly
-        BufferIterator( const BufferIterator &i ) : _it( i._it->copy( ) ) { }
-
-        // Operators are for base class only, These operations are copy constructor 
-        // expensive, prefer to use mNext() and mPrev() - But include them in unittests
-        // they excercise the copy constructor
-        const BufferIterator    operator++( void ) { _it->mNext(); return *this; }
-        const BufferIterator    operator--( void ) { _it->mPrev(); return *this; }
-        BufferIterator&         operator=(const BufferIterator& i ) { 
-                                    if( &i != this ) _it = i._it->copy(); 
-                                    return *this; 
-                                }
-        int                    operator==(const BufferIterator& right ) { 
-                                    if( this == &right ) return 1; 
-                                    return _it->mEqual(_it, right._it);
-                                }
-        int                    operator!=(const BufferIterator& right ) { return !( *this == right ); }
-        virtual int             mEqual( boost::shared_ptr<BufferIterator>,  boost::shared_ptr<BufferIterator> ) { assert( 1 == 0 ); }
-
-        // Navigation Methods
-        virtual bool            mNext( int intCount = 1 ) { return _it->mNext( intCount ); }
-        virtual bool            mPrev( int intCount = 1 ) { return _it->mPrev( intCount ); }
-        virtual bool            mNextBlock( int intCount = 1 ) { return _it->mPrevBlock( intCount ); }
-        virtual bool            mPrevBlock( int intCount = 1 ) { return _it->mPrevBlock( intCount ); }
-        virtual bool            mSetOffSet( OffSet offset ) { return _it->mSetOffSet( offset ); }
-        virtual OffSet          mGetOffSet( void ) { return _it->mGetOffSet(); }
-
-        // NOTES: 
-        // The array pointers returned by mGetString() methods should be managed by 
-        // the implementation, The caller is not responsible for freeing this memory ( See Utf8Buffer )
-        // The caller should make a copy of the data returned by the String() methods before 
-        // calling any other iterator method, the implementation may invalidate the pointer at any time
-        // TODO: Change the string = mGetString() methods to mGetString(int length, &string);
-        virtual char            mGetUtf8Char( void ) { return _it->mGetUtf8Char(); }
-        virtual const char*     mGetUtf8String( int intLen ) { return _it->mGetUtf8String( intLen ); }
-        virtual ushort          mGetUtf16Char( void ) { return _it->mGetUtf16Char(); }
-        virtual const ushort*   mGetUtf16String( int intLen, bool boolReverse = false ) { return _it->mGetUtf16String( intLen, boolReverse ); }
-        virtual std::string mGetError( void ) { std::string msg = _it->_streamErrorMsg.str(); _it->_streamErrorMsg.str(""); return msg; }
-
-        // The assert here warns us if we get called by accident, if the base class 
-        // copy() is called we are doing something very wrong.
-        virtual boost::shared_ptr<BufferIterator> copy( void ) const { assert( 1 == 0 ); }
-
-        // Convenience Casting
-        template<class T> T mGetPtrAs() { return boost::polymorphic_downcast<T>( _it.get() ); }
-        template<class T> const T mGetPtrAs() const { return boost::polymorphic_downcast<const T>( _it.get() ); }
-
-        //template<class T> boost::shared_ptr<T> mGetPtrAs() { return boost::shared_polymorphic_downcast<T>(_it); }
-        //template<class T> boost::shared_ptr<const T> mGetPtrAs() const { return boost::shared_polymorphic_downcast<const T>(_it); }
-
-    private:
-        boost::shared_ptr<BufferIterator> _it;
 };
 
 /*!
- *  Base class of all buffers
+ * This is the buffer implementation 
  */
- 
-class BufferInterface : public OllieCommon { 
+class Buffer : public OllieCommon {
 
     public:
-        // Constructor / Destructor  
-        BufferInterface( OffSet offPageSize = 0 ) { }
-        BufferInterface( const std::string& strName, OffSet offPageSize = 0 ) { }
-        BufferInterface( File* const,  OffSet offPageSize = 0 ) { }
-        virtual ~BufferInterface( void ) { }
+        Buffer( OffSet offPageSize = 0 );
+        Buffer( const std::string& strName, OffSet offPageSize = 0 );
+        Buffer( File* const,  OffSet offPageSize = 0 );
+        ~Buffer( void );
+        void init( OffSet );
 
         typedef BufferIterator Iterator;
 
-        // Methods
-        virtual BufferIterator               mInsert( BufferIterator&, const ushort*, int, Attributes& )    = 0;
-        virtual BufferIterator               mInsert( BufferIterator&, const char*, int, Attributes& )      = 0;
-        virtual BufferIterator               mInsert( BufferIterator&, const std::string&, Attributes& )    = 0;
-        virtual bool                         mSaveBuffer( void )                                    = 0;
-        virtual bool                         mLoadBuffer( void )                                    = 0;
-        virtual std::string                  mGetFileName( void )                                   = 0;
-        virtual std::string                  mGetName( void )                                       = 0;
-        virtual void                         mSetName( const std::string& strName )                 = 0;
-        virtual void                         mSetMaxBufferSize( OffSet size )                       = 0;
-        virtual OffSet                       mGetMaxBufferSize( void )                              = 0;
-        virtual OffSet                       mGetBufferSize( void )                                 = 0;
-        virtual bool                         mEntireFileLoaded( void )                              = 0;
-        virtual bool                         mBufferFull( void )                                    = 0;
-        virtual bool                         mIsBufferReady( void )                                 = 0;
-        virtual bool                         mPreformTask( void )                                   = 0;
-        virtual bool                         mAssignFile( File* const )                             = 0;
-        virtual bool                         mGetProgress( long* longProgress )                     = 0;
-        virtual bool                         mIsModified( void )                                    = 0;
-        virtual BufferIterator               mBegin( void )                                         = 0;
-        virtual BufferIterator               mEnd( void )                                           = 0;
-        virtual void                         mSetTargetPageSize( OffSet offSize )                   = 0;
-        virtual OffSet                       mGetTargetPageSize( void )                             = 0;
+        // Interface Implementaton
+         BufferIterator               mBegin( void );
+         BufferIterator               mEnd( void );
+         bool                         mSaveBuffer( void );
+         bool                         mLoadBuffer( void );
+         std::string                  mGetFileName( void );
+         std::string                  mGetName( void ) { return _strName; }
+         void                         mSetName( const std::string& strName ) { _strName = strName; }
+         void                         mSetMaxBufferSize( OffSet size ) { _offMaxBufferSize = size; }
+         OffSet                       mGetMaxBufferSize( void ) { return _offMaxBufferSize; }
+         OffSet                       mGetBufferSize( void ) { return _offBufferSize; }
+         bool                         mEntireFileLoaded( void ) { return _boolEntireFileLoaded; }
+         bool                         mBufferFull( void );
+         bool                         mIsBufferReady( void );
+         bool                         mPreformTask( void );
+         bool                         mAssignFile( File* const );
+         bool                         mGetProgress( long* longProgress );
+         bool                         mIsModified( void ) { return _boolModified; }
+         void                         mSetTargetPageSize( OffSet offSize ) { _offTargetPageSize = offSize; }
+         OffSet                       mGetTargetPageSize( void ) { return _offTargetPageSize; }
+
+        // Implementation Only 
+        bool                                 mSaveFileTask( void );
+        bool                                 mLoadFileTask( void );
+        OffSet                               mLoadPage( OffSet );
+        OffSet                               mSavePage( Page::Iterator&, OffSet );
+        std::stringstream&                   mSetTaskStatus( void ) { _streamStatusMsg.str(""); return _streamStatusMsg; }
+        std::string                          mGetTaskStatus( void ) { return _streamStatusMsg.str(); }
+
+        // Variables
+        PageContainer           _pageContainer;
+        OffSet                  _offCurLoadOffSet;
+        OffSet                  _offCurSaveOffSet;
+        Page::Iterator          _itCurSavePage;
+        long                    _longCurProgress;
+        std::stringstream       _streamStatusMsg;
+        File*                   _fileHandle;
+        std::string             _strName;
+        bool                    _boolModified;
+        bool                    _boolEntireFileLoaded;
+        OffSet                  _offMaxBufferSize;
+        OffSet                  _offBufferSize;
+        OffSet                  _offTargetPageSize;
+
+
+        // A pointer to the method that preforms the current task
+        bool (Buffer::*_currentTask)(void);
 
 };
 
-#endif // BUFFER_INCLUDE_H
+#endif // UTF8_INCLUDE_H

@@ -20,7 +20,7 @@
 
 #include "cxxtest/TestSuite.h"
 #include <file.h>
-#include <utf8.h>
+#include <buffer.h>
 #include <iostream>
 #include <fstream>
 #include <errno.h>

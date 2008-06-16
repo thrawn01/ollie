@@ -5,7 +5,7 @@
 # ----------------------------------------------------------------
 
 # Add the ollie Library
-ADD_LIBRARY(ollie ollie.cpp file.cpp iohandle.cpp utf8.cpp )
+ADD_LIBRARY(ollie ollie.cpp file.cpp iohandle.cpp buffer.cpp )
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 
 ENABLE_TESTING()

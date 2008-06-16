@@ -845,19 +845,10 @@ bool Utf8BufferIterator::mPrevBlock( int intCount ) {
  */
 bool Utf8BufferIterator::mDeleteBlock( void ) { 
 
-    // Update the current offset
-    _offCurrent -= mGetBlock()->mGetBlockSize();
-    if( mGetPos() == 0 ) {
-        _offCurrent -= mGetPos();
-    }
-
     // Delete this block
     if( !_mDeleteBlock() ) {
         return false;
     }
-
-    // Set the pos to the begining of the block
-    mSetPos(0);
 
     return true;
 }
@@ -879,12 +870,27 @@ bool Utf8BufferIterator::_mDeleteBlock( void ) {
         return false;
     }
 
+    // If this is the only page/block in the buffer
+    if( _buf->_pageContainer.mGetSize() == 1 ) {
+        if( _itPage->mGetBlockCount() == 1 ) {
+            // Update the number of bytes we are going to delete
+            _mBytesDeleted( _itBlock->mGetBlockSize() );
+            // Clear the current block instead of deleting it
+            _itBlock->mClear();
+            // Subtract the pos from the current offset
+            _offCurrent -= mGetPos();
+            // Set the pos to the begining of the block
+            mSetPos(0);
+            return true;
+        }
+    }
+
     // Update the size of the buffer
     _buf->_offBufferSize -= mGetBlock()->mGetBlockSize();
 
     // Delete the block and set the next block in the buffer as current
     mSetBlock( mGetPage()->mDeleteBlock( mGetBlock() ) );
-    
+   
     // If the page is empty
     if( mGetPage()->mIsEmpty() ) {
         // And this is not the only page in the buffer
@@ -902,19 +908,31 @@ bool Utf8BufferIterator::_mDeleteBlock( void ) {
         // If this is the only page in the buffer, it should stay
     }
 
-    // if this is the only page in the buffer
-    if( _buf->_pageContainer.mGetSize() == 1 ) {
-        // And we just deleted the last block in the buffer
-        if( _itPage->mGetPageSize() == 0 ) {
-            // Add an empty block
-            _itPage->mAppendBlock( Utf8Block() );
+    // Subtract the pos from the current offset
+    _offCurrent -= mGetPos();
+
+    // Set the pos to the begining of the block
+    mSetPos(0);
+
+    // If we deleted the block at the end of the page, 
+    // The delete leaves us pointing to _itPage->mEnd()
+    // So we need to point it 2 something that will 
+    // not give us a segfault ;-)
+    if( _itBlock == _itPage->mEnd() ) {
+        // And this is the last page in the buffer
+        if( _itPage == ( --_buf->_pageContainer.mEnd() ) ) {
+            // The Block is now the last block in the buffer
+            _itBlock = ( --_itPage->mEnd() );
+            // Update the pos to the end of the block
+            mSetPos( _itBlock->mGetBlockSize() );
+        }else {
+            // Move to the next page
+            ++_itPage;
+            // And assign our iterator to the first block in that page
+            _itBlock = _itPage->mBegin();
         }
     }
-
-    // If we are pointing to the end of the page
-    if( _itBlock == _itPage->mEnd() ) {
-        _itBlock = ( --_itPage->mEnd() );
-    }
+    
     return true; 
 }
 
@@ -936,8 +954,8 @@ bool Utf8BufferIterator::mInsertBlock( const Utf8Block &block ) {
 
     // If the current block is empty
     if( mGetBlock()->mIsEmpty() ) {
-        // Replace the block, Delete the block, so the insert will
-        // take it's place
+        // Replace the block, Delete the block, 
+        // so the insert will take it's place
         mSetBlock( mGetPage()->mDeleteBlock( mGetBlock() ) );
     }
 
@@ -1094,7 +1112,7 @@ const char* Utf8BufferIterator::mGetUtf8String( int intCount ) {
 
     // Figure out how many positions we have left till the end of the block
     int intPosLeft = itNew->_itBlock->mGetBlockSize() - itNew->_intPos;
-
+    
     // If we are asking to move past the current block
     while( intCount > intPosLeft ) {
 
@@ -1252,42 +1270,41 @@ bool Utf8BufferIterator::mDelete( Utf8BufferIterator& itEnd ) {
         return false;
     }
 
-    // If the end iterator points to our block
+    // If the end iterator points to our page and block
     if( _itPage == itEnd.mGetPage() ) {
         if( _itBlock == itEnd.mGetBlock() ) {
-            // Delete the characters from this block and return
-            Utf8Block deletedChars = mGetBlock()->mSubstr( mGetPos(), ( itEnd.mGetPos() - mGetPos() ) );
-            _buf->_offBufferSize -= deletedChars.mGetBlockSize();
-            // Update the size of the page
-            _itPage->_offPageSize -= deletedChars.mGetBlockSize();
+            // Delete the characters from this block
+            Utf8Block delBytes = mGetBlock()->mSubstr( mGetPos(), ( itEnd.mGetPos() - mGetPos() ) );
+            _mBytesDeleted( delBytes.mGetBlockSize() );
 
-            // the block is now empty, delete it
-            if( _itBlock->mGetBlockSize() == 0 ) {
-                _mDeleteBlock( ); 
+            // if the block is now empty, delete it
+            if( mGetBlock()->mIsEmpty() ) {
+                _mDeleteBlock(); 
             }
-
             // TODO: Append the deleted characters to the change set
             return true;
         }
     }
 
-    // If the iterator points to the begining of the block
-    if( mGetPos() == 0 ) {
-        // Delete the current block
-        _mDeleteBlock( ); 
-    } else {
-        // If the iterator doesn't point to the begining of the block
-        // Truncate the block starting at intPos 
-        // and return a copy of the bytes that were truncated
-        Utf8Block deletedChars = mGetBlock()->mSubstr( mGetPos(), -1 );
-        _buf->_offBufferSize -= deletedChars.mGetBlockSize();
-        _itPage->_offPageSize -= deletedChars.mGetBlockSize();
-        _offCurrent -= deletedChars.mGetBlockSize();
+    // Save the starting offset and pos, we will restore 
+    // them after deleting future blocks
+    int intPosSave = mGetPos();
+    OffSet offCurrentSave = _offCurrent;
 
-        // TODO: Append the deleted characters to the change set
+    // If the iterator doesn't point to the begining of the block
+    // Truncate the block starting at intPos 
+    // and return a copy of the bytes that were truncated
+    Utf8Block delBytes = mGetBlock()->mSubstr( mGetPos(), -1 );
+    _mBytesDeleted( delBytes.mGetBlockSize() );
 
+    // TODO: Append the deleted characters to the change set
+    
+    // If the block is now empty, delete it
+    if( mGetBlock()->mIsEmpty() ) {
+        _mDeleteBlock(); 
+    }else {
         // We know the end iterator doesn't point to our current block
-        ++_itBlock;
+        _mNextBlock(); 
     }
 
     // Delete blocks and pages until the 
@@ -1312,21 +1329,24 @@ bool Utf8BufferIterator::mDelete( Utf8BufferIterator& itEnd ) {
     if( itEnd.mGetPos() != 0 ) {
         // Split the block starting at intPos and save 
         // a copy of the bytes that were split from the block
-        Utf8Block deletedChars = _itBlock->mSubstr( 0, itEnd.mGetPos() );
-        _buf->_offBufferSize -= deletedChars.mGetBlockSize();
-        _itPage->_offPageSize -= deletedChars.mGetBlockSize();
-        _offCurrent -= deletedChars.mGetBlockSize();
+        Utf8Block delBytes = _itBlock->mSubstr( 0, itEnd.mGetPos() );
+        _mBytesDeleted( delBytes.mGetBlockSize() );
 
         // TODO: Append the deleted characters to the change set
         
-        // if the block is now empty, delete it
-        if( _itBlock->mGetBlockSize() == 0 ) {
-            _mDeleteBlock( ); 
+        // If the block is now empty, delete it
+        if( mGetBlock()->mIsEmpty() ) {
+            _mDeleteBlock(); 
         }
     }
    
-    // Move back to the block we started the delete from
-    --_itBlock;
+    // Go back to the block we started the delete from
+    // unless this is already the start of a page
+    if( _itBlock != _itPage->mBegin() ) {
+        _mPrevBlock();
+    }
+    mSetPos( intPosSave );
+    _offCurrent = offCurrentSave;
  
     return true;
 }
@@ -1658,3 +1678,23 @@ void Utf8BufferIterator::printBuffer( void ) {
 
     }
 }
+
+/*
+ * This method will update all the buffer offsets associated with an insert,
+ * once we move to a unified buffer interface, this method will be the only means to 
+ * update these states
+ */
+void Utf8BufferIterator::_mBytesInserted( OffSet offSize ) {
+
+}
+
+/*
+ * This method will update all the buffer offsets associated with a delete,
+ * once we move to a unified buffer interface, this method will be the only means 
+ * to update these states
+ */
+void Utf8BufferIterator::_mBytesDeleted( OffSet offSize ) {
+            _buf->_offBufferSize -= offSize;
+            _itPage->_offPageSize -= offSize;
+}
+

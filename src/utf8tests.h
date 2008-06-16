@@ -673,6 +673,11 @@ class Utf8Tests : public CxxTest::TestSuite
             // Append a block
             TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'A' ) ), true );
 
+            // TODO: Fix InsertBlock and AppendBlock, 
+            // they should act just like other insert methods
+            //TS_ASSERT_EQUALS( it->mGetPos(), 50 );
+            //TS_ASSERT_EQUALS( it->mGetOffSet(), 50 );
+            
             // Ensure the append was succesful
             TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().substr(0,10) , "AAAAAAAAAA" );
             TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().size() , 50 );
@@ -738,9 +743,8 @@ class Utf8Tests : public CxxTest::TestSuite
             // Insert a new block, Because new buffers always 
             // have a empty page and block, this insert should replace the empty block
 
-            it->printBuffer();
             TS_ASSERT_EQUALS( it->mInsertBlock( createBlock( 50, 'A' ) ), true );
-            it->printBuffer();
+
             // Ensure the insert was succesful
             TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().substr(0,10) , "AAAAAAAAAA" );
             TS_ASSERT_EQUALS( it->mGetBlock()->mGetBlockData().size() , 50 );
@@ -869,10 +873,23 @@ class Utf8Tests : public CxxTest::TestSuite
             // Should tell us what happend
             TS_ASSERT_EQUALS( it->mGetError(), "Buffer Error: Can not delete blocks from an empty buffer" );
 
+            TS_ASSERT_EQUALS( it->mGetPos(), 0 );
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 0 );
+            TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize() , 0 );
+            TS_ASSERT_EQUALS( buf->mGetBufferSize(), 0 );
+
             TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'A' ) ), true );
 
             // Delete a legit block
             TS_ASSERT_EQUALS( it->mDeleteBlock(), true );
+
+            // Buffer should contain 1 page and 1 empty block
+            TS_ASSERT_EQUALS( buf->_pageContainer.mGetSize(), 1 );
+            TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize(), 0 );
+            TS_ASSERT_EQUALS( it->mGetPage()->mGetBlockCount(), 1 );
+            TS_ASSERT_EQUALS( it->mGetPage()->mIsEmpty(), false );
+            TS_ASSERT_EQUALS( buf->mGetBufferSize(), 0 );
+            TS_ASSERT_EQUALS( it->mGetBlock()->mIsEmpty() , true );
 
             // Offset should point to the beginning of the first block
             TS_ASSERT_EQUALS( it->mGetPos(), 0 );
@@ -881,13 +898,17 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( buf->mGetBufferSize(), 0 );
 
             TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'A' ) ), true );
+            TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize() , 50 );
             TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'B' ) ), true );
+            TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize() , 100 );
             TS_ASSERT_EQUALS( it->mAppendBlock( createBlock( 50, 'C' ) ), true );
+
+            TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize() , 150 );
+            TS_ASSERT_EQUALS( buf->mGetBufferSize(), 150 );
 
             // Move back to 'B' Block
             TS_ASSERT_EQUALS( it->mPrevBlock( ), true );
 
-            it->printBuffer();
             TS_ASSERT_EQUALS( it->mDeleteBlock(), true );
 
             // Offset should point to the beginning of 'C' block
@@ -895,21 +916,18 @@ class Utf8Tests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it->mGetOffSet(), 50 );
             TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize() , 100 );
             TS_ASSERT_EQUALS( buf->mGetBufferSize(), 100 );
-            it->printBuffer();
 
             // Delete C Block
             TS_ASSERT_EQUALS( it->mDeleteBlock(), true );
-            it->printBuffer();
 
-            // Offset should point to the beginning of 'A' block
-            TS_ASSERT_EQUALS( it->mGetPos(), 0 );
-            TS_ASSERT_EQUALS( it->mGetOffSet(), 0 );
+            // Offset should point to the end of 'A' block
+            TS_ASSERT_EQUALS( it->mGetPos(), 50 );
+            TS_ASSERT_EQUALS( it->mGetOffSet(), 50 );
             TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize() , 50 );
             TS_ASSERT_EQUALS( buf->mGetBufferSize(), 50 );
 
             // Delete A Block
             TS_ASSERT_EQUALS( it->mDeleteBlock(), true );
-            it->printBuffer();
 
             // Offset should point to the beginning of the buffer
             TS_ASSERT_EQUALS( it->mGetPos(), 0 );
@@ -920,7 +938,7 @@ class Utf8Tests : public CxxTest::TestSuite
             // There should be 1 page and 1 empty block in the buffer
             TS_ASSERT_EQUALS( buf->_pageContainer.mGetSize(), 1 );
             TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize(), 0 );
-            TS_ASSERT_EQUALS( it->mGetPage()->_blockContainer.size(), 1 );
+            TS_ASSERT_EQUALS( it->mGetPage()->mGetBlockCount(), 1 );
             TS_ASSERT_EQUALS( it->mGetPage()->mIsEmpty(), false );
             TS_ASSERT_EQUALS( buf->mGetBufferSize(), 0 );
             TS_ASSERT_EQUALS( it->mGetBlock()->mIsEmpty() , true );
@@ -1239,7 +1257,7 @@ class Utf8Tests : public CxxTest::TestSuite
             // The buffer should have 1 page and 1 empty block 
             TS_ASSERT_EQUALS( buf->_pageContainer.mGetSize(), 1 );
             TS_ASSERT_EQUALS( it->mGetPage()->mGetPageSize(), 0 );
-            TS_ASSERT_EQUALS( it->mGetPage()->_blockContainer.size(), 1 );
+            TS_ASSERT_EQUALS( it->mGetPage()->mGetBlockCount(), 1 );
             TS_ASSERT_EQUALS( it->mGetPage()->mIsEmpty(), false );
             TS_ASSERT_EQUALS( buf->mGetBufferSize(), 0 );
             TS_ASSERT_EQUALS( it->mGetBlock()->mIsEmpty() , true );

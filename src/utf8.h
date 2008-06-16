@@ -49,7 +49,7 @@ class Utf8Block {
         Attributes&         mGetAttributes( void ) { return _attr; } //TODO Add Support for attributes
         bool                mSetOffSet( OffSet offset ) { _offOffSet = offset; }
         bool                mIsEmpty( void ) const { return _strBlockData.empty(); }
-        void                mClear( void ) { _strBlockData.clear(); }
+        void                mClear( void ) { _strBlockData.clear(); _sizeBlockSize = 0; }
         size_t              mGetBlockSize( void ) const { return _sizeBlockSize; }
         void                mInsert( int, const char*, int );
         Utf8Block           mSubstr( int, int );
@@ -97,6 +97,8 @@ class Utf8Page {
 
         void                 mSetPageSize( OffSet offSize ) { _offPageSize = offSize; }
         OffSet               mGetPageSize( void ) const { return _offPageSize; }
+
+        int                  mGetBlockCount( void ) const { return _blockContainer.size(); }
 
         bool                 mCanAcceptBytes( OffSet ) const;
         bool                 mIsFull( void ) const;
@@ -151,6 +153,8 @@ class Utf8BufferIterator : public BufferIterator {
         int                                         mGetPos( void ) { return _intPos; }
         void                                        mSetPos( const int pos ) { _intPos = pos; }
         void                                        printBuffer( void );
+        void                                        _mBytesInserted( OffSet );
+        void                                        _mBytesDeleted( OffSet );
 
         Utf8Page::Iterator      _itPage;
         Utf8Block::Iterator     _itBlock;

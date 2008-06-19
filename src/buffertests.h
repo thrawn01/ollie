@@ -350,7 +350,7 @@ class BufferTests : public CxxTest::TestSuite
         // Create a valid test file in /tmp 
         // --------------------------------
         void testCreateFileForTests( void ) {
-
+            
             fstream ioFile;
             ioFile.open(TEST_FILE, fstream::out);
             if( ( ! ioFile.is_open() ) || ( ! ioFile.good() ) ) { 
@@ -493,17 +493,23 @@ class BufferTests : public CxxTest::TestSuite
             // Insert text At the begining of the file 
             it.mInsert( "AAAAAGGGGGDDDDD12345" , 20, attr );
 
-            // The buffer should now have a size of 20
+            // Ensure our states updated
+            TS_ASSERT_EQUALS( it.mGetPos(), 20 );
+            TS_ASSERT_EQUALS( it.mGetOffSet(), 20 );
+            TS_ASSERT_EQUALS( it.mGetBlock()->mGetBlockSize() , 20 );
+            TS_ASSERT_EQUALS( it.mGetPage()->mGetPageSize() , 20 );
             TS_ASSERT_EQUALS( buf->mGetBufferSize(), 20 );
-
-            // Buffer should report modified
             TS_ASSERT_EQUALS( buf->mIsModified(), true );
 
-            // Get the first Block in the page
-            Block::Iterator itBlock = buf->_pageContainer.mBegin()->mBegin();
+            // Iterator now points to the end of the buffer, Getting data at
+            // the end of the buffer should return nothing
+            TS_ASSERT_EQUALS( string( it.mGetUtf8String( 10 ) ), "" );
+
+            // Return the iterator to the begining of the buffer
+            TS_ASSERT_EQUALS( it.mSetOffSet( 0 ), true );
 
             // The block should contain the inserted contents
-            TS_ASSERT_EQUALS( itBlock->mGetBlockData() , "AAAAAGGGGGDDDDD12345" );
+            TS_ASSERT_EQUALS( string( it.mGetUtf8String( 20 ) ), "AAAAAGGGGGDDDDD12345" );
 
             // Move the iterator up to the end of our insert
             TS_ASSERT_EQUALS( it.mNext( 20 ) , true );
@@ -511,13 +517,23 @@ class BufferTests : public CxxTest::TestSuite
             // Iterator should point past the last character
             TS_ASSERT_EQUALS( it.mGetUtf8Char(), 0 );
 
+            TS_ASSERT_EQUALS( string( it.mGetUtf8String( 10 ) ), "" );
+
             // Insert At the end of the current text
             it.mInsert("CCCCCZZZZZXXXXX12345" , 20, attr ); 
+
+            // Ensure our states updated
+            TS_ASSERT_EQUALS( it.mGetPos(), 20 );
+            TS_ASSERT_EQUALS( it.mGetOffSet(), 40 );
+            TS_ASSERT_EQUALS( it.mGetBlock()->mGetBlockSize() , 20 );
+            TS_ASSERT_EQUALS( it.mGetPage()->mGetPageSize() , 20 );
+            TS_ASSERT_EQUALS( buf->mGetBufferSize(), 40 );
+            TS_ASSERT_EQUALS( buf->mIsModified(), true );
 
             // The Page should be split with the first half of the page with
             // the first insert and the second half with the other insert
             Page::Iterator itPage = buf->_pageContainer.mBegin();
-            itBlock = itPage->mBegin();
+            Block::Iterator itBlock = itPage->mBegin();
 
             // This page should start at the begining of the buffer
             TS_ASSERT_EQUALS( itPage->mGetOffSet() , 0 );
@@ -580,8 +596,16 @@ class BufferTests : public CxxTest::TestSuite
             // Insert text At the begining of the file
             it.mInsert("A1234GGGGGDDDDDEFGHB" , 20, attr );
 
-            // New iterator should point to the end of the buffer, rdy for the next insert
-            //TS_ASSERT( itNew == buf->mEnd() );
+            // Ensure our states updated
+            TS_ASSERT_EQUALS( it.mGetPos(), 20 );
+            TS_ASSERT_EQUALS( it.mGetOffSet(), 20 );
+            TS_ASSERT_EQUALS( it.mGetBlock()->mGetBlockSize() , 20 );
+            TS_ASSERT_EQUALS( it.mGetPage()->mGetPageSize() , 20 );
+            TS_ASSERT_EQUALS( buf->mGetBufferSize(), 20 );
+            TS_ASSERT_EQUALS( buf->mIsModified(), true );
+
+            // Get a new Iterator to the beginning of the bufferS
+            it = buf->mBegin(); 
 
             // The first character in the buffer should be an 'A'
             TS_ASSERT_EQUALS( it.mGetUtf8Char(), 'A' );
@@ -590,6 +614,9 @@ class BufferTests : public CxxTest::TestSuite
 
             // Move to the next char in the buffer
             TS_ASSERT_EQUALS( it.mNext(), true );
+
+            TS_ASSERT_EQUALS( it.mGetPos(), 1 );
+            TS_ASSERT_EQUALS( it.mGetOffSet(), 1 );
 
             // Get the character the iterator points 2
             TS_ASSERT_EQUALS( it.mGetUtf8Char(), '1' );
@@ -600,6 +627,9 @@ class BufferTests : public CxxTest::TestSuite
             // Move the iterator 18 positions down in the buffer
             TS_ASSERT_EQUALS( it.mNext(18), true );
 
+            TS_ASSERT_EQUALS( it.mGetPos(), 19 );
+            TS_ASSERT_EQUALS( it.mGetOffSet(), 19 );
+
             // Get the character the iterator points 2
             TS_ASSERT_EQUALS( it.mGetUtf8Char(), 'B' ); 
 
@@ -609,6 +639,9 @@ class BufferTests : public CxxTest::TestSuite
 
             // Move the cursor next 1 position in the buffer ( Just after the last char )
             TS_ASSERT_EQUALS( it.mNext(), true );
+
+            TS_ASSERT_EQUALS( it.mGetPos(), 20 );
+            TS_ASSERT_EQUALS( it.mGetOffSet(), 20 );
 
             // Get the character the iterator points 2 ( Should be nothing )
             TS_ASSERT_EQUALS( it.mGetUtf8Char(), 0 );
@@ -624,6 +657,9 @@ class BufferTests : public CxxTest::TestSuite
 
             // Iterator still points to 21th position
             TS_ASSERT_EQUALS( string( it.mGetUtf8String( 10 ) ), "" );
+
+            TS_ASSERT_EQUALS( it.mGetPos(), 20 );
+            TS_ASSERT_EQUALS( it.mGetOffSet(), 20 );
             
             // The Iterator should be at the end of the buffer
             TS_ASSERT( it == buf->mEnd() );
@@ -636,6 +672,9 @@ class BufferTests : public CxxTest::TestSuite
 
             // Move the copy back 1 character
             TS_ASSERT_EQUALS( itCopy.mPrev(), true );
+
+            TS_ASSERT_EQUALS( itCopy.mGetPos(), 19 );
+            TS_ASSERT_EQUALS( itCopy.mGetOffSet(), 19 );
 
             // Iterators should not be equal
             TS_ASSERT( itCopy != it );
@@ -690,6 +729,7 @@ class BufferTests : public CxxTest::TestSuite
             // Move into the block
             TS_ASSERT_EQUALS( it.mNext( 45 ), true );
             // Ensure we are into the block
+            TS_ASSERT_EQUALS( it.mGetPos(), 45 );
             TS_ASSERT_EQUALS( it.mGetOffSet(), 45 );
             TS_ASSERT_EQUALS( string( it.mGetUtf8String( 10 ) ), "AAAAA" );
     
@@ -959,7 +999,8 @@ class BufferTests : public CxxTest::TestSuite
             it.mInsert("222221234567890EFGHB" , 20, attr );
             it.mInsert("333336789012345EFGHB" , 20, attr );
             it.mInsert("44444GGGGGDDDDDEFGHB" , 20, attr );
-  
+ 
+            it.printBuffer();
             // Iterator should point to the end of the buffer
             TS_ASSERT( it == buf->mEnd() );
 
@@ -1323,4 +1364,9 @@ class BufferTests : public CxxTest::TestSuite
         }
 
 };
+
+// TODO: Refactor so bufferIterator uses _mBytesDeleted() for all operations
+// Add Tests for Page offset with multiple pages 
+// Add tests for deleting blocks thru pages 
+// Add test for inserting blocks thru multiple pages
 

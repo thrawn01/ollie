@@ -369,44 +369,33 @@ bool Utf8File::mFinalizeLoad( void ) {
 }
 
 /**
- * Returns a itertor to the begining of this this buffer
+ * Returns a itertor to the begining of the buffer
  */
 BufferIterator Buffer::mBegin( void ) {
 
-    BufferIterator *it = new BufferIterator( this );
+    // BufferIterator Constructor points us 
+    // to the begining of the buffer by default
+    BufferIterator it( this );
 
-    Page::Iterator itPage = _pageContainer.mBegin();
-    Block::Iterator itBlock = itPage->mBegin();
-
-    it->mSetPage( itPage );
-    it->mSetBlock( itBlock );
-    it->mSetPos( 0 );
-    it->_offCurrent = 0 ;
-    
-    BufferIterator itBuf( it );
-    return itBuf;
-
+    return it;
 }
 
 /**
- * Returns a itertor to the end of this this buffer
+ * Returns a itertor to the last block of the buffer
  */
 BufferIterator Buffer::mEnd( void ) {
 
-    BufferIterator *it = new BufferIterator( this );
+    BufferIterator it( this );
 
     Page::Iterator itPage = (--_pageContainer.mEnd());
     Block::Iterator itBlock = (--itPage->mEnd());
     
-    it->mSetPage( itPage );
-    it->mSetBlock( itBlock );
-    it->mSetPos( itBlock->mGetBlockSize() );
-    it->_offCurrent = mGetBufferSize();
+    it.mSetPage( itPage );
+    it.mSetBlock( itBlock );
+    it.mSetPos( itBlock->mGetBlockSize() );
+    it._offCurrent = mGetBufferSize();
 
-    BufferIterator itBuf( it );
-
-    return itBuf;
-
+    return it;
 }
  
 /*! 
@@ -1140,7 +1129,8 @@ const char* BufferIterator::mGetUtf8String( int intCount ) {
 }
 
 /**
- * Constructor
+ * Constructor points the newly created 
+ * BufferIterator to the begining of the buffer
  */
 BufferIterator::BufferIterator( Buffer* buf ) : _buf(buf), _intPos(0), _offCurrent(0) { 
     _itPage = buf->_pageContainer.mBegin();
@@ -1165,8 +1155,14 @@ void BufferIterator::copy( const BufferIterator &it  ) {
  */
 int BufferIterator::mEqual( const BufferIterator* itLeft, const BufferIterator* itRight ){
 
+    std::cout << "pos: " << itLeft->_intPos << " : " << itRight->_intPos << std::endl;
+    std::cout << "block: " << itLeft->_itBlock->mGetBlockData() << " : " << itRight->_itBlock->mGetBlockData() << std::endl;
     // If the both point to the same address they are equal!
     if( itLeft == itRight ) return 1; 
+
+    if( itLeft->_itPage != itRight->_itPage  ) {
+        std::cout << "pages are NOT the same" << std::endl;
+    }
 
     // Are these iterators pointing to the same page, block, pos?
     if( ( itLeft->_itPage  == itRight->_itPage  ) and 
@@ -1206,8 +1202,9 @@ bool BufferIterator::mInsert( const char* cstrBuffer, int intBufSize, Attributes
     // Now that we inserted new data the offsets for the pages need to be adjusted 
     _buf->_pageContainer.mUpdateOffSets( _itPage );
 
-    // Update the position in the new iterator
-    mSetPos( mGetPos() + intBufSize );
+    // Update the position off the iterator
+    _intPos += intBufSize;
+    _offCurrent += intBufSize;
 
     // Update the size of the buffer
     _buf->_offBufferSize += intBufSize;

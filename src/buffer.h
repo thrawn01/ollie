@@ -18,102 +18,15 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
-#ifndef UTF8_INCLUDE_H
-#define UTF8_INCLUDE_H
+#ifndef BUFFER_INCLUDE_H
+#define BUFFER_INCLUDE_H
 
 #include <ollie.h>
 #include <buffer.h>
-#include <file.h>
 #include <list>
 #include <boost/ptr_container/ptr_list.hpp>
 
 class Buffer;
-
-/*!
- * Class for handling Blocks ( Text Blocks )
- */
-class Block {
-
-    public:
-        Block( void ) { _offOffSet = 0; _sizeBlockSize = 0; } 
-        Block( char* cstrData, OffSet offLen );
-         ~Block( void ) { }
-
-        typedef std::list<Block>::iterator Iterator;
-
-
-        void                mSetBlockData( const char* cstrData, OffSet offLen );
-        void                mSetBlockData( const std::string& );
-        const std::string&  mGetBlockData( void ) const { return _strBlockData; }
-        bool                mSetAttributes( const Attributes &attr ) { return false; } //TODO Add Support for attributes
-        Attributes&         mGetAttributes( void ) { return _attr; } //TODO Add Support for attributes
-        bool                mSetOffSet( OffSet offset ) { _offOffSet = offset; }
-        bool                mIsEmpty( void ) const { return _strBlockData.empty(); }
-        void                mClear( void ) { _strBlockData.clear(); _sizeBlockSize = 0; }
-        size_t              mGetBlockSize( void ) const { return _sizeBlockSize; }
-        void                mInsert( int, const char*, int );
-        Block               mSubstr( int, int );
-
-        // members
-        std::string _strBlockData;
-        OffSet      _offOffSet;
-        size_t      _sizeBlockSize;
-        Attributes  _attr;
-
-};
-
-
-/*!
- * A Class that holds blocks of data that consitutes a page
- * ( Not a Literal Page )
- */
-class Page {
-
-    public:
-        Page( void ) {
-            _offTargetPageSize = DEFAULT_PAGE_SIZE;
-            _offPageSize    = 0;
-            _offStart       = -1; 
-            _offFileStart   = -1; 
-        }
-         ~Page( void ) { }
-
-        typedef boost::ptr_list<Page>::iterator Iterator;  
-
-        Block::Iterator      mInsertBlock( const Block::Iterator&, const Block& );
-        Block::Iterator      mAppendBlock( const Block& );
-        Block::Iterator      mDeleteBlock( const Block::Iterator& ) ;
-        Block                mSplitBlock( const Block::Iterator&, int, int ) ;
-        void                 mInsert( const Block::Iterator& , int, const char*, int );
-
-        void                 mSetTargetPageSize( OffSet const offSize ) { _offTargetPageSize = offSize; }
-        OffSet               mGetTargetPageSize( void ) const { return _offTargetPageSize; }
-
-        void                 mSetOffSet( OffSet const offset ) { _offStart = offset; }
-        OffSet               mGetOffSet( void ) const { return _offStart; }
-
-        void                 mSetFileOffSet( OffSet const offset ) { _offFileStart = offset; }
-        OffSet               mGetFileOffSet( void ) const { return _offFileStart; }
-
-
-        void                 mSetPageSize( OffSet offSize ) { _offPageSize = offSize; }
-        OffSet               mGetPageSize( void ) const { return _offPageSize; }
-
-        int                  mGetBlockCount( void ) const { return _blockContainer.size(); }
-
-        bool                 mCanAcceptBytes( OffSet ) const;
-        bool                 mIsFull( void ) const;
-        bool                 mIsEmpty( void ) const;
-        Block::Iterator  mBegin( void ) { return _blockContainer.begin(); }
-        Block::Iterator  mEnd( void ) { return _blockContainer.end(); }
-
-        std::list<Block>       _blockContainer;
-        OffSet                 _offFileStart;
-        OffSet                 _offStart;
-        OffSet                 _offTargetPageSize;
-        OffSet                 _offPageSize;
-};
-
 
 class BufferIterator : public OllieCommon {
 
@@ -141,10 +54,6 @@ class BufferIterator : public OllieCommon {
         int                       operator!=(const BufferIterator& right ) { return !( this == &right ); }
 
         void                      copy( const BufferIterator &it  );
-        bool                      mNext( int intCount = 1 );
-        bool                      mPrev( int intCount = 1 );
-        bool                      mNextBlock( int intCount = 1 );
-        bool                      mPrevBlock( int intCount = 1 );
         bool                      _mNextBlock( void );
         bool                      _mPrevBlock( void );
         bool                      mSetOffSet( OffSet );
@@ -183,47 +92,6 @@ class BufferIterator : public OllieCommon {
 
 };
 
-/*!
- * A Container class to hold the pages that make up the buffer
- */
-class PageContainer {
-
-    public:
-        PageContainer() { _longSize = 0; };
-        ~PageContainer() {  };
-
-        Page::Iterator  mBegin() { return _listContainer.begin(); }
-        Page::Iterator  mEnd()   { return _listContainer.end();   }
-
-        void            mClear( void ) { _listContainer.clear(); }
-        Page::Iterator  mAppendPage( Page *page );
-        Page::Iterator  mInsertPage( Page::Iterator const &it, Page *page);
-        Page::Iterator  mDeletePage( Page::Iterator const &it );
-        int             mSplitPage( BufferIterator*, Page::Iterator& );
-        void            mUpdateOffSets( Page::Iterator const &it );
-        long            mGetSize() const { return _longSize; }
-        
-        boost::ptr_list<Page> _listContainer;
-        long                      _longSize;
-         
-};
-
-/*!
- *  The ChangeSet object.
- */
-class ChangeSet {
-
-    public:
-        ChangeSet( void ) { };
-         ~ChangeSet( void ) { };
-
-         std::string mGetText();
-         OffSet mGetAbsPosition() { }
-         OffSet mGetLineNum()     { }
-         OffSet mGetStartPos()    { }
-         OffSet mGetEndPos()      { }
-
-};
 
 /*!
  * This is the buffer implementation 
@@ -289,4 +157,4 @@ class Buffer : public OllieCommon {
 
 };
 
-#endif // UTF8_INCLUDE_H
+#endif // BUFFER_INCLUDE_H

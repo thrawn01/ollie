@@ -1000,7 +1000,6 @@ class BufferTests : public CxxTest::TestSuite
             it.mInsert("333336789012345EFGHB" , 20, attr );
             it.mInsert("44444GGGGGDDDDDEFGHB" , 20, attr );
  
-            it.printBuffer();
             // Iterator should point to the end of the buffer
             TS_ASSERT( it == buf->mEnd() );
 

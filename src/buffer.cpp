@@ -1155,13 +1155,10 @@ void BufferIterator::copy( const BufferIterator &it  ) {
  */
 int BufferIterator::mEqual( const BufferIterator* itLeft, const BufferIterator* itRight ){
 
-    std::cout << "pos: " << itLeft->_intPos << " : " << itRight->_intPos << std::endl;
-    std::cout << "block: " << itLeft->_itBlock->mGetBlockData() << " : " << itRight->_itBlock->mGetBlockData() << std::endl;
     // If the both point to the same address they are equal!
     if( itLeft == itRight ) return 1; 
 
     if( itLeft->_itPage != itRight->_itPage  ) {
-        std::cout << "pages are NOT the same" << std::endl;
     }
 
     // Are these iterators pointing to the same page, block, pos?
@@ -1193,14 +1190,14 @@ bool BufferIterator::mInsert( const char* cstrBuffer, int intBufSize, Attributes
     // Will this insert mean we will need to split the page ? 
     // ( We Split the page if the page size is twice that of the target page size )
     // If we inserted more than 1 page of data, keep spliting
-    while( _itPage->mGetPageSize() >= ( intTargetPageSize * 2 ) ) {
+    //while( _itPage->mGetPageSize() >= ( intTargetPageSize * 2 ) ) {
 
-        // Split the page, and return an iterator to the new page
-        _itPage = _buf->_pageContainer.mSplitPage( this , _itPage );
-    }
+        // Split the pages as needed
+        _buf->_pageContainer.mSplitPage( this , _itPage );
+    //}
 
     // Now that we inserted new data the offsets for the pages need to be adjusted 
-    _buf->_pageContainer.mUpdateOffSets( _itPage );
+    //_buf->_pageContainer.mUpdateOffSets( _itPage );
 
     // Update the position off the iterator
     _intPos += intBufSize;
@@ -1323,6 +1320,20 @@ bool BufferIterator::mDelete( BufferIterator& itEnd ) {
     _offCurrent = offCurrentSave;
  
     return true;
+}
+
+/**
+ * Split a block and return the bytes removed
+ */
+Block Page::mSplitBlock( const Block::Iterator& itBlock, int intPos, int intLen ) {
+
+    // Split the block of text
+    Block newBlock = itBlock->mSubstr( intPos, intLen );
+
+    // Update the page size
+    _offPageSize -= newBlock.mGetBlockSize();
+
+    return newBlock;
 }
 
 /*!
@@ -1512,74 +1523,80 @@ Page::Iterator PageContainer::mAppendPage( Page *page ) {
 /**
  * Split the page the iterator points to and update the iterator before returning
  */
-Page::Iterator PageContainer::mSplitPage( BufferIterator *itBuffer, Page::Iterator &itOldPage ) {
+int PageContainer::mSplitPage( BufferIterator *itBuffer, Page::Iterator &itOldPage ) {
 
     // Get the target page size
     OffSet intTargetSize = itOldPage->mGetTargetPageSize();
     OffSet intCurSize = 0;
+    int intCount = 0;
 
-    // Can not split unless the page is over the target page size
-    assert( itOldPage->mGetPageSize() > itOldPage->mGetTargetPageSize() );
+    // For as long as the current page is over it's target size, keep splitting
+    while( itOldPage->mGetPageSize() > itOldPage->mGetTargetPageSize() ) {
+        // Keep try of how many times we split
+        intCount++;
 
-    // Insert a new page right before the old page
-    Page::Iterator itNewPage = mInsertPage( itOldPage, new Page() );
+        // Insert a new page right before the old page
+        Page::Iterator itNewPage = mInsertPage( itOldPage, new Page() );
 
-    // Move blocks into the new page until we hit our target size
-    Block::Iterator itBlock;
-    for( itBlock = itOldPage->mBegin() ; itBlock != itOldPage->mEnd() ; ) {
-        int intSplitPos = 0;
-        Block::Iterator itNewBlock;
-        
-        // If we have hit our target size, break
-        if( intCurSize >= intTargetSize ) break;
+        // Move blocks into the new page until we hit our target size
+        Block::Iterator itBlock;
+        for( itBlock = itOldPage->mBegin() ; itBlock != itOldPage->mEnd() ; ) {
+            int intSplitPos = 0;
+            Block::Iterator itNewBlock;
+            
+            // If we have hit our target size, break
+            if( intCurSize >= intTargetSize ) break;
 
-        // If this block will put us over the target block size
-        if( ( intCurSize + itBlock->mGetBlockSize() ) > intTargetSize ) {
+            // If this block will put us over the target block size
+            if( ( intCurSize + itBlock->mGetBlockSize() ) > intTargetSize ) {
 
-            // Figure out where to split the block
-            intSplitPos = intTargetSize - intCurSize;
+                // Figure out where to split the block
+                intSplitPos = intTargetSize - intCurSize;
 
-            // Split the block, appending the new block to the page
-            itNewBlock = itNewPage->mAppendBlock( itBlock->mSubstr( 0, intSplitPos ) );
+                // Split the block, appending the new block to the page
+                itNewBlock = itNewPage->mAppendBlock( itOldPage->mSplitBlock( itBlock, 0, intSplitPos ) );
+                //itNewBlock = itNewPage->mAppendBlock( itBlock->mSubstr( 0, intSplitPos ) );
 
-        } else {
-            // Append the block to the new page
-            itNewBlock = itNewPage->mAppendBlock( *itBlock );
-        }
+            } else {
+                // Append the block to the new page
+                itNewBlock = itNewPage->mAppendBlock( *itBlock );
+            }
 
-        // If the buffer iterator points to the block just copied
-        if( itBlock == itBuffer->mGetBlock() ) {
-            // And we split this block
-            if( intSplitPos ) {
-                // If the pos points to the new block
-                if( itBuffer->mGetPos() < intSplitPos ) {
-                    // Update the iterator to point to the new block
-                    itBuffer->mSetBlock( itNewBlock );
-                } else {
-                    // Adjust the pos for the split block
-                    itBuffer->mSetPos( intSplitPos - itBuffer->mGetPos() );
+            // If the buffer iterator points to the block just copied
+            if( itBlock == itBuffer->mGetBlock() ) {
+                // And we split this block
+                if( intSplitPos ) {
+                    // If the pos points to the new block
+                    if( itBuffer->mGetPos() < intSplitPos ) {
+                        // Update the iterator to point to the new block
+                        itBuffer->mSetBlock( itNewBlock );
+                        // Update the iterator to point to the new page
+                        itBuffer->mSetPage( itNewPage );
+                    } else {
+                        // Adjust the pos for the split block
+                        itBuffer->mSetPos( intSplitPos - itBuffer->mGetPos() );
+                    }
                 }
             }
+
+            // If we split the block, don't delete it
+            if( ! intSplitPos ) {
+                // Remove the old block
+                itBlock = itOldPage->mDeleteBlock( itBlock );
+            }
+
+            // Update our current size
+            intCurSize += itNewBlock->mGetBlockSize();
         }
 
-        // If we split the block, don't delete it
-        if( ! intSplitPos ) {
-            // Remove the old block
-            itBlock = itOldPage->mDeleteBlock( itBlock );
-        }
-
-        // Update our current size
-        intCurSize += itNewBlock->mGetBlockSize();
-
+        // Update the offsets of the pages
+        itNewPage->mSetOffSet( itOldPage->mGetOffSet() );
+        itNewPage->mSetFileOffSet( itOldPage->mGetFileOffSet() );
+        itOldPage->mSetOffSet( intCurSize + itNewPage->mGetOffSet() );
+        itOldPage->mSetFileOffSet( -1 );
     }
 
-    // Update the offsets of the pages
-    itNewPage->mSetOffSet( itOldPage->mGetOffSet() );
-    itNewPage->mSetFileOffSet( itOldPage->mGetFileOffSet() );
-    itOldPage->mSetOffSet( intCurSize + itNewPage->mGetOffSet() );
-    itOldPage->mSetFileOffSet( -1 );
-
-    return itNewPage;
+    return intCount;
 }
 
 Page::Iterator PageContainer::mDeletePage( Page::Iterator const &it ) { 

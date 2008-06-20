@@ -80,9 +80,10 @@ class Page {
 
         typedef boost::ptr_list<Page>::iterator Iterator;  
 
-        Block::Iterator  mInsertBlock( const Block::Iterator&, const Block& );
-        Block::Iterator  mAppendBlock( const Block& );
-        Block::Iterator  mDeleteBlock( const Block::Iterator& ) ;
+        Block::Iterator      mInsertBlock( const Block::Iterator&, const Block& );
+        Block::Iterator      mAppendBlock( const Block& );
+        Block::Iterator      mDeleteBlock( const Block::Iterator& ) ;
+        Block                mSplitBlock( const Block::Iterator&, int, int ) ;
         void                 mInsert( const Block::Iterator& , int, const char*, int );
 
         void                 mSetTargetPageSize( OffSet const offSize ) { _offTargetPageSize = offSize; }
@@ -120,7 +121,7 @@ class BufferIterator : public OllieCommon {
         //Constructors
         BufferIterator() { }
         BufferIterator( Buffer* buf );
-        BufferIterator( const BufferIterator* it ) { copy(it); };
+        BufferIterator( const BufferIterator* it ) { copy(*it); };
 
          ~BufferIterator() { }
 
@@ -198,7 +199,7 @@ class PageContainer {
         Page::Iterator  mAppendPage( Page *page );
         Page::Iterator  mInsertPage( Page::Iterator const &it, Page *page);
         Page::Iterator  mDeletePage( Page::Iterator const &it );
-        Page::Iterator  mSplitPage( BufferIterator*, Page::Iterator& );
+        int             mSplitPage( BufferIterator*, Page::Iterator& );
         void            mUpdateOffSets( Page::Iterator const &it );
         long            mGetSize() const { return _longSize; }
         

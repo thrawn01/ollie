@@ -1337,22 +1337,6 @@ Block Page::mSplitBlock( const Block::Iterator& itBlock, int intPos, int intLen 
 }
 
 /*!
- * Append a block to the page and return an iterator to the block
- */
-Block::Iterator Page::mAppendBlock( const Block &block ) {
-    
-    // Add the block to our page
-    _blockContainer.push_back( block ); 
-   
-    // Record Incr the Cur size of our page
-    _offPageSize += block.mGetBlockSize();
-
-    // Return an iterator to the last element
-    return --(_blockContainer.end());
-
-}
-
-/*!
  * Remove a block from the page
  */
 Block::Iterator Page::mDeleteBlock( const Block::Iterator& itBlock ) {
@@ -1420,90 +1404,6 @@ bool Page::mCanAcceptBytes( OffSet offBytes ) const {
     return true;
 }
 
-/*! 
- * Assign the char* of data to the internal structure of the block
- */
-void Block::mSetBlockData( const char* cstrData, OffSet offLen ) {
-
-    // Assign the new data
-    _strBlockData.assign( cstrData, offLen ); 
-
-    // Update the size
-    _sizeBlockSize = offLen;
-
-}
-
-/*! 
- * Assign the char* of data to the internal structure of the block
- */
-void Block::mSetBlockData( const std::string& string ) {
-
-    // Assign the new data
-    _strBlockData.assign( string ); 
-
-    // Update the size
-    _sizeBlockSize = _strBlockData.size();
-
-}
-
-/**
- * TODO: Consider using std::string::iterators instead of intPos
- */
-void Block::mInsert( int intPos, const char* cstrData, int intSize ) {
-
-    // If the intPos requested is larger than the 
-    // size of the string append the data
-    if( _strBlockData.size() < intPos ) {
-        // Append the data
-        _strBlockData.append(cstrData, intSize);
-
-    }else {
-        // Insert more data 
-        _strBlockData.insert(intPos, cstrData, intSize);
-    }
-
-    // Update the size
-    _sizeBlockSize += intSize;
-
-}
-
-/**
- * Grab a substring of the current block and return a 
- * new block containing the 
- */
-Block Block::mSubstr( int intPos, int intLen ) {
-
-    Block newBlock;
-
-    if( intLen < 0 ) { 
-        // Set the new block data
-        newBlock.mSetBlockData( _strBlockData.substr( intPos, std::string::npos ) );
-        // Erase the copied block data
-        _strBlockData.erase( intPos, std::string::npos );
-    } else { 
-        // Set the new block data
-        newBlock.mSetBlockData( _strBlockData.substr( intPos, intLen ) );
-        // Erase the copied block data
-        _strBlockData.erase( intPos, intLen );
-    }
-
-    // Update the block size
-    _sizeBlockSize = _strBlockData.size();
-
-    // Copy the attributes from this block into the new block
-    newBlock.mSetAttributes( mGetAttributes() );
-
-    return newBlock;
-
-}
-
-Block::Block( char* cstrData, OffSet offLen ) { 
-    _offOffSet        = 0; 
-    _sizeBlockSize   = 0;
-
-    mSetBlockData( cstrData, offLen ); 
-
-}
 
 /*!
  * Add a page to the container 

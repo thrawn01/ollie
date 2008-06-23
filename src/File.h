@@ -21,8 +21,8 @@
 #ifndef FILE_INCLUDE_H
 #define FILE_INCLUDE_H
 
-#include <iohandle.h>
-#include <ollie.h>
+#include <IOHandle.h>
+#include <Ollie.h>
 
 /*! 
  * Class hold all the attributes associated with a block of data

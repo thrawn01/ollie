@@ -9,6 +9,7 @@
 
 #include <cxxtest/ValueTraits.h>
 #include <cxxtest/StdHeaders.h>
+#include <BufferImpl.h>
 
 #ifdef _CXXTEST_OLD_STD
 #   define CXXTEST_STD(x) x
@@ -60,6 +61,27 @@ namespace CxxTest
     };
 
     CXXTEST_COPY_CONST_TRAITS( CXXTEST_STD(string) );
+
+    //
+    // BufferImpl::ByteArray
+    //
+    CXXTEST_TEMPLATE_INSTANTIATION
+    class ValueTraits<const BufferImpl::ByteArray> : public StdTraitsBase
+    {
+    public:
+        ValueTraits( const BufferImpl::ByteArray &s )
+        {
+            *this << "\"";
+            for ( unsigned i = 0; i < s._strData.length(); ++ i ) {
+                char c[sizeof("\\xXX")];
+                charToString( s._strData[i], c );
+                *this << c;
+            }
+            *this << "\"";
+        }
+    };
+
+    CXXTEST_COPY_CONST_TRAITS( BufferImpl::ByteArray );
 
 #ifndef _CXXTEST_OLD_STD
     //

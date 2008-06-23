@@ -21,7 +21,7 @@
 #ifndef IOHANDLE_INCLUDE_H
 #define IOHANDLE_INCLUDE_H
 
-#include <ollie.h>
+#include <Ollie.h>
 
 /*!
  *  An Abstract class used to 

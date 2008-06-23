@@ -18,7 +18,7 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
-#include <ollie.h>
+#include <Ollie.h>
 
 /*!
  * Constructor

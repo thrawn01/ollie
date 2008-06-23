@@ -53,10 +53,36 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( sstr.str(), "AAAAABBBBB" );
         
             ByteArray arrBytes;
+            TS_ASSERT_EQUALS( arrBytes.mIsEmpty(), true );
 
+            // Append to an empty array
             arrBytes.mAppend( STR("AAAAABBBBB") );
-            TS_ASSERT_EQUALS( arrBytes, "AAABBBBB" );
-            
+            TS_ASSERT_EQUALS( arrBytes, "AAAAABBBBB" );
+            TS_ASSERT_EQUALS( arrBytes.mIsEmpty(), false );
+            TS_ASSERT_EQUALS( arrBytes.mSize(), 10 );
+
+            // Insert at the end of the array 
+            arrBytes.mInsert( 10, STR("GGGGGHHHHH") );
+            TS_ASSERT_EQUALS( arrBytes, "AAAAABBBBBGGGGGHHHHH" );
+           
+            // Insert at the start of the array
+            arrBytes.mInsert( 0, STR("1111122222") );
+            TS_ASSERT_EQUALS( arrBytes, "1111122222AAAAABBBBBGGGGGHHHHH" );
+
+            // Erase the text just added
+            arrBytes.mErase( 0, 10 );
+            TS_ASSERT_EQUALS( arrBytes, "AAAAABBBBBGGGGGHHHHH" );
+
+            // Remove GGGGG
+            arrBytes.mErase( 10, 5 );
+            TS_ASSERT_EQUALS( arrBytes, "AAAAABBBBBHHHHH" );
+            TS_ASSERT_EQUALS( arrBytes.mSize(), 15 );
+
+            // Append bytes to the end of the array
+            arrBytes.mAppend( STR("5555566666") );
+            TS_ASSERT_EQUALS( arrBytes, "AAAAABBBBBHHHHH5555566666" );
+            TS_ASSERT_EQUALS( arrBytes.mSize(), 25 );
+
         }
 
         // --------------------------------
@@ -81,7 +107,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( block->mSize() , 20 );
 
             // Insert some data into the block
-            block->mInsertBytes( 10 , STR("GGGGG") );
+            TS_ASSERT_EQUALS( block->mInsertBytes( 10 , STR("GGGGG") ), 5 );
 
             // Data should be there
             TS_ASSERT_EQUALS( block->mGetBytes(), "AAAAABBBBBGGGGGCCCCCDDDDD" );
@@ -90,7 +116,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( block->mSize() , 25 );
 
             // Insert data at the begining of the block
-            block->mInsertBytes( 0 , STR("12345") );
+            TS_ASSERT_EQUALS( block->mInsertBytes( 0 , STR("12345") ), 5 );
 
             TS_ASSERT_EQUALS( block->mGetBytes(), "12345AAAAABBBBBGGGGGCCCCCDDDDD" );
 
@@ -98,7 +124,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( block->mSize() , 30 );
 
             // Append data to the end of the block
-            block->mInsertBytes( 30 , STR("ZZZZZ") );
+            TS_ASSERT_EQUALS( block->mInsertBytes( 30 , STR("ZZZZZ") ), 5 );
 
             TS_ASSERT_EQUALS( block->mGetBytes(), "12345AAAAABBBBBGGGGGCCCCCDDDDDZZZZZ" );
 
@@ -123,7 +149,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( block->mSize() , 20 );
 
             // Truncate the block starting a pos 10,
-            newBlock = block->mDeleteBytes(10, -1);
+            newBlock = block->mDeleteBytes(10, BufferImpl::nPos);
 
             // The returning block should have the last 10 bytes of data
             TS_ASSERT_EQUALS( newBlock->mGetBytes(), "DDDDDZZZZZ" );

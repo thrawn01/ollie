@@ -59,9 +59,9 @@ namespace BufferImpl {
 
         if( intLen < 0 ) { 
             // Set the new block data
-            newBlock->mSetBytes( _arrBlockData.mSubStr( intPos, -1 ) );
+            newBlock->mSetBytes( _arrBlockData.mSubStr( intPos, nPos ) );
             // Erase the copied block data
-            _arrBlockData.mErase( intPos, -1 );
+            _arrBlockData.mErase( intPos, nPos );
         } else { 
             // Set the new block data
             newBlock->mSetBytes( _arrBlockData.mSubStr( intPos, intLen ) );

@@ -26,7 +26,7 @@
 #include <boost/ptr_container/ptr_list.hpp>
 
 namespace BufferImpl {
-    //int nPos = std::string::npos;
+    static const int nPos = std::string::npos;
 
     class ByteArray {
 

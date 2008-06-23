@@ -87,8 +87,8 @@ class Page {
         }
          ~Page( void ) { }
 
-        struct
-        typedef boost::ptr_list<Page>::iterator Iterator;  
+        Block::Iterator   mBegin( void ) { return _blockContainer.begin(); }
+        Block::Iterator   mEnd( void ) { return _blockContainer.end(); }
 
         Block::Iterator   mInsertBlock( const Block::Iterator&, const Block& );
         Block::Iterator   mAppendBlock( const Block& );
@@ -114,46 +114,91 @@ class Page {
         bool              mCanAcceptBytes( OffSet ) const;
         bool              mIsFull( void ) const;
         bool              mIsEmpty( void ) const;
-        Block::Iterator   mBegin( void ) { return _blockContainer.begin(); }
-        Block::Iterator   mEnd( void ) { return _blockContainer.end(); }
 
-        std::list<Block>  _blockContainer;
-        OffSet            _offFileStart;
-        OffSet            _offStart;
-        OffSet            _offTargetPageSize;
-        OffSet            _offPageSize;
+        boost::ptr_list<Block>  _blockContainer;
+        OffSet                  _offFileStart;
+        OffSet                  _offStart;
+        OffSet                  _offTargetPageSize;
+        OffSet                  _offPageSize;
 };
 
 
 /*!
- * A Container class to hold the pages that make up the buffer
+ * The low level Buffer Implementation
  */
-class PageInterface {
+class BufferImplementation {
 
     public:
-        PageInterface()         { _longSize = 0; };
-        ~PageInterface()        {  };
+        BufferImplementation()         {  };
+        ~BufferImplementation()        {  };
 
-        Page::Iterator          mBegin() { return _listContainer.begin(); }
-        Page::Iterator          mEnd()   { return _listContainer.end();   }
+        class Iterator { 
+            public:
+                Iterator( BufferImplelentation& impl, boost::ptr_list<Page>::iterator& iPage, 
+                          boost::ptr_list<Block>::iterator& iBlock ) : _impl(impl), itPage(iPage), itBlock(iBlock) {}
+                ~Iterator() {}
 
-        void                    mClearAllPages( void ) { _listContainer.clear(); }
+                void        copy( const Iterator &i ) {
+                                _impl = i._impl;
+                                itPage = i.itPage;
+                                itBlock = i.itBlock;
+                            }
 
-        Page::Iterator          mAppendPage( Page *page );
-        Page::Iterator          mInsertPage( Page::Iterator&, Page* );
-        Page::Iterator          mDeletePage( Page::Iterator& );
-        Page::Iterator          mSplitPage( Page::Iterator& );
+                Iterator    operator=( const Iterator& i ) {
+                                if( &i != this ) copy( i );
+                                return *this;
+                            }
+                int         operator==( const Iterator& right ) {
+                                if( this == &right ) return 1;
+                                return 
+                            }
 
-        int                     mNext( int intCount = 1 );
-        int                     mPrev( int intCount = 1 );
+                Iterator    operator++( int ) { 
+                                Iterator itTemp = *this;
+                                mNext( *this );
+                                return itTemp; 
+                            }
 
-        int                     mNextBlock( BufferIterator&, int intCount = 1 );
-        int                     mPrevBlock( BufferIterator&, int intCount = 1 );
+                Iterator    operator++() { 
+                                mNext( *this );
+                                return *this;
+                            }
 
-        long                    mGetSize() const { return _longSize; }
+                Iterator    operator--( int ) { 
+                                Iterator itTemp = *this;
+                                mPrev( *this );
+                                return itTemp; 
+                            }
+
+                Iterator    operator--() { 
+                                mPrev( *this );
+                                return *this;
+                            }
+
+                boost::ptr_list<Page>::iterator  itPage;
+                boost::ptr_list<Block>::iterator itBlock;
+                BufferImplementation&            _impl;
+        }
+                
+        Iterator          mBegin() { return _pageContainer.begin(); }
+        Iterator          mEnd()   { return _pageContainer.end();   }
+
+        void              mClearAllPages( void ) { _pageContainer.clear(); //TODO: reset all states }
+
+        Iterator          mAppendPage( Page *page );
+        Iterator          mInsertPage( Iterator&, Page* );
+        Iterator          mDeletePage( Iterator& );
+        Iterator          mSplitPage( Iterator& );
+
+        int               mNext( Iterator&, int intCount = 1 );
+        int               mPrev( Iterator&, int intCount = 1 );
+
+        int               mNextBlock( Iterator&, int intCount = 1 );
+        int               mPrevBlock( Iterator&, int intCount = 1 );
+
+        long              mGetPageCount() const { return _pageContainer.size(); }
         
-        boost::ptr_list<Page>   _listContainer;
-        long                    _longSize;
+        boost::ptr_list<Page>   _pageContainer;
          
 };
 

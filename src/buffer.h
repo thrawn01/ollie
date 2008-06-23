@@ -41,8 +41,8 @@ class BufferIterator : public OllieCommon {
         // Copy Constructor
         BufferIterator( const BufferIterator &it ) { copy(it); }
 
-        const BufferIterator      operator++( void ) { mNext(); return *this; }
-        const BufferIterator      operator--( void ) { mPrev(); return *this; }
+        const BufferIterator      operator++( int ) { mNext(); return *this; }
+        const BufferIterator      operator--( int ) { mPrev(); return *this; }
         BufferIterator&           operator=(const BufferIterator& i ) { 
                                       if( &i != this ) copy(i); 
                                       return *this; 

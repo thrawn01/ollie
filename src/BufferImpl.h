@@ -69,15 +69,16 @@ namespace BufferImpl {
         public:
             Block( void ) : _sizeBlockSize(0) {} 
             Block( const ByteArray& );
+            Block( const ByteArray& , Attributes &attr );
              ~Block( void ) {}
 
             typedef boost::ptr_list<Block>::iterator Iterator;
 
             void                mSetBytes( const ByteArray& );
-            const ByteArray&    mGetBytes( void ) const { return _arrBlockData; }
-            const ByteArray     mGetBytes( int intPos, int intLen ) { return _arrBlockData.mSubStr( intPos, intLen ); }
+            const ByteArray&    mBytes( void ) const { return _arrBlockData; }
+            const ByteArray     mBytes( int intPos, int intLen ) { return _arrBlockData.mSubStr( intPos, intLen ); }
             bool                mSetAttributes( const Attributes& attr ) { return false; }
-            const Attributes&   mGetAttributes( void ) { return _attr; } 
+            const Attributes&   mAttributes( void ) { return _attr; } 
             bool                mIsEmpty( void ) const { return _arrBlockData.mIsEmpty(); }
             void                mClear( void ) { _arrBlockData.mClear(); _sizeBlockSize = 0; }
             size_t              mSize( void ) const { return _sizeBlockSize; }
@@ -100,11 +101,11 @@ namespace BufferImpl {
             ChangeSet( void ) { };
              ~ChangeSet( void ) { };
 
-             std::string mGetText();
-             OffSet mGetAbsPosition() { }
-             OffSet mGetLineNum()     { }
-             OffSet mGetStartPos()    { }
-             OffSet mGetEndPos()      { }
+             std::string mText();
+             OffSet mAbsPosition() { }
+             OffSet mLineNum()     { }
+             OffSet mStartPos()    { }
+             OffSet mEndPos()      { }
 
     };
 
@@ -118,7 +119,6 @@ namespace BufferImpl {
             Page( void ) {
                 _offTargetPageSize = DEFAULT_PAGE_SIZE;
                 _offPageSize    = 0;
-                _offStart       = -1; 
                 _offFileStart   = -1; 
             }
              ~Page( void ) { }
@@ -126,34 +126,31 @@ namespace BufferImpl {
             Block::Iterator   mBegin( void ) { return _blockContainer.begin(); }
             Block::Iterator   mEnd( void ) { return _blockContainer.end(); }
 
-            Block::Iterator   mInsertBlock( const Block::Iterator&, const Block* );
-            Block::Iterator   mAppendBlock( const Block* );
+            Block::Iterator   mInsertBlock( const Block::Iterator&, Block* );
+            Block::Iterator   mAppendBlock( Block* );
             Block::Iterator   mDeleteBlock( const Block::Iterator& ) ;
-            Block             mSplitBlock( const Block::Iterator&, int, int ) ;
-            int               mInsertBytes( const Block::Iterator& , int, ByteArray& , int );
-            int               mDeleteBytes( const Block::Iterator& , int, int );
-
-            void              mSetTargetPageSize( OffSet const offSize ) { _offTargetPageSize = offSize; }
-            OffSet            mGetTargetPageSize( void ) const { return _offTargetPageSize; }
-
-            void              mSetOffSet( OffSet const offset ) { _offStart = offset; }
-            OffSet            mGetOffSet( void ) const { return _offStart; }
-
+            Block*            mSplitBlock( const Block::Iterator&, int, int ) ;
+            int               mInsertBytes( Block::Iterator& , int, ByteArray& , Attributes &attr );
+            Block*            mDeleteBytes( const Block::Iterator& , int, int );
+            void              mSetTargetSize( OffSet const offSize ) { _offTargetPageSize = offSize; }
+            OffSet            mTargetSize( void ) const { return _offTargetPageSize; }
             void              mSetFileOffSet( OffSet const offset ) { _offFileStart = offset; }
-            OffSet            mGetFileOffSet( void ) const { return _offFileStart; }
-
-            void              mSetPageSize( OffSet offSize ) { _offPageSize = offSize; }
-            OffSet            mGetPageSize( void ) const { return _offPageSize; }
-
-            int               mGetBlockCount( void ) const { return _blockContainer.size(); }
-
-            bool              mCanAcceptBytes( OffSet ) const;
-            bool              mIsFull( void ) const;
-            bool              mIsEmpty( void ) const;
+            OffSet            mFileOffSet( void ) const { return _offFileStart; }
+            void              mSetSize( OffSet offSize ) { _offPageSize = offSize; }
+            OffSet            mSize( void ) const { return _offPageSize; }
+            int               mBlockCount( void ) const { return _blockContainer.size(); }
+            bool              mIsFull( void ) const {
+                                  if (_offPageSize >= _offTargetPageSize ) return true;
+                                  return false;
+                              }
+            bool              mIsEmpty( void ) const { return _blockContainer.empty(); }
+            bool              mCanAcceptBytes( OffSet offBytes ) const {
+                                  if( ( offBytes + _offPageSize) > _offTargetPageSize ) return false; 
+                                  return true;
+                              }
 
             boost::ptr_list<Block>  _blockContainer;
             OffSet                  _offFileStart;
-            OffSet                  _offStart;
             OffSet                  _offTargetPageSize;
             OffSet                  _offPageSize;
     };
@@ -186,7 +183,7 @@ namespace BufferImpl {
             int               mNextBlock( BufferImplIterator&, int intCount = 1 );
             int               mPrevBlock( BufferImplIterator&, int intCount = 1 );
 
-            long              mGetPageCount() const { return _pageContainer.size(); }
+            long              mPageCount() const { return _pageContainer.size(); }
             void              mPrintBuffer( void );
             
             boost::ptr_list<Page>   _pageContainer;
@@ -212,7 +209,7 @@ namespace BufferImpl {
                             return *this;
                         }
 
-            int         operator==( const BufferImplIterator& right ) {
+            int         operator==( const BufferImplIterator& right ) const {
                             if( this == &right ) return 1;
                             //TODO: fixme
                             return 0;

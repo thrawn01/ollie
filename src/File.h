@@ -33,6 +33,12 @@ class Attributes {
         Attributes() { }
         ~Attributes() { }
         Attributes( const Attributes &a ) { }
+        int operator==( const Attributes &right ) const {
+            return 1;
+        }
+        int operator!=( const Attributes &right ) const {
+            return 0;
+        }
 };
 
 /*! 

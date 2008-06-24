@@ -110,7 +110,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( block->mInsertBytes( 10 , STR("GGGGG") ), 5 );
 
             // Data should be there
-            TS_ASSERT_EQUALS( block->mGetBytes(), "AAAAABBBBBGGGGGCCCCCDDDDD" );
+            TS_ASSERT_EQUALS( block->mBytes(), "AAAAABBBBBGGGGGCCCCCDDDDD" );
 
             // Ensure the size is correct
             TS_ASSERT_EQUALS( block->mSize() , 25 );
@@ -118,7 +118,7 @@ class BufferTests : public CxxTest::TestSuite
             // Insert data at the begining of the block
             TS_ASSERT_EQUALS( block->mInsertBytes( 0 , STR("12345") ), 5 );
 
-            TS_ASSERT_EQUALS( block->mGetBytes(), "12345AAAAABBBBBGGGGGCCCCCDDDDD" );
+            TS_ASSERT_EQUALS( block->mBytes(), "12345AAAAABBBBBGGGGGCCCCCDDDDD" );
 
             // Ensure the size is correct
             TS_ASSERT_EQUALS( block->mSize() , 30 );
@@ -126,7 +126,7 @@ class BufferTests : public CxxTest::TestSuite
             // Append data to the end of the block
             TS_ASSERT_EQUALS( block->mInsertBytes( 30 , STR("ZZZZZ") ), 5 );
 
-            TS_ASSERT_EQUALS( block->mGetBytes(), "12345AAAAABBBBBGGGGGCCCCCDDDDDZZZZZ" );
+            TS_ASSERT_EQUALS( block->mBytes(), "12345AAAAABBBBBGGGGGCCCCCDDDDDZZZZZ" );
 
             // Ensure the size is correct
             TS_ASSERT_EQUALS( block->mSize() , 35 );
@@ -135,7 +135,7 @@ class BufferTests : public CxxTest::TestSuite
             Block* newBlock = block->mDeleteBytes(0,15);
 
             // The returning block should have the first 15 bytes of data
-            TS_ASSERT_EQUALS( newBlock->mGetBytes(), "12345AAAAABBBBB" );
+            TS_ASSERT_EQUALS( newBlock->mBytes(), "12345AAAAABBBBB" );
 
             // Ensure the size is correct
             TS_ASSERT_EQUALS( newBlock->mSize() , 15 );
@@ -143,7 +143,7 @@ class BufferTests : public CxxTest::TestSuite
             delete newBlock;
 
             // The remaining blocks still be in the original block
-            TS_ASSERT_EQUALS( block->mGetBytes(), "GGGGGCCCCCDDDDDZZZZZ" );
+            TS_ASSERT_EQUALS( block->mBytes(), "GGGGGCCCCCDDDDDZZZZZ" );
 
             // Ensure the size is correct
             TS_ASSERT_EQUALS( block->mSize() , 20 );
@@ -152,13 +152,13 @@ class BufferTests : public CxxTest::TestSuite
             newBlock = block->mDeleteBytes(10, BufferImpl::nPos);
 
             // The returning block should have the last 10 bytes of data
-            TS_ASSERT_EQUALS( newBlock->mGetBytes(), "DDDDDZZZZZ" );
+            TS_ASSERT_EQUALS( newBlock->mBytes(), "DDDDDZZZZZ" );
 
             // Ensure the size is correct
             TS_ASSERT_EQUALS( newBlock->mSize() , 10 );
 
             // The original block should only contain the first 10 bytes
-            TS_ASSERT_EQUALS( block->mGetBytes(), "GGGGGCCCCC" );
+            TS_ASSERT_EQUALS( block->mBytes(), "GGGGGCCCCC" );
 
             // Ensure the size is correct
             TS_ASSERT_EQUALS( block->mSize() , 10 );
@@ -170,6 +170,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( block->mIsEmpty(), true )
 
             delete newBlock;
+            delete block;
 
         }
 
@@ -189,20 +190,20 @@ class BufferTests : public CxxTest::TestSuite
 
             delete block;
         }
-};
-/*
+
         // --------------------------------
         // Create a page of data
         // --------------------------------
-        //void testmCreatePage( void ) {
+        void testmCreatePage( void ) {
+            
             Block* block = new Block();
             Page page;
 
-            // Set the max page size to 100 bytes
-            page.mSetTargetPageSize( 100 );
+            // Set the max page size
+            page.mSetTargetSize( 50 );
 
-            // The max page size should be 100 bytes
-            TS_ASSERT_EQUALS( page.mGetTargetPageSize( ), 100 );
+            // The max page size should be 50 bytes
+            TS_ASSERT_EQUALS( page.mTargetSize( ), 50 );
 
             // Assign some data to the block
             block->mSetBytes( STR("AAAAABBBBBCCCCCDDDDD") );
@@ -211,30 +212,28 @@ class BufferTests : public CxxTest::TestSuite
             Block::Iterator it = page.mAppendBlock( block );
 
             // Verify the data is there
-            TS_ASSERT_EQUALS( it->mGetBytes(), "AAAAABBBBBCCCCCDDDDD" );
+            TS_ASSERT_EQUALS( it->mBytes(), "AAAAABBBBBCCCCCDDDDD" );
 
             // Page size should be 20
-            TS_ASSERT_EQUALS( page.mGetPageSize() , 20 );
+            TS_ASSERT_EQUALS( page.mSize() , 20 );
 
             // Page should not be full
             TS_ASSERT_EQUALS( page.mIsFull(), false );
 
-            // Page should accept 1 more byte
+            // Page should accept 1 more bytes
             TS_ASSERT_EQUALS( page.mCanAcceptBytes( 1 ), true );
+
+            // Page should accept 30 more bytes
+            TS_ASSERT_EQUALS( page.mCanAcceptBytes( 30 ), true );
 
             // Page should NOT accept 100 more bytes
             TS_ASSERT_EQUALS( page.mCanAcceptBytes( 100 ), false );
 
-            char* arrBlockData = new char[100];
-            memset(arrBlockData, 'G', 100);
-
-            Block* block2 = new Block( STR( arrBlockData, 100 ) );
-
-            // Add the block to the page
-            page.mAppendBlock( block2 );
+            // Add new block to the page
+            page.mAppendBlock( new Block( STR( "111112222233333444445555566666" ) ) );
             
-            // Page size should be 120
-            TS_ASSERT_EQUALS( page.mGetPageSize() , 120 );
+            // Page size should be 50
+            TS_ASSERT_EQUALS( page.mSize() , 50 );
 
             // Page should be full
             TS_ASSERT_EQUALS( page.mIsFull(), true );
@@ -246,32 +245,58 @@ class BufferTests : public CxxTest::TestSuite
             it = page.mBegin();
 
             // Verify the data is there
-            TS_ASSERT_EQUALS( it->mGetBytes(), "AAAAABBBBBCCCCCDDDDD" );
+            TS_ASSERT_EQUALS( it->mBytes(), "AAAAABBBBBCCCCCDDDDD" );
 
             // Go to the next block on the page
             ++it;
 
-            // The next block should contain all G's
-            TS_ASSERT_EQUALS( it->mGetBytes(0,10) , "GGGGGGGGGG" );
+            TS_ASSERT_EQUALS( it->mBytes() , "111112222233333444445555566666" );
 
             // Go back to the first block on the page
             --it; 
 
-            // Delete that block
+            // Page should contain 2 blocks
+            TS_ASSERT_EQUALS( page.mBlockCount() , 2 );
+            
+            // Delete the first block
             it = page.mDeleteBlock( it );
 
-            // The only block in the page should contain all G's
-            TS_ASSERT_EQUALS( it->mGetBytes(0,10) , "GGGGGGGGGG" );
+            // The iterator should point to the last block on the page
+            TS_ASSERT_EQUALS( it->mBytes() , "111112222233333444445555566666" );
 
-            // Page size should be 100
-            TS_ASSERT_EQUALS( page.mGetPageSize() , 100 );
+            TS_ASSERT_EQUALS( page.mBlockCount() , 1 );
 
-            delete arrBlockData;
-            delete block;
-            delete block2;
+            // Page size should be 30
+            TS_ASSERT_EQUALS( page.mSize() , 30 );
+
+            // Split the block 
+            Block* newBlock = page.mSplitBlock( it, 20, BufferImpl::nPos );
+
+            TS_ASSERT_EQUALS( page.mBlockCount() , 1 );
+           
+            // Iterator still points to the old block
+            TS_ASSERT_EQUALS( it->mBytes() , "11111222223333344444" );
+            TS_ASSERT_EQUALS( it->mSize() , 20 );
+
+            // Insert the block before our current blocks position
+            Block::Iterator itNew = page.mInsertBlock( it, newBlock );
+
+            TS_ASSERT_EQUALS( page.mBlockCount() , 2 );
+
+            // Iterator still points to the old block
+            TS_ASSERT_EQUALS( it->mBytes() , "11111222223333344444" );
+            TS_ASSERT_EQUALS( it->mSize() , 20 );
+
+            // New Iterator points to the Newly inserted block
+            TS_ASSERT_EQUALS( itNew->mBytes() , "5555566666" );
+            TS_ASSERT_EQUALS( itNew->mSize() , 10 );
+           
+            //TODO: Tests for insertBytes and deleteBytes
             
         }
 
+};
+/*
         // --------------------------------
         // Helper method to create a block of data
         // --------------------------------
@@ -307,28 +332,28 @@ class BufferTests : public CxxTest::TestSuite
             Page::Iterator it = pages.mBegin(); 
 
             // The file offset for this page should be 0
-            TS_ASSERT_EQUALS( it->mGetFileOffSet(), 0 );
+            TS_ASSERT_EQUALS( it->mFileOffSet(), 0 );
 
             // The offset for this page should be 0
-            TS_ASSERT_EQUALS( it->mGetOffSet(), 0 );
+            TS_ASSERT_EQUALS( it->mOffSet(), 0 );
 
             // Get the first Block in the page
             Block::Iterator itBlock = it->mBegin();
 
             // The block should contain all A's
-            TS_ASSERT_EQUALS( itBlock->mGetBytes(0,10) , "AAAAAAAAAA" );
+            TS_ASSERT_EQUALS( itBlock->mBytes(0,10) , "AAAAAAAAAA" );
 
             // Check the next Page
             ++it;
        
             // The starting offset for this page should be 100
-            TS_ASSERT_EQUALS( it->mGetFileOffSet(), 100 );
+            TS_ASSERT_EQUALS( it->mFileOffSet(), 100 );
 
             // Get the first block in the page
             itBlock = it->mBegin();
 
             // The block should contain all B's
-            TS_ASSERT_EQUALS( itBlock->mGetBytes(0,10) , "BBBBBBBBBB" );
+            TS_ASSERT_EQUALS( itBlock->mBytes(0,10) , "BBBBBBBBBB" );
 
             // Insert a new page, just before the 
             // current page the iterator points to
@@ -343,7 +368,7 @@ class BufferTests : public CxxTest::TestSuite
             itBlock = it->mBegin();
 
             // The block should contain all E's
-            TS_ASSERT_EQUALS( itBlock->mGetBytes(0,10) , "EEEEEEEEEE" );
+            TS_ASSERT_EQUALS( itBlock->mBytes(0,10) , "EEEEEEEEEE" );
 
             // Move the iterator to the BBBB page
             it++;
@@ -356,7 +381,7 @@ class BufferTests : public CxxTest::TestSuite
             itBlock = it->mBegin();
 
             // The block should contain all B's
-            TS_ASSERT_EQUALS( itBlock->mGetBytes(0,10) , "CCCCCCCCCC" );
+            TS_ASSERT_EQUALS( itBlock->mBytes(0,10) , "CCCCCCCCCC" );
 
         }
 };

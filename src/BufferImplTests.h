@@ -149,7 +149,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( block->mSize() , 20 );
 
             // Truncate the block starting a pos 10,
-            newBlock = block->mDeleteBytes(10, BufferImpl::nPos);
+            newBlock = block->mDeleteBytes(10, nPos);
 
             // The returning block should have the last 10 bytes of data
             TS_ASSERT_EQUALS( newBlock->mBytes(), "DDDDDZZZZZ" );
@@ -195,7 +195,8 @@ class BufferTests : public CxxTest::TestSuite
         // Create a page of data
         // --------------------------------
         void testmCreatePage( void ) {
-            
+            Attributes attr;
+
             Block* block = new Block();
             Page page;
 
@@ -263,6 +264,7 @@ class BufferTests : public CxxTest::TestSuite
 
             // The iterator should point to the last block on the page
             TS_ASSERT_EQUALS( it->mBytes() , "111112222233333444445555566666" );
+            TS_ASSERT_EQUALS( page.mSize() , 30 );
 
             TS_ASSERT_EQUALS( page.mBlockCount() , 1 );
 
@@ -270,13 +272,14 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( page.mSize() , 30 );
 
             // Split the block 
-            Block* newBlock = page.mSplitBlock( it, 20, BufferImpl::nPos );
+            Block* newBlock = page.mSplitBlock( it, 20, nPos );
 
             TS_ASSERT_EQUALS( page.mBlockCount() , 1 );
            
             // Iterator still points to the old block
             TS_ASSERT_EQUALS( it->mBytes() , "11111222223333344444" );
             TS_ASSERT_EQUALS( it->mSize() , 20 );
+            TS_ASSERT_EQUALS( page.mSize() , 20 );
 
             // Insert the block before our current blocks position
             Block::Iterator itNew = page.mInsertBlock( it, newBlock );
@@ -286,33 +289,35 @@ class BufferTests : public CxxTest::TestSuite
             // Iterator still points to the old block
             TS_ASSERT_EQUALS( it->mBytes() , "11111222223333344444" );
             TS_ASSERT_EQUALS( it->mSize() , 20 );
+            TS_ASSERT_EQUALS( page.mSize() , 30 );
 
             // New Iterator points to the Newly inserted block
             TS_ASSERT_EQUALS( itNew->mBytes() , "5555566666" );
             TS_ASSERT_EQUALS( itNew->mSize() , 10 );
            
-            //TODO: Tests for insertBytes and deleteBytes
+            // Insert Some text into the current block
+            TS_ASSERT_EQUALS( page.mInsertBytes( it, 5, STR( "QQQQQWWWWW" ), attr ), 10 );  
+
+            // Inserted text should appear
+            TS_ASSERT_EQUALS( it->mBytes() , "11111QQQQQWWWWW222223333344444" );
+            TS_ASSERT_EQUALS( it->mSize() , 30 );
+            TS_ASSERT_EQUALS( page.mSize() , 40 );
+          
+            // Delete 5 bytes starting at position 20 in the block
+            newBlock = page.mDeleteBytes( it, 20, 5 );
+
+            // The block of bytes deleted
+            TS_ASSERT_EQUALS( newBlock->mBytes() , "33333" );
             
+            TS_ASSERT_EQUALS( it->mBytes() , "11111QQQQQWWWWW2222244444" );
+            TS_ASSERT_EQUALS( it->mSize() , 25 );
+            TS_ASSERT_EQUALS( page.mSize() , 35 );
+
+            delete newBlock;
         }
 
 };
 /*
-        // --------------------------------
-        // Helper method to create a block of data
-        // --------------------------------
-        //Block createBlock( int intSize , char charByte ) {
-            Block* block = new Block;
-
-            char* arrBlockData = new char[ intSize ];
-            memset(arrBlockData, charByte, intSize);
-
-            block->mSetBytes( STR( arrBlockData, intSize ) );
-
-            delete arrBlockData;
-
-            return block;
-        }
-
         // --------------------------------
         // 
         // --------------------------------
@@ -384,6 +389,22 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( itBlock->mBytes(0,10) , "CCCCCCCCCC" );
 
         }
+        // --------------------------------
+        // Helper method to create a block of data
+        // --------------------------------
+        //Block createBlock( int intSize , char charByte ) {
+            Block* block = new Block;
+
+            char* arrBlockData = new char[ intSize ];
+            memset(arrBlockData, charByte, intSize);
+
+            block->mSetBytes( STR( arrBlockData, intSize ) );
+
+            delete arrBlockData;
+
+            return block;
+        }
+
 };
         */
 

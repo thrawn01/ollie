@@ -130,7 +130,7 @@ namespace BufferImpl {
             Block::Iterator   mAppendBlock( Block* );
             Block::Iterator   mDeleteBlock( const Block::Iterator& ) ;
             Block*            mSplitBlock( const Block::Iterator&, int, int ) ;
-            int               mInsertBytes( Block::Iterator& , int, ByteArray& , Attributes &attr );
+            int               mInsertBytes( Block::Iterator& , int, const ByteArray& , Attributes &attr );
             Block*            mDeleteBytes( const Block::Iterator& , int, int );
             void              mSetTargetSize( OffSet const offSize ) { _offTargetPageSize = offSize; }
             OffSet            mTargetSize( void ) const { return _offTargetPageSize; }

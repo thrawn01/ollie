@@ -148,7 +148,7 @@ namespace BufferImpl {
     }
 
     //TODO: Should inserts return a new iterator or just the bytes inserted?
-    int Page::mInsertBytes( Block::Iterator& itBlock , int intPos , ByteArray& arrBytes , Attributes &attr ) {
+    int Page::mInsertBytes( Block::Iterator& itBlock , int intPos , const ByteArray& arrBytes , Attributes &attr ) {
 
         // If the attr is NOT the same as 
         // the block we are inserting into

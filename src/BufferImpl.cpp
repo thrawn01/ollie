@@ -116,14 +116,19 @@ namespace BufferImpl {
 
     }
 
-    Block::Iterator Page::mInsertBlock( const Block::Iterator& it, Block* block ) {
+    int Page::mInsertBlock( Block::Iterator& it, Block* block ) {
 
         // Record Incr the Cur size of our page
         _offPageSize += block->mSize();
 
         // insert the block to our page and 
         // return an iterator to the inserted element
-        return _blockContainer.insert( it, block ); 
+        it.it = _blockContainer.insert( it.it, block ); 
+
+        // Update the pos
+        it.intPos = block->mSize();
+
+        return block->mSize();
     }
 
     Block* Page::mSplitBlock( const Block::Iterator& itBlock, int intPos, int intLen ) {

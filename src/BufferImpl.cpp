@@ -86,61 +86,103 @@ namespace BufferImpl {
     // ---------- Page Methods ----------
 
     /********************************************/
-    
-    Block::Iterator Page::mAppendBlock( Block* block ) {
-        
-        // Add the block to our page
-        _blockContainer.push_back( block ); 
-       
-        // Record Incr the Cur size of our page
-        _offPageSize += block->mSize();
 
-        // Return an iterator to the last element
-        return --(_blockContainer.end());
+    //TODO: This method needs to return the block that was deleted
+    int Page::mDeleteBlock( Block::Iterator& itBlock ) {
+        assert( itBlock.page == this );
 
-    }
+        // If this is the only block in the page
+        if( itBlock == mLast() and itBlock == mFirst() ) {
+            // Record the size of the deleted block
+            int intLen = itBlock->mSize();
+            // Clear the block
+            itBlock->mClear()
+            // Update the page size
+            _offPageSize -= intLen;
+            // And reset our pos
+            itBlock.intPos = 0;
 
-    Block::Iterator Page::mDeleteBlock( const Block::Iterator& itBlock ) {
-
-        // Can't delete non-existant block
-        if( itBlock == mEnd() ) {
-            return itBlock;
+            return intLen;
         }
 
+        // Record the size of the deleted block
+        int intLen = itBlock->mSize();
         // Shrink the size of the page by the block size removed
-        _offPageSize -= itBlock->mSize();
+        _offPageSize -= intLen;
 
         // Remove this block from the container and return an 
         // iterator to the block after the one we deleted
-        return _blockContainer.erase( itBlock );
+        itBlock.it = _blockContainer.erase( itBlock.it );
 
+        // If our iterator points to the last block in the page
+        if( itBlock == mLast() ) {
+            // Then pos should point to the end of the page
+            itBlock.intPos = itBlock->mSize();
+
+            return intLen;
+        }
+
+        // Update the pos 
+        itBlock.intPos = 0;
+        
+        return intLen;
     }
 
-    int Page::mInsertBlock( Block::Iterator& it, Block* block ) {
+    int Page::mInsertBlock( Block::Iterator& itBlock, Block* block ) {
+        assert( itBlock.page == this );
+
+        // If this is the only block in the page
+        if( itBlock == mLast() and itBlock == mFirst() ) {
+            // Erase the empty block
+            _blockContainer.erase( itBlock.it );
+            // Insert the new block
+            _blockContainer.push_back( block );
+            // Assign the iterator to the last block in the page
+            itBlock.it = ( --_blockContainer.end() ); 
+        }else {
+            // If our iterator points to the end of the page
+            if( itBlock == mLast() ) {
+                // Append the block 
+                _blockContainer.push_back( block ); 
+                // Assign the iterator to the last block in the page
+                itBlock.it = ( --_blockContainer.end() ); 
+            }else {
+                // If the intPos points to the end of the block
+                if( itBlock.intPos == itBlock->mSize() ) {
+                    // Insert the block after this block
+                    itBlock.it = _blockContainer.insert( ++itBlock.it, block ); 
+                } else { 
+                    // Insert the block
+                    itBlock.it = _blockContainer.insert( itBlock.it, block ); 
+                }
+            }
+        }
 
         // Record Incr the Cur size of our page
         _offPageSize += block->mSize();
-
-        // insert the block to our page and 
-        // return an iterator to the inserted element
-        it.it = _blockContainer.insert( it.it, block ); 
-
-        // Update the pos
-        it.intPos = block->mSize();
+        // Update the pos to the end of the block
+        itBlock.intPos = block->mSize();
 
         return block->mSize();
     }
 
-    Block* Page::mSplitBlock( const Block::Iterator& itBlock, int intPos, int intLen ) {
-        return mDeleteBytes( itBlock, intPos, intLen );
+    void Page::mSplitBlock( Block::Iterator& itBlock ) {
+        assert( itBlock.page == this );
+        
+        // Refuse to split at the begining or end of a block
+        if( itBlock.intPos == 0 or itBlock.intPos == itBlock->mSize() ) return;
+        // Split the block of text starting 0 and ending at intPos
+        Block* newBlock = itBlock->mDeleteBytes( 0 , itBlock.intPos );
+        // Grab the attributes from the original block
+        newBlock->mSetAttributes( itBlock->mAttributes() );
+        // Insert the block just before the current block
+        mInsertBlock( itBlock, newBlock );
+
     }
 
-    Block* Page::mDeleteBytes( const Block::Iterator& itBlock, int intPos, int intLen ) {
-
-        // Can't split non-existant block
-        if( itBlock == mEnd() ) {
-            return new Block();
-        }
+    //TODO: Deleting X num bytes might mean deleting multiple blocks
+    Block* Page::mDeleteBytes( Block::Iterator& itBlock, int intLen ) {
+        assert( itBlock.page == this );
 
         // Split the block of text
         Block* newBlock = itBlock->mDeleteBytes( intPos, intLen );
@@ -153,26 +195,28 @@ namespace BufferImpl {
     }
 
     //TODO: Should inserts return a new iterator or just the bytes inserted?
-    int Page::mInsertBytes( Block::Iterator& itBlock , int intPos , const ByteArray& arrBytes , Attributes &attr ) {
+    int Page::mInsertBytes( Block::Iterator& itBlock, const ByteArray& arrBytes , Attributes &attr ) {
+        assert( itBlock.page == this );
 
         // If the attr is NOT the same as 
         // the block we are inserting into
         if( itBlock->mAttributes() != attr ) {
             // Split the block on the point where our insert is 2 happen
-            Block* splitBlock = mSplitBlock( itBlock, 0, intPos );
-            // Insert the part we split right before the block we split
-            mInsertBlock( itBlock, splitBlock );
+            mSplitBlock( itBlock );
             // Insert the new block with our data and attributes
             // We want the iterator to point to the new block
-            itBlock = mInsertBlock( itBlock, new Block( arrBytes, attr ) );
+            mInsertBlock( itBlock, new Block( arrBytes, attr ) );
 
             return arrBytes.mSize();
         }
 
         // Insert the data into the block
         int intLen = itBlock->mInsertBytes( intPos, arrBytes );
+
         // Update the page size
         _offPageSize += intLen;
+        // Update the pos
+        itBlock.intPos += intLen;
 
         return intLen;
     }

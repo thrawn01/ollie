@@ -101,14 +101,25 @@ namespace BufferImpl {
     class ChangeSet {
 
         public:
-            ChangeSet( void ) { };
+            ChangeSet( void ) : _intSize(0) { };
              ~ChangeSet( void ) { };
             
-             int        mBlockCount() { return _blockContainer.size(); }
-             void       mPushBlock( Block* block ) { _blockContainer.push_front( block ); } 
-             Block*     mPopBlock( void ) { try{ return _blockContainer.pop_front() }catch(...){ return 0; } }
+             int        mSize() { return _intSize; }
+             int        mCount() { return _blockContainer.size(); }
+             void       mPush( Block* block ) { 
+                            _intSize += block->mSize();
+                            _blockContainer.push_front( block ); 
+                        }
+             Block*     mPop( void ) { 
+                            try{ 
+                                Block* block =  _blockContainer.release_front(); 
+                                _intSize -= block->mSize();
+                                return block;
+                            }
+                            catch(...){ return 0; } }
 
              boost::ptr_list<Block> _blockContainer;
+             int                    _intSize;
     };
     typedef std::auto_ptr<ChangeSet> ChangeSetPtr;
 
@@ -141,10 +152,10 @@ namespace BufferImpl {
                               }
 
             int               mInsertBlock( Block::Iterator&, BlockPtr );
-            ChangeSetPtr      mDeleteBlock( Block::Iterator& ) ;
+            ChangeSet*        mDeleteBlock( Block::Iterator& ) ;
             void              mSplitBlock( const Block::Iterator& ) ;
             int               mInsertBytes( Block::Iterator& , int, const ByteArray& , Attributes &attr );
-            ChangeSetPtr      mDeleteBytes( const Block::Iterator& , int, int );
+            ChangeSet*        mDeleteBytes( const Block::Iterator& , int, int );
             void              mSetTargetSize( OffSet const offSize ) { _offTargetPageSize = offSize; }
             OffSet            mTargetSize( void ) const { return _offTargetPageSize; }
             void              mSetFileOffSet( OffSet const offset ) { _offFileStart = offset; }

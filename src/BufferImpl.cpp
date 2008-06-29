@@ -88,21 +88,22 @@ namespace BufferImpl {
     /********************************************/
 
     //TODO: This method needs to return the block that was deleted
-    int Page::mDeleteBlock( Block::Iterator& itBlock ) {
+    ChangeSet*  Page::mDeleteBlock( Block::Iterator& itBlock ) {
         assert( itBlock.page == this );
+        ChangeSetPtr changeSet = new ChangeSet;
 
         // If this is the only block in the page
         if( itBlock == mLast() and itBlock == mFirst() ) {
             // Record the size of the deleted block
             int intLen = itBlock->mSize();
-            // Clear the block
-            itBlock->mClear()
+            // Replace the current block with an empty one
+            changeSet->mPush( _blockContainer.replace( mFirst() , new Block ) );
             // Update the page size
             _offPageSize -= intLen;
             // And reset our pos
             itBlock.intPos = 0;
 
-            return intLen;
+            return changeSet.release();
         }
 
         // Record the size of the deleted block
@@ -110,6 +111,9 @@ namespace BufferImpl {
         // Shrink the size of the page by the block size removed
         _offPageSize -= intLen;
 
+        //TODO: THRAWN, How do we release and erase to get a new
+        //iterator to the previous block?
+        
         // Remove this block from the container and return an 
         // iterator to the block after the one we deleted
         itBlock.it = _blockContainer.erase( itBlock.it );
@@ -119,13 +123,13 @@ namespace BufferImpl {
             // Then pos should point to the end of the page
             itBlock.intPos = itBlock->mSize();
 
-            return intLen;
+            return changeSet.release();
         }
 
         // Update the pos 
         itBlock.intPos = 0;
         
-        return intLen;
+        return changeSet.release();
     }
 
     int Page::mInsertBlock( Block::Iterator& itBlock, Block* block ) {

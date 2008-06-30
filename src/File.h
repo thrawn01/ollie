@@ -30,15 +30,19 @@
 class Attributes {
 
     public:
-        Attributes() { }
+        Attributes( void ) : _intValue(0) { }
+        Attributes( int intValue ) : _intValue(intValue) { }
         ~Attributes() { }
-        Attributes( const Attributes &a ) { }
+        Attributes( const Attributes &a ) : _intValue(a._intValue) { }
         int operator==( const Attributes &right ) const {
-            return 1;
-        }
-        int operator!=( const Attributes &right ) const {
+            if( _intValue == right._intValue ) return 1;
             return 0;
         }
+        int operator!=( const Attributes &right ) const {
+            if( _intValue != right._intValue ) return 1;
+            return 0;
+        }
+        int _intValue;
 };
 
 /*! 

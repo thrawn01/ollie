@@ -92,7 +92,7 @@ class BufferTests : public CxxTest::TestSuite
         void testmCreateBlock( void ) {
 
             // Create a new block of data
-            Block* block = new Block();
+            BlockPtr block( new Block() );
 
             // Should be empty
             TS_ASSERT_EQUALS( block->mIsEmpty(), true );
@@ -132,15 +132,13 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( block->mSize() , 35 );
 
             // Delete the bytes from this block and return a new block
-            Block* newBlock = block->mDeleteBytes(0,15);
+            BlockPtr newBlock( block->mDeleteBytes(0,15) );
 
             // The returning block should have the first 15 bytes of data
             TS_ASSERT_EQUALS( newBlock->mBytes(), "12345AAAAABBBBB" );
 
             // Ensure the size is correct
             TS_ASSERT_EQUALS( newBlock->mSize() , 15 );
-
-            delete newBlock;
 
             // The remaining blocks still be in the original block
             TS_ASSERT_EQUALS( block->mBytes(), "GGGGGCCCCCDDDDDZZZZZ" );
@@ -149,7 +147,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( block->mSize() , 20 );
 
             // Truncate the block starting a pos 10,
-            newBlock = block->mDeleteBytes(10, nPos);
+            newBlock = BlockPtr( block->mDeleteBytes(10, nPos) );
 
             // The returning block should have the last 10 bytes of data
             TS_ASSERT_EQUALS( newBlock->mBytes(), "DDDDDZZZZZ" );
@@ -169,36 +167,71 @@ class BufferTests : public CxxTest::TestSuite
             // Block should now be empty
             TS_ASSERT_EQUALS( block->mIsEmpty(), true )
 
-            delete newBlock;
-            delete block;
+        }
+
+        // --------------------------------
+        // Test Change set class
+        // --------------------------------
+        void testChangeSet( void ) {
+
+            ChangeSetPtr changeSet( new ChangeSet() );
+
+            // Push a deleted block into the change set
+            changeSet->mPush( new Block( STR("AAAAABBBBBCCCCC") ) );
+            // Number of bytes in the change set
+            TS_ASSERT_EQUALS( changeSet->mSize(), 15 );
+            // Only 1 Block in the change set
+            TS_ASSERT_EQUALS( changeSet->mCount(), 1 );
+            // This change set does not represent an insert operation
+            TS_ASSERT_EQUALS( changeSet->mIsInsert(), false );
+            // The first block in the change set contains our data
+            TS_ASSERT_EQUALS( changeSet->mPeek()->mBytes(), "AAAAABBBBBCCCCC" );
+
+            changeSet->mPush( new Block( STR("EEEEEFFFFFGGGGG") ) );
+            TS_ASSERT_EQUALS( changeSet->mSize(), 30 );
+            TS_ASSERT_EQUALS( changeSet->mCount(), 2 );
+            TS_ASSERT_EQUALS( changeSet->mPeek()->mBytes(), "EEEEEFFFFFGGGGG" );
+
+            // Pop off the last block in the change set
+            BlockPtr block( changeSet->mPop() );
+
+            // Change size decrements
+            TS_ASSERT_EQUALS( changeSet->mSize(), 15 );
+            TS_ASSERT_EQUALS( changeSet->mCount(), 1 );
+
+            TS_ASSERT_EQUALS( block->mBytes(), "EEEEEFFFFFGGGGG" );
+
+            BlockPtr firstBlock( changeSet->mPop() );
+            TS_ASSERT_EQUALS( firstBlock->mBytes(), "AAAAABBBBBCCCCC" );
+
+            TS_ASSERT_EQUALS( changeSet->mSize(), 0 );
+            TS_ASSERT_EQUALS( changeSet->mCount(), 0 );
+
+            // Trying to pop an empty changeset returns null
+            TS_ASSERT( changeSet->mPop() == 0 );
+
+            // The change set represents a insert range
+            changeSet->mSetInsert( 50000, 50 );
+
+            TS_ASSERT_EQUALS( changeSet->mSize(), 50 );
+            TS_ASSERT_EQUALS( changeSet->mOffSet(), 50000 );
+            TS_ASSERT_EQUALS( changeSet->mCount(), 0 );
+            TS_ASSERT_EQUALS( changeSet->mIsInsert(), true );
 
         }
 
         // --------------------------------
-        // Assign Attributes to a block TODO: Finish this
+        // Test Insert and Delete Block
         // --------------------------------
-        void testmAssignAttributesBlock( void ) {
-
-            // Create a new block of data
-            Block* block = new Block();
-
-            // Assign some data to the block
-            block->mSetBytes( STR( "This is a test" ) );
-
-            //TODO
-            //block->mSetAttributes( attr );
-
-            delete block;
-        }
-
-        // --------------------------------
-        // Create a page of data
-        // --------------------------------
-        void testmCreatePage( void ) {
-            Attributes attr;
-
-            Block* block = new Block();
+        void testInsertDeleteBlock( void ) {
             Page page;
+
+            // Get an iterator to the begining of the page
+            Block::Iterator it = page.mFirst();
+
+            // First and last should point to the same block
+            TS_ASSERT( it == page.mFirst() );
+            TS_ASSERT( it == page.mLast() );
 
             // Set the max page size
             page.mSetTargetSize( 50 );
@@ -206,34 +239,75 @@ class BufferTests : public CxxTest::TestSuite
             // The max page size should be 50 bytes
             TS_ASSERT_EQUALS( page.mTargetSize( ), 50 );
 
-            // Assign some data to the block
-            block->mSetBytes( STR("AAAAABBBBBCCCCCDDDDD") );
-          
-            // Add the block to the page
-            Block::Iterator it = page.mAppendBlock( block );
-
-            // Verify the data is there
-            TS_ASSERT_EQUALS( it->mBytes(), "AAAAABBBBBCCCCCDDDDD" );
-
-            // Page size should be 20
+            // Insert the block into an empty page
+            TS_ASSERT_EQUALS( page.mInsertBlock( it, new Block( STR("EEEEEFFFFFGGGGGHHHHH") ) ) , 20 );
+            
+            TS_ASSERT_EQUALS( page.mCount() , 1 );
             TS_ASSERT_EQUALS( page.mSize() , 20 );
+            TS_ASSERT_EQUALS( it->mBytes(), "EEEEEFFFFFGGGGGHHHHH" );
 
             // Page should not be full
             TS_ASSERT_EQUALS( page.mIsFull(), false );
 
+            // Iterator should point to the end of the page
+            TS_ASSERT( it == page.mLast() );
+            TS_ASSERT( it != page.mFirst() );
+
+            // Delete the block just inserted
+            Block* block = page.mDeleteBlock( it );
+            delete block;
+            TS_ASSERT_EQUALS( page.mCount() , 1 );
+            TS_ASSERT_EQUALS( page.mSize() , 0 );
+
+            // Delete block on an empty page
+            block = page.mDeleteBlock( it );
+
+            TS_ASSERT_EQUALS( block->mSize(), 0 );
+            delete block;
+
+            TS_ASSERT_EQUALS( page.mCount() , 1 );
+            TS_ASSERT_EQUALS( page.mSize() , 0 );
+
+            TS_ASSERT( it == page.mFirst() );
+            TS_ASSERT( it == page.mLast() );
+
+            // Insert 4 blocks
+            TS_ASSERT_EQUALS( page.mInsertBlock( it, new Block( STR("AAAAABBBBBCCCCCDDDDD") ) ), 20 );
+            TS_ASSERT_EQUALS( page.mInsertBlock( it, new Block( STR("AAAAABBBBBCCCCCDDDDD") ) ), 20 );
+            TS_ASSERT_EQUALS( page.mInsertBlock( it, new Block( STR("EEEEEFFFFFGGGGGHHHHH") ) ), 20 );
+            TS_ASSERT_EQUALS( page.mInsertBlock( it, new Block( STR("EEEEEFFFFFGGGGGHHHHH") ) ), 20 );
+            TS_ASSERT_EQUALS( page.mCount() , 4 );
+            TS_ASSERT_EQUALS( page.mSize() , 80 );
+
+            // Delete the last block on the page
+            block = page.mDeleteBlock( it );
+            delete block;
+            TS_ASSERT( it == page.mLast() );
+            TS_ASSERT_EQUALS( page.mCount() , 3 );
+            TS_ASSERT_EQUALS( page.mSize() , 60 );
+
+            // Delete the first block on the page
+            it == page.mFirst();
+            block = page.mDeleteBlock( it );
+            delete block;
+            TS_ASSERT( it == page.mFirst() );
+            TS_ASSERT_EQUALS( page.mCount() , 2 );
+            TS_ASSERT_EQUALS( page.mSize() , 40 );
+
             // Page should accept 1 more bytes
             TS_ASSERT_EQUALS( page.mCanAcceptBytes( 1 ), true );
 
-            // Page should accept 30 more bytes
-            TS_ASSERT_EQUALS( page.mCanAcceptBytes( 30 ), true );
+            // Page should accept 5 more bytes
+            TS_ASSERT_EQUALS( page.mCanAcceptBytes( 5 ), true );
 
-            // Page should NOT accept 100 more bytes
-            TS_ASSERT_EQUALS( page.mCanAcceptBytes( 100 ), false );
+            // Page should NOT accept 15 more bytes
+            TS_ASSERT_EQUALS( page.mCanAcceptBytes( 15 ), false );
 
-            // Add new block to the page
-            page.mAppendBlock( new Block( STR( "111112222233333444445555566666" ) ) );
-            
-            // Page size should be 50
+            // Insert 1 block at the begining of the page
+            it == page.mFirst();
+            TS_ASSERT_EQUALS( page.mInsertBlock( it, new Block( STR("1111122222") ) ), 10 );
+
+            TS_ASSERT_EQUALS( page.mCount() , 3 );
             TS_ASSERT_EQUALS( page.mSize() , 50 );
 
             // Page should be full
@@ -242,78 +316,218 @@ class BufferTests : public CxxTest::TestSuite
             // Page should NOT accept 1 more byte
             TS_ASSERT_EQUALS( page.mCanAcceptBytes( 1 ), false );
 
-            // Verify we can iterate thru the blocks in the page
-            it = page.mBegin();
+            // Ensure our data is there
+            TS_ASSERT_EQUALS( page.mGetUtf8String( page.mFirst(), 50 ), "1111122222AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHH" );
 
-            // Verify the data is there
-            TS_ASSERT_EQUALS( it->mBytes(), "AAAAABBBBBCCCCCDDDDD" );
+            }
 
-            // Go to the next block on the page
-            ++it;
+        // --------------------------------
+        // Test Block Iterator movement
+        // --------------------------------
+        void testNextPrevBlockIterator( void ) {
+            Page page;
 
-            TS_ASSERT_EQUALS( it->mBytes() , "111112222233333444445555566666" );
+            Block::Iterator it = page.mLast();
 
-            // Go back to the first block on the page
-            --it; 
+            // Can't move around an empty page
+            TS_ASSERT_EQUALS( page.mPrevBlock( it ), 0 );
+            TS_ASSERT_EQUALS( page.mNextBlock( it ), 0 );
 
-            // Page should contain 2 blocks
-            TS_ASSERT_EQUALS( page.mBlockCount() , 2 );
-            
-            // Delete the first block
-            it = page.mDeleteBlock( it );
+            // Add new block to the end of the page
+            TS_ASSERT_EQUALS( page.mInsertBlock( it, new Block( STR("AAAAABBBBBCCCCCDDDDD") ) ), 20 );
+            TS_ASSERT_EQUALS( page.mInsertBlock( it, new Block( STR("EEEEEFFFFFGGGGGHHHHH") ) ), 20 );
+            TS_ASSERT_EQUALS( page.mInsertBlock( it, new Block( STR("1111122222333334444455555") ) ), 25 );
+            TS_ASSERT_EQUALS( page.mInsertBlock( it, new Block( STR("6666677777888889999900000") ) ), 25 );
+            TS_ASSERT_EQUALS( page.mCount() , 4 );
+            TS_ASSERT_EQUALS( page.mSize() , 90 );
 
-            // The iterator should point to the last block on the page
-            TS_ASSERT_EQUALS( it->mBytes() , "111112222233333444445555566666" );
-            TS_ASSERT_EQUALS( page.mSize() , 30 );
+            // Verify we can iterate thru blocks
+            it = page.mFirst();
+            TS_ASSERT_EQUALS( it->mBytes() , "AAAAABBBBBCCCCCDDDDD" );
+            TS_ASSERT_EQUALS( it.intPos , 0 );
 
-            TS_ASSERT_EQUALS( page.mBlockCount() , 1 );
+            // use Next to iterate thru all the blocks
+            TS_ASSERT_EQUALS( page.mNextBlock( it ), 1 );
+            TS_ASSERT_EQUALS( it->mBytes() , "EEEEEFFFFFGGGGGHHHHH" );
+            TS_ASSERT_EQUALS( it.intPos , 0 );
+            TS_ASSERT_EQUALS( page.mNextBlock( it ), 1 );
+            TS_ASSERT_EQUALS( it->mBytes() , "1111122222333334444455555" );
+            TS_ASSERT_EQUALS( it.intPos , 0 );
+            TS_ASSERT_EQUALS( page.mNextBlock( it ), 1 );
+            TS_ASSERT_EQUALS( it->mBytes() , "6666677777888889999900000" );
+            TS_ASSERT_EQUALS( it.intPos , 0 );
 
-            // Page size should be 30
-            TS_ASSERT_EQUALS( page.mSize() , 30 );
+            // Can't move past the last block on the page
+            TS_ASSERT_EQUALS( page.mNextBlock( it ), 0 );
+            TS_ASSERT_EQUALS( it->mBytes() , "6666677777888889999900000" );
+            TS_ASSERT_EQUALS( it.intPos , 0 );
 
-            // Split the block 
-            Block* newBlock = page.mSplitBlock( it, 20, nPos );
+            // We are pointing to the last block in the page
+            TS_ASSERT( it.it == page.mLast().it );
 
-            TS_ASSERT_EQUALS( page.mBlockCount() , 1 );
-           
-            // Iterator still points to the old block
-            TS_ASSERT_EQUALS( it->mBytes() , "11111222223333344444" );
-            TS_ASSERT_EQUALS( it->mSize() , 20 );
-            TS_ASSERT_EQUALS( page.mSize() , 20 );
+            // use Prev to iterate back thru all the blocks
+            TS_ASSERT_EQUALS( page.mPrevBlock( it ), 1 );
+            TS_ASSERT_EQUALS( it->mBytes() , "1111122222333334444455555" );
+            TS_ASSERT_EQUALS( it.intPos , 25 );
+            TS_ASSERT_EQUALS( page.mPrevBlock( it ), 1 );
+            TS_ASSERT_EQUALS( it->mBytes() , "EEEEEFFFFFGGGGGHHHHH" );
+            TS_ASSERT_EQUALS( it.intPos , 20 );
+            TS_ASSERT_EQUALS( page.mPrevBlock( it ), 1 );
+            TS_ASSERT_EQUALS( it->mBytes() , "AAAAABBBBBCCCCCDDDDD" );
+            TS_ASSERT_EQUALS( it.intPos , 20 );
 
-            // Insert the block before our current blocks position
-            Block::Iterator itNew = page.mInsertBlock( it, newBlock );
+            // We are pointing to the first block in the page
+            TS_ASSERT( it.it == page.mFirst().it );
+        }
 
-            TS_ASSERT_EQUALS( page.mBlockCount() , 2 );
+        // --------------------------------
+        // Test Insert and Delete Block
+        // --------------------------------
+        void testInsertDelete( void ) {
+            Page page;
+            ChangeSet* changeSet;
 
-            // Iterator still points to the old block
-            TS_ASSERT_EQUALS( it->mBytes() , "11111222223333344444" );
-            TS_ASSERT_EQUALS( it->mSize() , 20 );
-            TS_ASSERT_EQUALS( page.mSize() , 30 );
+            // Get an iterator to the begining of the page
+            Block::Iterator it = page.mFirst();
 
-            // New Iterator points to the Newly inserted block
-            TS_ASSERT_EQUALS( itNew->mBytes() , "5555566666" );
-            TS_ASSERT_EQUALS( itNew->mSize() , 10 );
-           
-            // Insert Some text into the current block
-            TS_ASSERT_EQUALS( page.mInsertBytes( it, 5, STR( "QQQQQWWWWW" ), attr ), 10 );  
+            // First and last should point to the same block
+            TS_ASSERT( it == page.mFirst() );
+            TS_ASSERT( it == page.mLast() );
 
-            // Inserted text should appear
-            TS_ASSERT_EQUALS( it->mBytes() , "11111QQQQQWWWWW222223333344444" );
-            TS_ASSERT_EQUALS( it->mSize() , 30 );
+            // Insert some text
+            TS_ASSERT_EQUALS( page.mInsertBytes( it, STR("EEEEEFFFFFGGGGGHHHHH"), Attributes(1) ), 20 );
+
+            TS_ASSERT( it != page.mFirst() );
+            TS_ASSERT( it == page.mLast() );
+
+            it = page.mFirst();
+
+            TS_ASSERT_EQUALS( page.mGetUtf8String( it, 20 ), "EEEEEFFFFFGGGGGHHHHH" );
+
+            // Delete everything in the page
+            changeSet = page.mDeleteBytes( it, page.mLast() );
+            delete changeSet;
+
+            TS_ASSERT_EQUALS( page.mCount() , 1 );
+            TS_ASSERT_EQUALS( page.mSize() , 0 );
+            TS_ASSERT_EQUALS( page.mGetUtf8String( it, 10 ), "" );
+
+            // Try to delete an empty page
+            changeSet = page.mDeleteBytes( it, page.mLast() );
+            TS_ASSERT_EQUALS( changeSet->mSize(), 0 );
+            delete changeSet;
+
+            TS_ASSERT_EQUALS( page.mCount() , 1 );
+            TS_ASSERT_EQUALS( page.mSize() , 0 );
+            TS_ASSERT_EQUALS( page.mGetUtf8String( it, 10 ), "" );
+
+            TS_ASSERT( it == page.mFirst() );
+            TS_ASSERT( it == page.mLast() );
+
+            TS_ASSERT_EQUALS( page.mInsertBytes( it, STR("AAAAABBBBBCCCCCDDDDD"), Attributes(1) ), 20 );
+            TS_ASSERT_EQUALS( page.mInsertBytes( it, STR("EEEEEFFFFFGGGGGHHHHH"), Attributes(2) ), 20 );
+            TS_ASSERT_EQUALS( page.mCount() , 2 );
             TS_ASSERT_EQUALS( page.mSize() , 40 );
-          
-            // Delete 5 bytes starting at position 20 in the block
-            newBlock = page.mDeleteBytes( it, 20, 5 );
+            TS_ASSERT_EQUALS( page.mGetUtf8String( page.mFirst(), 40 ), "AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHH" );
 
-            // The block of bytes deleted
-            TS_ASSERT_EQUALS( newBlock->mBytes() , "33333" );
-            
-            TS_ASSERT_EQUALS( it->mBytes() , "11111QQQQQWWWWW2222244444" );
-            TS_ASSERT_EQUALS( it->mSize() , 25 );
+            TS_ASSERT( it == page.mLast() );
+
+            // Move back 10 bytes
+            page.mPrev( it, 10 );
+
+            // Delete the last 10 bytes from the page
+            changeSet = page.mDeleteBytes( it, 10 );
+            TS_ASSERT_EQUALS( changeSet->mSize(), 10 );
+            delete changeSet;
+
+            TS_ASSERT( it == page.mLast() );
+            TS_ASSERT_EQUALS( page.mSize() , 30 );
+
+            it == page.mFirst();
+            // Delete the first 5 bytes from the page
+            changeSet = page.mDeleteBytes( it, 5 );
+            TS_ASSERT_EQUALS( changeSet->mSize(), 5 );
+            delete changeSet;
+
+            TS_ASSERT_EQUALS( page.mSize() , 25 );
+
+            // Insert bytes at the begining of the page
+            it == page.mFirst();
+            TS_ASSERT_EQUALS( page.mInsertBytes( it, STR("1111122222"), Attributes(1) ), 10 );
             TS_ASSERT_EQUALS( page.mSize() , 35 );
 
-            delete newBlock;
+            TS_ASSERT_EQUALS( page.mGetUtf8String( page.mFirst(), 40 ), "1111122222BBBBBCCCCCDDDDDEEEEEFFFFF" );
+
+        }
+
+        // --------------------------------
+        // Test Iterator movement
+        // --------------------------------
+        void testNextPrevIterator( void ) {
+            Page page;
+
+            Block::Iterator it = page.mLast();
+
+            // Can't move around an empty page
+            TS_ASSERT_EQUALS( page.mPrev( it, 1 ), 0 );
+            TS_ASSERT_EQUALS( page.mNext( it, 1 ), 0 );
+
+            // Add new block to the end of the page
+            TS_ASSERT_EQUALS( page.mInsertBytes( it, STR("AAAAABBBBBCCCCCDDDDD"), Attributes(1) ), 20 );
+            TS_ASSERT_EQUALS( page.mInsertBytes( it, STR("EEEEEFFFFFGGGGGHHHHH"), Attributes(2) ), 20 );
+            TS_ASSERT_EQUALS( page.mInsertBytes( it, STR("1111122222333334444455555"), Attributes(3) ), 25 );
+            TS_ASSERT_EQUALS( page.mInsertBytes( it, STR("6666677777888889999900000"), Attributes(4) ), 25 );
+            TS_ASSERT_EQUALS( page.mInsertBytes( it, STR("ZZZZZXXXXXCCCCCVVVVVBBBBB"), Attributes(4) ), 25 );
+            TS_ASSERT_EQUALS( page.mCount() , 4 );
+            TS_ASSERT_EQUALS( page.mSize() , 115 );
+
+            // Move 10 bytes into the first block
+            TS_ASSERT_EQUALS( page.mNext( it, 10 ), 10 ); 
+            TS_ASSERT_EQUALS( page.mGetUtf8String( it, 10 ), "CCCCCDDDDD" );
+
+            // Move 10 more bytes into the second block
+            TS_ASSERT_EQUALS( page.mNext( it, 10 ), 10 ); 
+            TS_ASSERT_EQUALS( page.mGetUtf8String( it, 10 ), "EEEEEFFFFF" );
+
+            // Move 10 more bytes into the second block
+            TS_ASSERT_EQUALS( page.mNext( it, 10 ), 10 ); 
+            TS_ASSERT_EQUALS( page.mGetUtf8String( it, 10 ), "GGGGGHHHHH" );
+
+            // Make a copy of the current iterator position
+            Block::Iterator itEnd = it;
+
+            // Move back 20 bytes to the first block
+            TS_ASSERT_EQUALS( page.mPrev( it, 20 ), 20 ); 
+            TS_ASSERT_EQUALS( page.mGetUtf8String( it, 20 ), "CCCCCDDDDDEEEEEFFFFF" );
+
+            // delete 20 bytes accross 2 blocks
+            ChangeSet* changeSet = page.mDeleteBytes( it, itEnd );
+            TS_ASSERT_EQUALS( page.mGetUtf8String( it, 20 ), "GGGGGHHHHH1111122222" );
+            TS_ASSERT_EQUALS( page.mCount() , 4 );
+            TS_ASSERT_EQUALS( page.mSize() , 95 );
+
+            TS_ASSERT_EQUALS( changeSet->mSize(), 20 );
+            TS_ASSERT_EQUALS( changeSet->mCount(), 2 );
+            TS_ASSERT_EQUALS( changeSet->mPeek()->mBytes(), "EEEEEFFFFF" );
+            delete changeSet;
+
+            // Insert some bytes with the same attribute as the first block
+            TS_ASSERT_EQUALS( page.mInsertBytes( it,  STR("PPPPP"), Attributes(1) ), 5 );
+
+            // Since the first block and the inserted block have the same attr the insert
+            // should insert the bytes into the like block
+            TS_ASSERT_EQUALS( page.mFirst()->mBytes(), "AAAAABBBBBPPPPP" );
+            TS_ASSERT_EQUALS( page.mCount() , 4 );
+            TS_ASSERT_EQUALS( page.mSize() , 100 );
+
+            // Insert some bytes with different attributes
+            TS_ASSERT_EQUALS( page.mInsertBytes( it,  STR("OOOOO"), Attributes(6) ), 5 );
+           
+            // The inserted bytes should have their own block
+            TS_ASSERT_EQUALS( it->mBytes(), "OOOOO" );
+            TS_ASSERT_EQUALS( page.mCount() , 5 );
+            TS_ASSERT_EQUALS( page.mSize() , 105 );
+
         }
 
 };

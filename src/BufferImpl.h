@@ -31,6 +31,7 @@ namespace BufferImpl {
 
     class Page;
     class BlockIterator;
+    class BufferImplIterator;
 
     class ByteArray {
 
@@ -142,63 +143,45 @@ namespace BufferImpl {
     class BlockIterator { 
 
         public:
-            BlockIterator( Page* ppage, boost::ptr_list<Block>::iterator i, int pos ) 
-                         : page(ppage), it(i), intPos(pos) {}
+            BlockIterator( Page* ppage, boost::ptr_list<Block>::iterator i, int pos ) : page(ppage), it(i), intPos(pos) {}
             ~BlockIterator() {}
             
             typedef boost::ptr_list<Block>::reference Reference;
             typedef boost::ptr_list<Block>::pointer   Pointer;
 
-            void        copy( const BlockIterator &i ) {
-                            it = i.it;
-                            intPos = i.intPos;
-                            page = i.page;
-                        }
+            void            copy( const BlockIterator &i ) {
+                                it = i.it;
+                                intPos = i.intPos;
+                                page = i.page;
+                            }
 
-            Reference   operator*() const {
-                            // could be *static_cast<Pointer>( *it );
-                            return *it;
-                        }
-            Pointer     operator->() const {
-                            // could be static_cast<Pointer>( *it );
-                            return &*it;
-                        }
+            Reference       operator*() const {
+                                return *it;
+                            }
+            Pointer         operator->() const {
+                                return &*it;
+                            }
 
-            BlockIterator    operator=( const BlockIterator& i ) {
-                            if( &i != this ) copy( i );
-                            return *this;
-                        }
+            BlockIterator   operator=( const BlockIterator& i ) {
+                                if( &i != this ) copy( i );
+                                return *this;
+                            }
 
-            int         operator==( const BlockIterator& right ) const {
-                            if( this == &right ) return 1;
-                            if( it == right.it and intPos == right.intPos ) return 1;
-                            return 0;
-                        }
+            int             operator==( const BlockIterator& right ) const {
+                                if( this == &right ) return 1;
+                                if( it == right.it and intPos == right.intPos ) return 1;
+                                return 0;
+                            }
 
-            int         operator!=( const BlockIterator& right ) const {
-                            if( it != right.it and intPos != right.intPos ) return 1;
-                            return 0;
-                        }
+            int             operator!=( const BlockIterator& right ) const {
+                                if( it != right.it or intPos != right.intPos ) return 1;
+                                return 0;
+                            }
 
-            /*int         operator>( const BlockIterator& right ) const {
-                            if( page != right.page ) return 0;
-                            if( it > right.it and intPos > right.intPos ) return 1;
-                            return 0;
-                        }*/
-
-            int         mNext( int );
-
-            /*int         mNextBlock( int ) { 
-                            return _page->mNextBlock( *this, int );
-                        }
-
-            int         mPrev( int ) { 
-                            return _page->mPrev( *this, int );
-                        }
-
-            int         mPrevBlock( int ) { 
-                            return _page->mPrevBlock( *this, int );
-                        }*/
+            int             mNext( int );
+            int             mPrev( int );
+            int             mNextBlock( void );
+            int             mPrevBlock( void );
 
             boost::ptr_list<Block>::iterator it;
             int                              intPos;
@@ -208,10 +191,8 @@ namespace BufferImpl {
     // Page Rules: 
     // 1. A Page must always contain at least 1 Block
     // 2. DeleteBlock() must always leave 1 empty block 
-    // 3. InsertBlock() if the current block is empty, must replace 
+    // 3. InsertBlock()/InsertBytes() if the current block is empty, must replace 
     //    ( or insert ) the current block with the bytes and attributes
-    // 4. InsertBytes() if the current block is empty, must insert
-    //    the currrent block with the blocks and attributes
     class Page {
 
         public:
@@ -221,7 +202,7 @@ namespace BufferImpl {
                 _offFileStart   = -1; 
                 _blockContainer.push_back( new Block() ); 
             }
-             ~Page( void ) { }
+            ~Page( void ) { }
 
             typedef boost::ptr_list<Page>::iterator  Iterator;
 
@@ -232,7 +213,6 @@ namespace BufferImpl {
                                   boost::ptr_list<Block>::iterator itBlock = ( --_blockContainer.end() );
                                   return Block::Iterator( this, itBlock, itBlock->mSize() ); 
                               }
-
             int               mInsertBlock( Block::Iterator&, Block* );
             Block*            mDeleteBlock( Block::Iterator& ) ;
             void              mSplitBlock( Block::Iterator& ) ;
@@ -254,7 +234,6 @@ namespace BufferImpl {
                                   if ( _offPageSize == 0 ) return true;
                                   return false;
                               }
-
             bool              mCanAcceptBytes( OffSet offBytes ) const {
                                   if( ( offBytes + _offPageSize) > _offTargetPageSize ) return false; 
                                   return true;
@@ -263,7 +242,8 @@ namespace BufferImpl {
             int               mPrev( Block::Iterator&, int );
             int               mNextBlock( Block::Iterator& );
             int               mPrevBlock( Block::Iterator& );
-            const ByteArray&  mGetUtf8String( const Block::Iterator&, int ) { return _arrTemp; }
+            const ByteArray&  mByteArray( const Block::Iterator&, int );
+            void              mPrintPage( void );
 
             boost::ptr_list<Block>  _blockContainer;
             OffSet                  _offFileStart;
@@ -271,8 +251,6 @@ namespace BufferImpl {
             OffSet                  _offPageSize;
             ByteArray               _arrTemp;
     };
-
-    class BufferImplIterator;
 
     class BufferImpl {
 
@@ -285,7 +263,7 @@ namespace BufferImpl {
             //Iterator          mBegin() { }
             //Iterator          mEnd()   { }
 
-            void              mClearAllPages( void ) { _pageContainer.clear(); } //TODO: reset all states 
+            void              mClear( void ) { _pageContainer.clear(); } //TODO: reset all states 
 
             Iterator          mAppendPage( Page *page );
             Iterator          mInsertPage( BufferImplIterator&, Page* );

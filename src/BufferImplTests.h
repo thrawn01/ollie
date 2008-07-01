@@ -287,7 +287,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( page.mSize() , 60 );
 
             // Delete the first block on the page
-            it == page.mFirst();
+            it = page.mFirst();
             block = page.mDeleteBlock( it );
             delete block;
             TS_ASSERT( it == page.mFirst() );
@@ -317,7 +317,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( page.mCanAcceptBytes( 1 ), false );
 
             // Ensure our data is there
-            TS_ASSERT_EQUALS( page.mGetUtf8String( page.mFirst(), 50 ), "1111122222AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHH" );
+            TS_ASSERT_EQUALS( page.mByteArray( page.mFirst(), 50 ), "1111122222AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHH" );
 
             }
 
@@ -330,8 +330,8 @@ class BufferTests : public CxxTest::TestSuite
             Block::Iterator it = page.mLast();
 
             // Can't move around an empty page
-            TS_ASSERT_EQUALS( page.mPrevBlock( it ), 0 );
-            TS_ASSERT_EQUALS( page.mNextBlock( it ), 0 );
+            TS_ASSERT_EQUALS( page.mPrevBlock( it ), -1 );
+            TS_ASSERT_EQUALS( page.mNextBlock( it ), -1 );
 
             // Add new block to the end of the page
             TS_ASSERT_EQUALS( page.mInsertBlock( it, new Block( STR("AAAAABBBBBCCCCCDDDDD") ) ), 20 );
@@ -347,18 +347,18 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it.intPos , 0 );
 
             // use Next to iterate thru all the blocks
-            TS_ASSERT_EQUALS( page.mNextBlock( it ), 1 );
+            TS_ASSERT_EQUALS( page.mNextBlock( it ), 20 );
             TS_ASSERT_EQUALS( it->mBytes() , "EEEEEFFFFFGGGGGHHHHH" );
             TS_ASSERT_EQUALS( it.intPos , 0 );
-            TS_ASSERT_EQUALS( page.mNextBlock( it ), 1 );
+            TS_ASSERT_EQUALS( page.mNextBlock( it ), 20 );
             TS_ASSERT_EQUALS( it->mBytes() , "1111122222333334444455555" );
             TS_ASSERT_EQUALS( it.intPos , 0 );
-            TS_ASSERT_EQUALS( page.mNextBlock( it ), 1 );
+            TS_ASSERT_EQUALS( page.mNextBlock( it ), 25 );
             TS_ASSERT_EQUALS( it->mBytes() , "6666677777888889999900000" );
             TS_ASSERT_EQUALS( it.intPos , 0 );
 
             // Can't move past the last block on the page
-            TS_ASSERT_EQUALS( page.mNextBlock( it ), 0 );
+            TS_ASSERT_EQUALS( page.mNextBlock( it ), -1 );
             TS_ASSERT_EQUALS( it->mBytes() , "6666677777888889999900000" );
             TS_ASSERT_EQUALS( it.intPos , 0 );
 
@@ -366,13 +366,15 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT( it.it == page.mLast().it );
 
             // use Prev to iterate back thru all the blocks
-            TS_ASSERT_EQUALS( page.mPrevBlock( it ), 1 );
+            // Prev only returned 0 zero because the iterator 
+            // points to 0 on the last block after the last call to mNextBlock()
+            TS_ASSERT_EQUALS( page.mPrevBlock( it ), 0 );
             TS_ASSERT_EQUALS( it->mBytes() , "1111122222333334444455555" );
             TS_ASSERT_EQUALS( it.intPos , 25 );
-            TS_ASSERT_EQUALS( page.mPrevBlock( it ), 1 );
+            TS_ASSERT_EQUALS( page.mPrevBlock( it ), 25 );
             TS_ASSERT_EQUALS( it->mBytes() , "EEEEEFFFFFGGGGGHHHHH" );
             TS_ASSERT_EQUALS( it.intPos , 20 );
-            TS_ASSERT_EQUALS( page.mPrevBlock( it ), 1 );
+            TS_ASSERT_EQUALS( page.mPrevBlock( it ), 20 );
             TS_ASSERT_EQUALS( it->mBytes() , "AAAAABBBBBCCCCCDDDDD" );
             TS_ASSERT_EQUALS( it.intPos , 20 );
 
@@ -396,13 +398,15 @@ class BufferTests : public CxxTest::TestSuite
 
             // Insert some text
             TS_ASSERT_EQUALS( page.mInsertBytes( it, STR("EEEEEFFFFFGGGGGHHHHH"), Attributes(1) ), 20 );
+            TS_ASSERT_EQUALS( page.mCount() , 1 );
+            TS_ASSERT_EQUALS( page.mSize() , 20 );
 
             TS_ASSERT( it != page.mFirst() );
             TS_ASSERT( it == page.mLast() );
 
             it = page.mFirst();
 
-            TS_ASSERT_EQUALS( page.mGetUtf8String( it, 20 ), "EEEEEFFFFFGGGGGHHHHH" );
+            TS_ASSERT_EQUALS( page.mByteArray( it, 20 ), "EEEEEFFFFFGGGGGHHHHH" );
 
             // Delete everything in the page
             changeSet = page.mDeleteBytes( it, page.mLast() );
@@ -410,7 +414,7 @@ class BufferTests : public CxxTest::TestSuite
 
             TS_ASSERT_EQUALS( page.mCount() , 1 );
             TS_ASSERT_EQUALS( page.mSize() , 0 );
-            TS_ASSERT_EQUALS( page.mGetUtf8String( it, 10 ), "" );
+            TS_ASSERT_EQUALS( page.mByteArray( it, 10 ), "" );
 
             // Try to delete an empty page
             changeSet = page.mDeleteBytes( it, page.mLast() );
@@ -419,7 +423,7 @@ class BufferTests : public CxxTest::TestSuite
 
             TS_ASSERT_EQUALS( page.mCount() , 1 );
             TS_ASSERT_EQUALS( page.mSize() , 0 );
-            TS_ASSERT_EQUALS( page.mGetUtf8String( it, 10 ), "" );
+            TS_ASSERT_EQUALS( page.mByteArray( it, 10 ), "" );
 
             TS_ASSERT( it == page.mFirst() );
             TS_ASSERT( it == page.mLast() );
@@ -428,7 +432,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( page.mInsertBytes( it, STR("EEEEEFFFFFGGGGGHHHHH"), Attributes(2) ), 20 );
             TS_ASSERT_EQUALS( page.mCount() , 2 );
             TS_ASSERT_EQUALS( page.mSize() , 40 );
-            TS_ASSERT_EQUALS( page.mGetUtf8String( page.mFirst(), 40 ), "AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHH" );
+            TS_ASSERT_EQUALS( page.mByteArray( page.mFirst(), 40 ), "AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHH" );
 
             TS_ASSERT( it == page.mLast() );
 
@@ -443,7 +447,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT( it == page.mLast() );
             TS_ASSERT_EQUALS( page.mSize() , 30 );
 
-            it == page.mFirst();
+            it = page.mFirst();
             // Delete the first 5 bytes from the page
             changeSet = page.mDeleteBytes( it, 5 );
             TS_ASSERT_EQUALS( changeSet->mSize(), 5 );
@@ -452,11 +456,11 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( page.mSize() , 25 );
 
             // Insert bytes at the begining of the page
-            it == page.mFirst();
+            it = page.mFirst();
             TS_ASSERT_EQUALS( page.mInsertBytes( it, STR("1111122222"), Attributes(1) ), 10 );
             TS_ASSERT_EQUALS( page.mSize() , 35 );
 
-            TS_ASSERT_EQUALS( page.mGetUtf8String( page.mFirst(), 40 ), "1111122222BBBBBCCCCCDDDDDEEEEEFFFFF" );
+            TS_ASSERT_EQUALS( page.mByteArray( page.mFirst(), 40 ), "1111122222BBBBBCCCCCDDDDDEEEEEFFFFF" );
 
         }
 
@@ -466,7 +470,7 @@ class BufferTests : public CxxTest::TestSuite
         void testNextPrevIterator( void ) {
             Page page;
 
-            Block::Iterator it = page.mLast();
+            Block::Iterator it = page.mFirst();
 
             // Can't move around an empty page
             TS_ASSERT_EQUALS( page.mPrev( it, 1 ), 0 );
@@ -481,28 +485,30 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( page.mCount() , 4 );
             TS_ASSERT_EQUALS( page.mSize() , 115 );
 
+            it = page.mFirst();
+
             // Move 10 bytes into the first block
             TS_ASSERT_EQUALS( page.mNext( it, 10 ), 10 ); 
-            TS_ASSERT_EQUALS( page.mGetUtf8String( it, 10 ), "CCCCCDDDDD" );
+            TS_ASSERT_EQUALS( page.mByteArray( it, 10 ), "CCCCCDDDDD" );
 
             // Move 10 more bytes into the second block
             TS_ASSERT_EQUALS( page.mNext( it, 10 ), 10 ); 
-            TS_ASSERT_EQUALS( page.mGetUtf8String( it, 10 ), "EEEEEFFFFF" );
+            TS_ASSERT_EQUALS( page.mByteArray( it, 10 ), "EEEEEFFFFF" );
 
             // Move 10 more bytes into the second block
             TS_ASSERT_EQUALS( page.mNext( it, 10 ), 10 ); 
-            TS_ASSERT_EQUALS( page.mGetUtf8String( it, 10 ), "GGGGGHHHHH" );
+            TS_ASSERT_EQUALS( page.mByteArray( it, 10 ), "GGGGGHHHHH" );
 
             // Make a copy of the current iterator position
             Block::Iterator itEnd = it;
 
             // Move back 20 bytes to the first block
             TS_ASSERT_EQUALS( page.mPrev( it, 20 ), 20 ); 
-            TS_ASSERT_EQUALS( page.mGetUtf8String( it, 20 ), "CCCCCDDDDDEEEEEFFFFF" );
+            TS_ASSERT_EQUALS( page.mByteArray( it, 20 ), "CCCCCDDDDDEEEEEFFFFF" );
 
             // delete 20 bytes accross 2 blocks
             ChangeSet* changeSet = page.mDeleteBytes( it, itEnd );
-            TS_ASSERT_EQUALS( page.mGetUtf8String( it, 20 ), "GGGGGHHHHH1111122222" );
+            TS_ASSERT_EQUALS( page.mByteArray( it, 20 ), "GGGGGHHHHH1111122222" );
             TS_ASSERT_EQUALS( page.mCount() , 4 );
             TS_ASSERT_EQUALS( page.mSize() , 95 );
 

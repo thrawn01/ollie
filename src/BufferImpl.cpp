@@ -91,6 +91,19 @@ namespace BufferImpl {
         return page->mNext( *this, intLen );
     }
 
+    int BlockIterator::mPrev( int intLen ) { 
+        return page->mPrev( *this, intLen );
+    }
+
+    int BlockIterator::mNextBlock( void ) { 
+        return page->mNextBlock( *this );
+    }
+
+    int BlockIterator::mPrevBlock( void ) { 
+        return page->mPrevBlock( *this );
+    }
+
+
     // ---------- Page Methods ----------
 
     /********************************************/
@@ -123,10 +136,10 @@ namespace BufferImpl {
         // iterator to the block after the one we deleted
         itBlock.it = _blockContainer.erase( itBlock.it );
 
-        // If our iterator points to the last block in the page
-        if( itBlock == mLast() ) {
-            // Then pos should point to the end of the page
-            itBlock.intPos = itBlock->mSize();
+        // If we deleted the last block in the page
+        if( itBlock.it == _blockContainer.end() ) {
+            // Set our iterator to the last block on the page
+            itBlock = mLast();
 
             return delBlock.release();
         }
@@ -140,8 +153,8 @@ namespace BufferImpl {
     int Page::mInsertBlock( Block::Iterator& itBlock, Block* block ) {
         assert( itBlock.page == this );
 
-        // If this is the only block in the page
-        if( itBlock.it == mLast().it and itBlock.it == mFirst().it ) {
+        // If the page is empty
+        if( itBlock == mLast() and itBlock == mFirst() ) {
             // Erase the empty block
             _blockContainer.erase( itBlock.it );
             // Insert the new block
@@ -200,9 +213,12 @@ namespace BufferImpl {
     }
 
     // NOTE: If itEnd actually precedes itStart, the result is undefined.
-    ChangeSet* Page::mDeleteBytes( Block::Iterator& itStart, const Block::Iterator& itEnd ) {
-        assert( itStart.page == this );
+    ChangeSet* Page::mDeleteBytes( Block::Iterator& itBlock, const Block::Iterator& itEnd ) {
+        assert( itBlock.page == this );
         ChangeSetPtr changeSet( new ChangeSet );
+
+        // Make a copy of our iterator
+        Block::Iterator itStart = itBlock;
 
         // If the end block is the same as the start block
         if( itEnd.it == itStart.it ) {
@@ -210,8 +226,8 @@ namespace BufferImpl {
             if( itStart.intPos == 0 and itEnd.intPos == itStart->mSize() ) {
                 // Delete the entire block
                 changeSet->mPush( mDeleteBlock( itStart ) );
-                // Update the page size
-                _offPageSize -= changeSet->mSize();
+                // Our originating block was deleted, update the iterator passed
+                itBlock = itStart;
 
                 return changeSet.release();
             }
@@ -234,22 +250,18 @@ namespace BufferImpl {
         while( itEnd.it != itStart.it or itStart.it == mLast().it ) {
             // Delete the entire block
             changeSet->mPush( mDeleteBlock( itStart ) );
-
         }
 
         // If itEnd points to the end of the block
         if( itEnd.intPos == itStart->mSize() ) {
             // Delete the entire block
             changeSet->mPush( mDeleteBlock( itStart ) );
-            // Update the page size
-            _offPageSize -= changeSet->mSize();
 
             return changeSet.release();
         }
 
         // Delete bytes until the itEnd
         changeSet->mPush( itStart->mDeleteBytes( 0, itEnd.intPos ) );
-
         // Update the page size
         _offPageSize -= changeSet->mSize();
 
@@ -300,7 +312,7 @@ namespace BufferImpl {
             // Move to the previous block
             int intMoved = mNextBlock( itBlock );
             // Couldn't move forward anymore
-            if( intMoved == 0 ) {
+            if( intMoved == -1 ) {
                 return intRequested - intCount;
             }
 
@@ -331,7 +343,7 @@ namespace BufferImpl {
             // Move to the previous block
             int intMoved = mPrevBlock( itBlock );
             // Couldn't move back anymore
-            if( intMoved == 0 ) {
+            if( intMoved == -1 ) {
                 return intRequested - intCount;
             }
 
@@ -350,7 +362,7 @@ namespace BufferImpl {
 
         // If itBlock.it points to the last block in the page
         if( itBlock.it == mLast().it ) {
-            return 0;
+            return -1;
         }
        
         // Record the positions we are moving back
@@ -368,7 +380,7 @@ namespace BufferImpl {
 
         // If itBlock.it points to the first block in the page
         if( itBlock.it == mFirst().it ) {
-            return 0;
+            return -1;
         }
      
         // Record the positions we are moving back
@@ -379,6 +391,55 @@ namespace BufferImpl {
         itBlock.intPos = itBlock->mSize();
 
         return intLen;
+    }
+
+    void Page::mPrintPage( void ) {
+
+        boost::ptr_list<Block>::iterator it;
+
+        std::cout << std::endl;
+        for( it = _blockContainer.begin() ; it != _blockContainer.end() ; it++ ) {
+            std::cout << "\tBlock: " << it->mBytes() << std::endl;
+        }
+    }
+
+    const ByteArray& Page::mByteArray( const Block::Iterator& itBlock, int intCount ) { 
+        assert( itBlock.page == this );
+
+        Block::Iterator itTemp( itBlock );
+
+        _arrTemp.mClear();
+
+        // OK, lol
+        if( intCount == 0 ) return _arrTemp;
+
+        // Remeber the requested positions
+        int intRequested = intCount;
+        // Figure out how many positions we have left till the end of the block
+        int intPosLeft = itTemp->mSize() - itTemp.intPos;
+
+        // If we are asking to move past the current block
+        while( intCount > intPosLeft ) {
+
+            // Append the data in this block to the temp
+            _arrTemp.mAppend( itTemp->mBytes( itTemp.intPos, intPosLeft ) );
+            // Move to the previous block
+            int intMoved = mNextBlock( itTemp );
+            // Couldn't move forward anymore
+            if( intMoved == -1 ) {
+                return _arrTemp;
+            }
+
+            // Remeber how many we moved forward
+            intCount -= intMoved;
+            // how many pos are left in this block
+            intPosLeft = itTemp->mSize();
+        }
+        // Append the remaining bytes in the block
+        _arrTemp.mAppend( itTemp->mBytes( itTemp.intPos, intCount ) );
+
+        return _arrTemp;
+
     }
 
 };

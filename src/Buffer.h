@@ -22,9 +22,37 @@
 #define BUFFER_INCLUDE_H
 
 #include <Ollie.h>
+#include <Page.h>
 #include <boost/ptr_container/ptr_list.hpp>
+
 namespace Ollie {
     namespace OllieBuffer {
+
+        class BufferIterator;
+
+        class PageBuffer {
+
+            public:
+                PageBuffer( OffSet offTargetPageSize = DEFAULT_PAGE_SIZE  ) : _offTargetPageSize( offTargetPageSize ) {
+                    pageList.push_back( new Page( _offTargetPageSize ) ); 
+                }
+                ~PageBuffer( void ){ };
+
+                typedef boost::ptr_list<Page>::iterator Iterator;
+
+                Iterator     mFirst( void ) { return pageList.begin(); }
+                Iterator     mLast( void ) { return (--pageList.end()); }
+                int          mAppendPage( Page* );
+                int          mInsertPage( Page::Iterator&, Page* );
+                ChangeSet*   mDeletePage( Page::Iterator& );
+                void         mSplitPage( Page::Iterator&, Block::Iterator& );
+                int          mCount( void ) { return pageList.size(); }
+                void         mClear( void ) { };
+
+                boost::ptr_list<Page> pageList;
+                OffSet                _offTargetPageSize;
+
+        };
 
         class Buffer {
 
@@ -32,79 +60,75 @@ namespace Ollie {
                 Buffer() { };
                 ~Buffer(){ };
 
-                typedef BufferImplIterator Iterator;
+                typedef BufferIterator Iterator;
 
                 //Iterator          mBegin() { }
                 //Iterator          mEnd()   { }
 
-                void              mClear( void ) { _pageContainer.clear(); } //TODO: reset all states 
+                //void              mClear( void ) { pageBuffer.clear(); } //TODO: reset all states 
 
-                Iterator          mAppendPage( Page *page );
-                Iterator          mInsertPage( BufferImplIterator&, Page* );
-                Iterator          mDeletePage( BufferImplIterator& );
-                Iterator          mSplitPage( BufferImplIterator& );
 
-                int               mNext( BufferImplIterator&, int intCount = 1 );
-                int               mPrev( BufferImplIterator&, int intCount = 1 );
-                int               mNextBlock( BufferImplIterator&, int intCount = 1 );
-                int               mPrevBlock( BufferImplIterator&, int intCount = 1 );
+                int               mNext( BufferIterator&, int intCount = 1 );
+                int               mPrev( BufferIterator&, int intCount = 1 );
+                int               mNextBlock( BufferIterator&, int intCount = 1 );
+                int               mPrevBlock( BufferIterator&, int intCount = 1 );
 
-                long              mPageCount() const { return _pageContainer.size(); }
+                //long              mPageCount() const { return pageBuffer.size(); }
                 void              mPrintBuffer( void );
                 
-                boost::ptr_list<Page>   _pageContainer;
-                 
+                PageBuffer        pageBuffer; 
         };
 
-        class BufferImplIterator { 
+
+        class BufferIterator { 
 
             public:
-                BufferImplIterator( BufferImpl& impl, Page::Iterator& iPage, 
+                BufferIterator( Buffer& impl, Page::Iterator& iPage, 
                           Block::Iterator& iBlock ) : _impl(&impl), itPage(iPage), itBlock(iBlock) {}
-                ~BufferImplIterator() {}
+                ~BufferIterator() {}
 
-                void        copy( const BufferImplIterator &i ) {
+                void        copy( const BufferIterator &i ) {
                                 itPage = i.itPage;
                                 itBlock = i.itBlock;
                                 _impl = i._impl;
                             }
 
-                BufferImplIterator    operator=( const BufferImplIterator& i ) {
+                BufferIterator    operator=( const BufferIterator& i ) {
                                 if( &i != this ) copy( i );
                                 return *this;
                             }
 
-                int         operator==( const BufferImplIterator& right ) const {
+                int         operator==( const BufferIterator& right ) const {
                                 if( this == &right ) return 1;
                                 //TODO: fixme
                                 return 0;
                             }
 
-                BufferImplIterator    operator++( int ) { 
-                                BufferImplIterator itTemp = *this;
+                BufferIterator    operator++( int ) { 
+                                BufferIterator itTemp = *this;
                                 _impl->mNext( *this );
                                 return itTemp; 
                             }
 
-                BufferImplIterator    operator++() { 
+                BufferIterator    operator++() { 
                                 _impl->mNext( *this );
                                 return *this;
                             }
 
-                BufferImplIterator    operator--( int ) { 
-                                BufferImplIterator itTemp = *this;
+                BufferIterator    operator--( int ) { 
+                                BufferIterator itTemp = *this;
                                 _impl->mPrev( *this );
                                 return itTemp; 
                             }
 
-                BufferImplIterator    operator--() { 
+                BufferIterator    operator--() { 
                                 _impl->mPrev( *this );
                                 return *this;
                             }
 
                 Page::Iterator      itPage;
                 Block::Iterator     itBlock;
-                BufferImpl*         _impl;
+                Buffer*         _impl;
         };
     };
 };

@@ -33,7 +33,6 @@ namespace Ollie {
 
         class Page;
         class BlockIterator;
-        class BufferImplIterator;
 
         class ByteArray {
 
@@ -109,22 +108,9 @@ namespace Ollie {
                  int        mSetSize( int intSize ) { _intSize = intSize; }
                  int        mSize( void ) { return _intSize; }
                  int        mCount( void ) { return _blockContainer.size(); }
-                 void       mPush( Block* block ) { 
-                                _boolIsInsert = false;
-                                _intSize += block->mSize();
-                                _blockContainer.push_front( block ); 
-                            }
-                 Block*     mPop( void ) { 
-                                try{ 
-                                    if( mCount() == 0 ) return 0;
-                                    _boolIsInsert = false;
-                                    Block* block = _blockContainer.release( _blockContainer.begin() ).release(); 
-                                    _intSize -= block->mSize();
-                                    return block;
-                                }
-                                catch(...){ return 0; } 
-                            }
-                 
+                 void       mPushPage( Page* page );
+                 void       mPush( Block* block );
+                 Block*     mPop( void );
                  Iterator   mPeek( void ) { return _blockContainer.begin(); }
                  void       mSetOffSet( OffSet offset ) { _offSet = offset; }
                  OffSet     mOffSet( void ) { return _offSet; }
@@ -198,15 +184,13 @@ namespace Ollie {
         class Page {
 
             public:
-                Page( void ) {
-                    _offTargetPageSize = DEFAULT_PAGE_SIZE;
-                    _offPageSize    = 0;
-                    _offFileStart   = -1; 
+                Page( OffSet offTargetPageSize = DEFAULT_PAGE_SIZE ) : _offTargetPageSize( offTargetPageSize ),
+                                                                       _offPageSize( 0 ), _offFileStart( -1 ) {
                     _blockContainer.push_back( new Block() ); 
                 }
                 ~Page( void ) { }
 
-                typedef boost::ptr_list<Page>::iterator  Iterator;
+                typedef boost::ptr_list<Page>::iterator Iterator;
 
                 Block::Iterator   mFirst( void ) { 
                                       return Block::Iterator( this, _blockContainer.begin(), 0 ); 
@@ -216,8 +200,8 @@ namespace Ollie {
                                       return Block::Iterator( this, itBlock, itBlock->mSize() ); 
                                   }
                 int               mInsertBlock( Block::Iterator&, Block* );
-                Block*            mDeleteBlock( Block::Iterator& ) ;
-                void              mSplitBlock( Block::Iterator& ) ;
+                Block*            mDeleteBlock( Block::Iterator& );
+                void              mSplitBlock( Block::Iterator& );
                 int               mInsertBytes( Block::Iterator& , const ByteArray& , const Attributes &attr );
                 ChangeSet*        mDeleteBytes( Block::Iterator& , int );
                 ChangeSet*        mDeleteBytes( Block::Iterator& , const Block::Iterator& );
@@ -253,7 +237,7 @@ namespace Ollie {
                 OffSet                  _offPageSize;
                 ByteArray               _arrTemp;
         };
-
+        typedef std::auto_ptr<Page> PagePtr;
     };
 };
 #endif // PAGE_INCLUDE_H

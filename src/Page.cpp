@@ -81,6 +81,34 @@ namespace Ollie {
             return newBlock.release();
         }
 
+        // ---------- ChangeSet Methods ----------
+
+        /********************************************/
+
+        void ChangeSet::mPushPage( Page* page ) {
+            Block::Iterator it = page->mFirst();
+            _boolIsInsert = false;
+
+            while( page->mSize() != 0 ) {
+                mPush( page->mDeleteBlock( it ) );
+            }
+        }
+        void ChangeSet::mPush( Block* block ) { 
+            _boolIsInsert = false;
+            _intSize += block->mSize();
+            _blockContainer.push_front( block ); 
+        }
+        Block* ChangeSet::mPop( void ) { 
+            try{ 
+                if( mCount() == 0 ) return 0;
+                _boolIsInsert = false;
+                Block* block = _blockContainer.release( _blockContainer.begin() ).release(); 
+                _intSize -= block->mSize();
+                return block;
+            }
+            catch(...){ return 0; } 
+        }
+
         // ---------- BlockIterator Methods ----------
 
         /********************************************/
@@ -112,27 +140,23 @@ namespace Ollie {
 
             // If this is the only block in the page
             if( itBlock.it == mLast().it and itBlock.it == mFirst().it ) {
-                // Record the size of the deleted block
-                int intLen = itBlock->mSize();
                 // Replace the current block with an empty one
                 delBlock = BlockPtr( _blockContainer.replace( _blockContainer.begin() , new Block ).release() );
                 // Update the page size
-                _offPageSize -= intLen;
+                _offPageSize -= delBlock->mSize();
                 // And reset our pos
                 itBlock.intPos = 0;
 
                 return delBlock.release();
             }
 
-            // Record the size of the deleted block
-            int intLen = itBlock->mSize();
-            // Shrink the size of the page by the block size removed
-            _offPageSize -= intLen;
             // Replace the block with an empty block, so we can get the original block
             delBlock = BlockPtr( _blockContainer.replace( itBlock.it , new Block ).release() );
             // Now Remove the block from the container and return an 
             // iterator to the block after the one we deleted
             itBlock.it = _blockContainer.erase( itBlock.it );
+            // Update the page size
+            _offPageSize -= delBlock->mSize();
 
             // If we deleted the last block in the page
             if( itBlock.it == _blockContainer.end() ) {

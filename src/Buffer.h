@@ -22,118 +22,90 @@
 #define BUFFER_INCLUDE_H
 
 #include <Ollie.h>
-#include <Buffer.h>
-#include <list>
 #include <boost/ptr_container/ptr_list.hpp>
+namespace Ollie {
+    namespace OllieBuffer {
 
-class Buffer;
+        class Buffer {
 
-class BufferIterator : public OllieCommon {
-    public: 
-        //Constructors
-        BufferIterator() { }
-        BufferIterator( Buffer* buf );
-        BufferIterator( const BufferIterator* it ) { copy(*it); };
-         ~BufferIterator() { }
+            public:
+                Buffer() { };
+                ~Buffer(){ };
 
-        // Copy Constructor
-        BufferIterator( const BufferIterator &it ) { copy(it); }
+                typedef BufferImplIterator Iterator;
 
-        const BufferIterator      operator++( int ) { mNext(); return *this; }
-        const BufferIterator      operator--( int ) { mPrev(); return *this; }
-        BufferIterator&           operator=(const BufferIterator& i ) { 
-                                      if( &i != this ) copy(i); 
-                                      return *this; 
-                                  }
-        int                       operator==(const BufferIterator& right ) { 
-                                      if( this == &right ) return 1; 
-                                      return mEqual(this, &right);
-                                  }
-        int                       operator!=(const BufferIterator& right ) { return !( this == &right ); }
+                //Iterator          mBegin() { }
+                //Iterator          mEnd()   { }
 
-        void                      copy( const BufferIterator &it  );
-        bool                      mSeekToOffSet( OffSet );
-        OffSet                    mCurOffSet( void ) { return _offCurrent; }
-        char                      mToUtf8Char( void ); 
-        const char*               mToUtf8String( int intLen );
-        ushort                    mToUtf16Char( void ) { }
-        const ushort*             mToUtf16String( int intLen ) { }
-        int                       mEqual( const BufferIterator*, const BufferIterator* );
-        std::string               mGetError( void ) { std::string msg = _streamErrorMsg.str(); _streamErrorMsg.str(""); return msg; }
-        int                       mNext() { }
-        int                       mPrev() { }
+                void              mClear( void ) { _pageContainer.clear(); } //TODO: reset all states 
 
-        Buffer*                        _buf;
-        std::string                    _strTemp;
-        OffSet                         _offCurrent;
-        BufferImplementation::Iterator _it;
+                Iterator          mAppendPage( Page *page );
+                Iterator          mInsertPage( BufferImplIterator&, Page* );
+                Iterator          mDeletePage( BufferImplIterator& );
+                Iterator          mSplitPage( BufferImplIterator& );
+
+                int               mNext( BufferImplIterator&, int intCount = 1 );
+                int               mPrev( BufferImplIterator&, int intCount = 1 );
+                int               mNextBlock( BufferImplIterator&, int intCount = 1 );
+                int               mPrevBlock( BufferImplIterator&, int intCount = 1 );
+
+                long              mPageCount() const { return _pageContainer.size(); }
+                void              mPrintBuffer( void );
+                
+                boost::ptr_list<Page>   _pageContainer;
+                 
+        };
+
+        class BufferImplIterator { 
+
+            public:
+                BufferImplIterator( BufferImpl& impl, Page::Iterator& iPage, 
+                          Block::Iterator& iBlock ) : _impl(&impl), itPage(iPage), itBlock(iBlock) {}
+                ~BufferImplIterator() {}
+
+                void        copy( const BufferImplIterator &i ) {
+                                itPage = i.itPage;
+                                itBlock = i.itBlock;
+                                _impl = i._impl;
+                            }
+
+                BufferImplIterator    operator=( const BufferImplIterator& i ) {
+                                if( &i != this ) copy( i );
+                                return *this;
+                            }
+
+                int         operator==( const BufferImplIterator& right ) const {
+                                if( this == &right ) return 1;
+                                //TODO: fixme
+                                return 0;
+                            }
+
+                BufferImplIterator    operator++( int ) { 
+                                BufferImplIterator itTemp = *this;
+                                _impl->mNext( *this );
+                                return itTemp; 
+                            }
+
+                BufferImplIterator    operator++() { 
+                                _impl->mNext( *this );
+                                return *this;
+                            }
+
+                BufferImplIterator    operator--( int ) { 
+                                BufferImplIterator itTemp = *this;
+                                _impl->mPrev( *this );
+                                return itTemp; 
+                            }
+
+                BufferImplIterator    operator--() { 
+                                _impl->mPrev( *this );
+                                return *this;
+                            }
+
+                Page::Iterator      itPage;
+                Block::Iterator     itBlock;
+                BufferImpl*         _impl;
+        };
+    };
 };
-
-
-/*!
- * This is the buffer implementation 
- */
-class Buffer : public OllieCommon {
-
-        public:
-        Buffer( OffSet offPageSize = 0 );
-        Buffer( const std::string& strName, OffSet offPageSize = 0 );
-        Buffer( File* const,  OffSet offPageSize = 0 );
-        ~Buffer( void );
-        void init( OffSet );
-
-        typedef BufferIterator Iterator;
-
-        // Interface Implementaton
-        BufferIterator               mBegin( void );
-        BufferIterator               mEnd( void );
-        bool                         mSaveBuffer( void );
-        bool                         mLoadBuffer( void );
-        std::string                  mGetFileName( void );
-        std::string                  mGetName( void ) { return _strName; }
-        void                         mSetName( const std::string& strName ) { _strName = strName; }
-        void                         mSetMaxBufferSize( OffSet size ) { _offMaxBufferSize = size; }
-        OffSet                       mGetMaxBufferSize( void ) { return _offMaxBufferSize; }
-        OffSet                       mGetBufferSize( void ) { return _offBufferSize; }
-        bool                         mEntireFileLoaded( void ) { return _boolEntireFileLoaded; }
-        bool                         mBufferFull( void );
-        bool                         mIsBufferReady( void );
-        bool                         mPreformTask( void );
-        bool                         mAssignFile( File* const );
-        bool                         mGetProgress( long* longProgress );
-        bool                         mIsModified( void ) { return _boolModified; }
-        void                         mSetTargetPageSize( OffSet offSize ) { _offTargetPageSize = offSize; }
-        OffSet                       mGetTargetPageSize( void ) { return _offTargetPageSize; }
-        bool                         mInsert( BufferIterator&, const char*, int, Attributes &attr );
-        bool                         mDelete( BufferIterator&, BufferIterator& );
-        bool                         mDelete( BufferIterator&, OffSet );
-
-        // Implementation Only 
-        bool                         mSaveFileTask( void );
-        bool                         mLoadFileTask( void );
-        OffSet                       mLoadPage( OffSet );
-        OffSet                       mSavePage( Page::Iterator&, OffSet );
-        std::stringstream&           mSetTaskStatus( void ) { _streamStatusMsg.str(""); return _streamStatusMsg; }
-        std::string                  mGetTaskStatus( void ) { return _streamStatusMsg.str(); }
-
-        // Variables
-        PageContainer           _pageContainer;
-        OffSet                  _offCurLoadOffSet;
-        OffSet                  _offCurSaveOffSet;
-        Page::Iterator          _itCurSavePage;
-        long                    _longCurProgress;
-        std::stringstream       _streamStatusMsg;
-        File*                   _fileHandle;
-        std::string             _strName;
-        bool                    _boolModified;
-        bool                    _boolEntireFileLoaded;
-        OffSet                  _offMaxBufferSize;
-        OffSet                  _offBufferSize;
-        OffSet                  _offTargetPageSize;
-
-        // A pointer to the method that preforms the current task
-        bool (Buffer::*_currentTask)(void);
-
-};
-
 #endif // BUFFER_INCLUDE_H

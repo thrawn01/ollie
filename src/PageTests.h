@@ -19,17 +19,17 @@
  **/
 
 #include "cxxtest/TestSuite.h"
-#include <BufferImpl.h>
+#include <Page.h>
 #include <iostream>
 #include <sstream>
 
 using namespace std;
-using namespace BufferImpl;
+using namespace Ollie::OllieBuffer;
 
 // --------------------------------
-//  Unit Test for buffer.cpp
+//  Unit Test for Page.cpp
 // --------------------------------
-class BufferTests : public CxxTest::TestSuite
+class PageTests : public CxxTest::TestSuite
 {
     public: 
 
@@ -537,94 +537,4 @@ class BufferTests : public CxxTest::TestSuite
         }
 
 };
-/*
-        // --------------------------------
-        // 
-        // --------------------------------
-        //void testmPageContainers( void ) {
-            
-            PageContainer pages;
-           
-            // Append the pages as if we were reading from a file
-            pages.mAppendPage( createDataPage('A', 0) );
-            pages.mAppendPage( createDataPage('B', 100) );
-            pages.mAppendPage( createDataPage('C', 200) );
-            pages.mAppendPage( createDataPage('D', 300) );
-
-            TS_ASSERT_EQUALS( pages._longSize, 4 );
-
-            // Get an Iterator to the Pages
-            Page::Iterator it = pages.mBegin(); 
-
-            // The file offset for this page should be 0
-            TS_ASSERT_EQUALS( it->mFileOffSet(), 0 );
-
-            // The offset for this page should be 0
-            TS_ASSERT_EQUALS( it->mOffSet(), 0 );
-
-            // Get the first Block in the page
-            Block::Iterator itBlock = it->mBegin();
-
-            // The block should contain all A's
-            TS_ASSERT_EQUALS( itBlock->mBytes(0,10) , "AAAAAAAAAA" );
-
-            // Check the next Page
-            ++it;
-       
-            // The starting offset for this page should be 100
-            TS_ASSERT_EQUALS( it->mFileOffSet(), 100 );
-
-            // Get the first block in the page
-            itBlock = it->mBegin();
-
-            // The block should contain all B's
-            TS_ASSERT_EQUALS( itBlock->mBytes(0,10) , "BBBBBBBBBB" );
-
-            // Insert a new page, just before the 
-            // current page the iterator points to
-            pages.mInsertPage( it , createDataPage('E', 0) );
-
-            TS_ASSERT_EQUALS( pages._longSize, 5 );
-
-            // Move to the newly inserted page
-            it--;
-
-            // Get the first block in the page
-            itBlock = it->mBegin();
-
-            // The block should contain all E's
-            TS_ASSERT_EQUALS( itBlock->mBytes(0,10) , "EEEEEEEEEE" );
-
-            // Move the iterator to the BBBB page
-            it++;
-
-            // Delete the BBBB page, After deleting the page, the iterator points to
-            // the next page after the deleted page in this case, the CCC Page
-            it = pages.mDeletePage( it );
-
-            // Get the first block in the page
-            itBlock = it->mBegin();
-
-            // The block should contain all B's
-            TS_ASSERT_EQUALS( itBlock->mBytes(0,10) , "CCCCCCCCCC" );
-
-        }
-        // --------------------------------
-        // Helper method to create a block of data
-        // --------------------------------
-        //Block createBlock( int intSize , char charByte ) {
-            Block* block = new Block;
-
-            char* arrBlockData = new char[ intSize ];
-            memset(arrBlockData, charByte, intSize);
-
-            block->mSetBytes( STR( arrBlockData, intSize ) );
-
-            delete arrBlockData;
-
-            return block;
-        }
-
-};
-        */
 

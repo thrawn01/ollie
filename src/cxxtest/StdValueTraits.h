@@ -9,7 +9,7 @@
 
 #include <cxxtest/ValueTraits.h>
 #include <cxxtest/StdHeaders.h>
-#include <BufferImpl.h>
+#include <Page.h>
 
 #ifdef _CXXTEST_OLD_STD
 #   define CXXTEST_STD(x) x
@@ -66,10 +66,10 @@ namespace CxxTest
     // BufferImpl::ByteArray
     //
     CXXTEST_TEMPLATE_INSTANTIATION
-    class ValueTraits<const BufferImpl::ByteArray> : public StdTraitsBase
+    class ValueTraits<const Ollie::OllieBuffer::ByteArray> : public StdTraitsBase
     {
     public:
-        ValueTraits( const BufferImpl::ByteArray &s )
+        ValueTraits( const Ollie::OllieBuffer::ByteArray &s )
         {
             *this << "\"";
             for ( unsigned i = 0; i < s._strData.length(); ++ i ) {
@@ -81,7 +81,7 @@ namespace CxxTest
         }
     };
 
-    CXXTEST_COPY_CONST_TRAITS( BufferImpl::ByteArray );
+    CXXTEST_COPY_CONST_TRAITS( Ollie::OllieBuffer::ByteArray );
 
 #ifndef _CXXTEST_OLD_STD
     //

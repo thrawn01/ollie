@@ -56,7 +56,6 @@ namespace Ollie {
             // Insert the page where it is needed
             it = pageList.insert( it, page );
 
-
             return page->mSize();
         }
 
@@ -92,12 +91,18 @@ namespace Ollie {
         }
 
         void PageBuffer::mSplitPage( Page::Iterator& itPage, Block::Iterator& itBlock ) {
-            //assert( itBlock.page == *itPage )
+            //assert( itBlock.page == *itPage.get() );
 
-            Block::Iterator itOld = itPage->mFirst();
+            // Remeber where the original page was
+            Page::Iterator itOriginal = itPage;
+            // Get a Block iterator to the original page
+            Block::Iterator itOld = itOriginal->mFirst();
 
-            // For as long as the passed page is over it's target size, keep splitting
-            while( itPage->mSize() > itPage->mTargetSize() ) {
+            // For as long as the original page is over it's target size, keep splitting
+            while( itOriginal->mSize() > itOriginal->mTargetSize() ) {
+
+                // Get a temp iterator from the original page
+                Page::Iterator itTemp = itOriginal;
                 // Create our new page
                 PagePtr page( new Page( _offTargetPageSize ) );
                 // Get an iterator to the new page
@@ -105,50 +110,67 @@ namespace Ollie {
 
                 // while our new page size is less than it's target size keep moving blocks
                 while( page->mSize() < page->mTargetSize() ) {
-                std::cout << "page: " <<  page->mSize() << " target: " <<  page->mTargetSize() << std::endl;
                     // Figure out what our size would be after adding this block
                     int intNewSize = page->mSize() + itOld->mSize();
                     // If this block will put us over our new page target size
                     if( intNewSize > page->mTargetSize() ) {
-                        std::cout << "split" << std::endl;
                         // Place the iterator at the place we want to split
                         itOld.mNext( intNewSize - page->mTargetSize() );
                         // If this is the iterator that needs to be preserved
                         if( itBlock.it == itOld.it ) {
-                            std::cout << "iterators match" << std::endl;
                             // Split the block
-                            itPage->mSplitBlock( itOld );
+                            itOriginal->mSplitBlock( itOld );
                             // If we are on the left side of the split
                             if( itBlock.intPos < itOld.intPos ) {
-                                std::cout << "int to the left" << std::endl;
                                 // Update the iterator with the new block
                                 itBlock.it = itOld.it;
                             } else {
-                                std::cout << "int to the right" << std::endl;
                                 // Update the pos, the .it iterator will remain
                                 itBlock.intPos = itBlock.intPos - itOld.intPos;
                             }
                         } else {
                             // Split the block
-                            itPage->mSplitBlock( itOld );
+                            itOriginal->mSplitBlock( itOld );
                         }
                     }
                    
                     // If we are about to copy the iterator that needs to be preserved
                     if( itBlock.it == itOld.it ) {
-                        std::cout << "iterators before insert match" << std::endl;
                         // Delete the block from the first page, and insert the block into the new page
-                        page->mInsertBlock( itNew, itPage->mDeleteBlock( itOld ) );
+                        page->mInsertBlock( itNew, itOriginal->mDeleteBlock( itOld ) );
                         // Assign the iterator to the new place in the new page
                         itBlock.it = itNew.it;
-                        std::cout << "value: " << itBlock->mBytes() << std::endl;
+                        itBlock.page = itNew.page;
                     }else {
                         // Delete the block from the first page, and insert the block into the new page
-                        page->mInsertBlock( itNew, itPage->mDeleteBlock( itOld ) );
+                        page->mInsertBlock( itNew, itOriginal->mDeleteBlock( itOld ) );
                     }
                 }
+                // If this is the page our block iterator points to
+                if( itBlock.page == page.get() ) {
+                    // Insert the page
+                    mInsertPage( itTemp, page.release() );
+                    // And update the page iterator
+                    itPage = itTemp;
+                } else {
+                    // Insert the page
+                    mInsertPage( itTemp, page.release() );
+                }
             }
-            std::cout << "value: " << itBlock->mBytes() << std::endl;
+        }
+
+        void PageBuffer::mPrintPageBuffer( void ) {
+
+            boost::ptr_list<Page>::iterator it;
+    
+            int intCount = 1;
+            for( it = pageList.begin() ; it != pageList.end() ; it++ ) {
+                std::cout << "Page: " << intCount << std::endl;
+                it->mPrintPage();
+                ++intCount;
+            }
+
+
         }
 
     };

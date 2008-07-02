@@ -48,6 +48,7 @@ namespace Ollie {
                 void         mSplitPage( Page::Iterator&, Block::Iterator& );
                 int          mCount( void ) { return pageList.size(); }
                 void         mClear( void ) { };
+                void         mPrintPageBuffer( void );
 
                 boost::ptr_list<Page> pageList;
                 OffSet                _offTargetPageSize;

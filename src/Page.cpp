@@ -217,6 +217,8 @@ namespace Ollie {
             if( itBlock.intPos == 0 or itBlock.intPos == itBlock->mSize() ) return;
             // Split the block of text starting 0 and ending at intPos
             BlockPtr newBlock( itBlock->mDeleteBytes( 0 , itBlock.intPos ) );
+            // Reset the pos here, so the InsertBlock can correct it
+            itBlock.intPos = 0;
             // Insert the block just before the current block
             mInsertBlock( itBlock, newBlock.release() );
 

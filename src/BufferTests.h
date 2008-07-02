@@ -127,6 +127,7 @@ class BufferTests : public CxxTest::TestSuite
 
             // Move the iterator near the center of the page
             TS_ASSERT_EQUALS( itBlock.mNext( 45 ), 45 );
+            TS_ASSERT_EQUALS( itPage->mByteArray( itBlock, 55 ), "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC" );
 
             // Insert some stuff
             TS_ASSERT_EQUALS( itPage->mInsertBytes( itBlock, STR("111112222233333"), Attributes(60) ), 15 );
@@ -134,15 +135,24 @@ class BufferTests : public CxxTest::TestSuite
             // Move back to the start of the insert
             TS_ASSERT_EQUALS( itBlock.mPrev( 15 ), 15 );
 
-            TS_ASSERT_EQUALS( itPage->mByteArray( itBlock, 15 ), "111112222233333" );
+            // The insert plus the original data should be there
+            TS_ASSERT_EQUALS( itPage->mByteArray( itBlock, 70 ), "111112222233333CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC" );
             //pageBuffer.mPrintPageBuffer();
          
             // Split the page we are pointing to
             pageBuffer.mSplitPage( itPage, itBlock );
 
             //pageBuffer.mPrintPageBuffer();
-            // The block we were pointing to should have been preserved during the split
-            TS_ASSERT_EQUALS( itPage->mByteArray( itBlock, 15 ), "111112222233333" );
+            
+            // The block we were pointing to should have been preserved during the split,
+            // but 11111 should be on 1 page and 2222233333 should be on the second page
+            TS_ASSERT_EQUALS( itPage->mByteArray( itBlock, 15 ), "11111" );
+
+            // Go to the next page and get our iterator
+            ++itPage;
+            itBlock = itPage->mFirst();
+
+            TS_ASSERT_EQUALS( itPage->mByteArray( itBlock, 10 ), "2222233333" );
             
             TS_ASSERT_EQUALS( pageBuffer.mCount(), 5 );
             

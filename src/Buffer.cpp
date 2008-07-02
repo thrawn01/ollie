@@ -100,7 +100,6 @@ namespace Ollie {
 
             // For as long as the original page is over it's target size, keep splitting
             while( itOriginal->mSize() > itOriginal->mTargetSize() ) {
-
                 // Get a temp iterator from the original page
                 Page::Iterator itTemp = itOriginal;
                 // Create our new page
@@ -115,7 +114,7 @@ namespace Ollie {
                     // If this block will put us over our new page target size
                     if( intNewSize > page->mTargetSize() ) {
                         // Place the iterator at the place we want to split
-                        itOld.mNext( intNewSize - page->mTargetSize() );
+                        itOld.mNext( itOld->mSize() - (intNewSize - page->mTargetSize()) );
                         // If this is the iterator that needs to be preserved
                         if( itBlock.it == itOld.it ) {
                             // Split the block

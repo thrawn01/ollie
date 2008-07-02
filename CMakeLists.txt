@@ -3,7 +3,7 @@
 #
 # Derrick Wippler 2007 (thrawn01@gmail.com) 
 # ----------------------------------------------------------------
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 
 PROJECT(OLLIE)
 

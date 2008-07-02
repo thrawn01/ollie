@@ -533,6 +533,28 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it->mBytes(), "OOOOO" );
             TS_ASSERT_EQUALS( page.mCount() , 5 );
             TS_ASSERT_EQUALS( page.mSize() , 105 );
+            //cout << endl;
+            //page.mPrintPage();
+            // Goto the start of the page
+            it = page.mFirst();
+
+            // Short hand version
+            TS_ASSERT_EQUALS( it.mNext( 35 ), 35 ); 
+            TS_ASSERT_EQUALS( page.mByteArray( it, 30 ), "222223333344444555556666677777" );
+            TS_ASSERT_EQUALS( it.mNext( 10 ), 10 ); 
+            TS_ASSERT_EQUALS( page.mByteArray( it, 10), "4444455555" );
+
+            // Insert some bytes that will cause a block to split
+            TS_ASSERT_EQUALS( page.mInsertBytes( it,  STR("TTTTTYYYYY"), Attributes(20) ), 10 );
+            //page.mPrintPage();
+
+            // Because the insert places us just after the inserted bytes
+            TS_ASSERT_EQUALS( it.mPrev( 10 ), 10 ); 
+            // Our inserted data
+            TS_ASSERT_EQUALS( page.mByteArray( it, 10 ), "TTTTTYYYYY" );
+            // All togeather now
+            TS_ASSERT_EQUALS( it.mPrev( 10 ), 10 ); 
+            TS_ASSERT_EQUALS( page.mByteArray( it, 40 ), "2222233333TTTTTYYYYY44444555556666677777" );
 
         }
 

@@ -38,13 +38,14 @@ namespace Ollie {
         }
 
         int PageBuffer::mInsertPage( Page::Iterator& it, Page* page ) {
-
             // If this is the only page in the buffer
-            if( it == mFirst() and it == mLast() ) {
+            if( it.it == mFirst().it and it.it == mLast().it ) {
                 // And the page is empty
                 if( it->mSize() == 0 ) {
                     // Replace the current page with the new page
-                    pageList.replace( mFirst() , page );
+                    pageList.replace( it.it , page );
+                    // Update the iterator
+                    it.mUpdate( it.it );
 
                     return page->mSize();
                 }
@@ -53,8 +54,8 @@ namespace Ollie {
             // Force new pages to have the same page size as the container
             page->mSetTargetSize( _offTargetPageSize );
 
-            // Insert the page where it is needed
-            it = pageList.insert( it, page );
+            // Insert the page where it is needed, and update the iterator
+            it.mUpdate( pageList.insert( it.it, page ) );
 
             return page->mSize();
         }
@@ -62,14 +63,8 @@ namespace Ollie {
         ChangeSet* PageBuffer::mDeletePage( Page::Iterator& it ) {
             ChangeSetPtr changeSet( new ChangeSet );
 
-            // Did we get passed an iterator to nothing?
-            if( it == pageList.end() ) {
-                // TODO: We should really tell someone about this
-                return changeSet.release();
-            }
-
             // If we are trying to delete the last page in the list
-            if( it == mFirst() and it == mLast() ) {
+            if( it.it == mFirst().it and it.it == mLast().it ) {
                 // Replace the current page with an empty one, and push the page into the change set
                 changeSet->mPushPage( pageList.replace( pageList.begin() , new Page( _offTargetPageSize ) ).release() );
                 
@@ -77,13 +72,13 @@ namespace Ollie {
             }
 
             // Replace the current page with an empty one, and push the page into the change set
-            changeSet->mPushPage( pageList.replace( pageList.begin() , new Page( _offTargetPageSize ) ).release() );
+            changeSet->mPushPage( pageList.replace( it.it , new Page( _offTargetPageSize ) ).release() );
 
             // Erase the replaced page
-            it = pageList.erase( it );
+            it.mUpdate( pageList.erase( it.it ) );
 
             // If we erased the last page in the buffer
-            if( it == pageList.end() ) {
+            if( it.it == pageList.end() ) {
                 it = mLast();
             }
 

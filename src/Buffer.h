@@ -38,48 +38,82 @@ namespace Ollie {
                 }
                 ~PageBuffer( void ){ };
 
-                typedef boost::ptr_list<Page>::iterator Iterator;
-
-                Iterator     mFirst( void ) { return pageList.begin(); }
-                Iterator     mLast( void ) { return (--pageList.end()); }
+                Page::Iterator mFirst( void ) { 
+                                    boost::ptr_list<Page>::iterator it = pageList.begin();
+                                    return PageIterator( this, it, it->mFirst() ); 
+                               }
+                Page::Iterator mLast( void ) { 
+                                    boost::ptr_list<Page>::iterator it = (--pageList.end());
+                                    return PageIterator( this, it, it->mLast() );
+                               }
                 int          mAppendPage( Page* );
                 int          mInsertPage( Page::Iterator&, Page* );
                 ChangeSet*   mDeletePage( Page::Iterator& );
                 void         mSplitPage( Page::Iterator&, Block::Iterator& );
                 int          mCount( void ) { return pageList.size(); }
-                void         mClear( void ) { };
+                void         mClear( void ) { pageList.clear(); }
+                int          mNext( Page::Iterator&, int intCount = 1 );
+                int          mPrev( Page::Iterator&, int intCount = 1 );
+                int          mNextBlock( Page::Iterator& );
+                int          mPrevBlock( Page::Iterator& );
                 void         mPrintPageBuffer( void );
 
-                boost::ptr_list<Page> pageList;
-                OffSet                _offTargetPageSize;
+                boost::ptr_list<Page>               pageList;
+                OffSet                              _offTargetPageSize;
 
         };
 
         class Buffer {
 
             public:
-                Buffer() { };
+                Buffer() : offSize(0), boolModified(false) { };
                 ~Buffer(){ };
 
                 typedef BufferIterator Iterator;
 
-                //Iterator          mBegin() { }
-                //Iterator          mEnd()   { }
+                Iterator          mFirst( void );
+                Iterator          mLast( void );
 
-                //void              mClear( void ) { pageBuffer.clear(); } //TODO: reset all states 
+                int               mUndo( void );
+                int               mRedo( void );
 
+                int               mInsertBlock( Buffer::Iterator&, Block* );
+                int               mDeleteBlock( Buffer::Iterator& );
+                int               mInsertBytes( Buffer::Iterator& , const ByteArray& );
+                int               mInsertBytes( Buffer::Iterator& , const ByteArray& , const Attributes &attr );
+                int               mDeleteBytes( Buffer::Iterator& , int );
+                int               mDeleteBytes( Buffer::Iterator& , const Buffer::Iterator& );
+                int               mNext( Buffer::Iterator&, int intCount = 1 );
+                int               mPrev( Buffer::Iterator&, int intCount = 1 );
+                int               mNextBlock( Buffer::Iterator& );
+                int               mPrevBlock( Buffer::Iterator& );
 
-                int               mNext( BufferIterator&, int intCount = 1 );
-                int               mPrev( BufferIterator&, int intCount = 1 );
-                int               mNextBlock( BufferIterator&, int intCount = 1 );
-                int               mPrevBlock( BufferIterator&, int intCount = 1 );
+                const Block*      mBlock( Buffer::Iterator& );
+                const Attributes* mAttributes( Buffer::Iterator& );
 
-                //long              mPageCount() const { return pageBuffer.size(); }
+                                  // Buffer Control Methods
+                                  // -------------------------
+                                  
+                                  // Default Attributes assigned to bytes inserted
+                void              mSetDefaultAttributes( const Attributes &attr );
+                                  // Controls the default page size
+                void              mSetPageSize( OffSet );
+                OffSet            mPageSize( void );
+                                  // Returns the buffer size in bytes 
+                OffSet            mSize( void ) { return offSize; }
+                                  // Returns the number of blocks in the buffer
+                int               mCount( void ) { return pageBuffer.mCount(); }
+                                  // Clears all blocks from the buffer
+                void              mClear( void ) { pageBuffer.mClear(); }
+                                  // Returns true if the buffer is full
+                bool              mIsModified( void ) { return boolModified; }
+                                  // Prints the contents of the buffer to stdout ( for debug )
                 void              mPrintBuffer( void );
                 
                 PageBuffer        pageBuffer; 
+                OffSet            offSize;
+                bool              boolModified;
         };
-
 
         class BufferIterator { 
 

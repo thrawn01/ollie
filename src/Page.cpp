@@ -19,6 +19,8 @@
  **/
 
 #include <Page.h>
+#include <Buffer.h>
+
 namespace Ollie {
     namespace OllieBuffer {
 
@@ -127,6 +129,25 @@ namespace Ollie {
 
         int BlockIterator::mPrevBlock( void ) { 
             return page->mPrevBlock( *this );
+        }
+
+        // ---------- PageIterator Methods ----------
+
+        /********************************************/
+
+        void PageIterator::mUpdate( const boost::ptr_list<Page>::iterator &i, bool boolFirst ) {
+            // Don't copy urself
+            if( &it != &i ) it = i;
+
+            // If we didn't get passed an invalid iterator
+            if( i != parent->pageList.end() ) {
+                if( boolFirst ) {
+                    itBlock = i->mFirst();
+                } else {
+                    itBlock = i->mLast();
+                }
+                itBlock.mSetParent( this );
+            }
         }
 
 

@@ -33,6 +33,8 @@ namespace Ollie {
 
         class Page;
         class BlockIterator;
+        class PageIterator;
+        class PageBuffer;
 
         class ByteArray {
 
@@ -131,16 +133,25 @@ namespace Ollie {
         class BlockIterator { 
 
             public:
-                BlockIterator( Page* ppage, boost::ptr_list<Block>::iterator i, int pos ) : page(ppage), it(i), intPos(pos) {}
-                ~BlockIterator() {}
+                BlockIterator( PageIterator* p, const BlockIterator& b ) 
+                            : parent(p), page(b.page), it(b.it), intPos(b.intPos) { /*it->mAdd( this );*/ }
+                BlockIterator( Page* p, const boost::ptr_list<Block>::iterator& i, int pos ) 
+                            : parent(0), page(p), it(i), intPos(pos) { /*it->mAdd( this );*/ }
+                ~BlockIterator() { /*it->mRemove( this );*/ }
                 
                 typedef boost::ptr_list<Block>::reference Reference;
                 typedef boost::ptr_list<Block>::pointer   Pointer;
+
+                void            mSetParent( const PageIterator* p ) { 
+                                    parent = p; 
+                                }
 
                 void            copy( const BlockIterator &i ) {
                                     it = i.it;
                                     intPos = i.intPos;
                                     page = i.page;
+                                    parent = i.parent;
+                                    //it->mAdd( this );
                                 }
 
                 Reference       operator*() const {
@@ -174,7 +185,72 @@ namespace Ollie {
                 boost::ptr_list<Block>::iterator it;
                 int                              intPos;
                 Page*                            page;
+                const PageIterator*                    parent;
+                bool                             boolValid;
         };
+
+        class PageIterator { 
+
+            public:
+                PageIterator( const PageBuffer* p, const boost::ptr_list<Page>::iterator& i, const Block::Iterator& b ) 
+                            : parent(p), it(i), itBlock(this, b) {}
+                PageIterator( boost::ptr_list<Page>::iterator& i, Block::Iterator& b ) 
+                            : parent(0), it(i), itBlock(this, b) {}
+                ~PageIterator() { }
+
+                void            mUpdate( const boost::ptr_list<Page>::iterator &i, bool boolFirst = true );
+
+                typedef boost::ptr_list<Page>::reference Reference;
+                typedef boost::ptr_list<Page>::pointer   Pointer;
+
+                void            copy( const PageIterator &i ) {
+                                    it = i.it;
+                                    itBlock = i.itBlock;
+                                    parent = i.parent;
+                                }
+
+                Reference       operator*() const {
+                                    return *it;
+                                }
+                Pointer         operator->() const {
+                                    return &*it;
+                                }
+            
+                PageIterator   operator=( const PageIterator& i ) {
+                                    if( &i != this ) copy( i );
+                                    return *this;
+                                }
+
+                int             operator==( const BlockIterator& right ) const {
+                                    if( itBlock == right ) return 1;
+                                    return 0;
+                                }
+
+                int             operator==( const PageIterator& right ) const {
+                                    if( this == &right ) return 1;
+                                    if( it == right.it and itBlock == right.itBlock ) return 1;
+                                    return 0;
+                                }
+
+                int             operator!=( const PageIterator& right ) const {
+                                    if( it != right.it or itBlock != right.itBlock ) return 1;
+                                    return 0;
+                                }
+                PageIterator    operator++() { 
+                                    mUpdate( ++it );
+                                    return *this;
+                                }
+                PageIterator    operator--() { 
+                                    mUpdate( --it, false );
+                                    return *this;
+                                }
+
+                boost::ptr_list<Page>::iterator it;
+                Block::Iterator                 itBlock;
+                const PageBuffer*               parent;
+
+        };
+
 
         // Page Rules: 
         // 1. A Page must always contain at least 1 Block
@@ -190,7 +266,7 @@ namespace Ollie {
                 }
                 ~Page( void ) { }
 
-                typedef boost::ptr_list<Page>::iterator Iterator;
+                typedef PageIterator Iterator;
 
                 Block::Iterator   mFirst( void ) { 
                                       return Block::Iterator( this, _blockContainer.begin(), 0 ); 

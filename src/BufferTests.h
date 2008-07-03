@@ -72,7 +72,7 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( pageBuffer.mCount(), 1 );
 
             // Get an iterator to our first page
-            PageBuffer::Iterator itPage = pageBuffer.mFirst();
+            Page::Iterator itPage = pageBuffer.mFirst();
 
             // Insert an empty page into an empty Page Buffer
             TS_ASSERT_EQUALS( pageBuffer.mInsertPage( itPage, new Page() ), 0 );
@@ -85,8 +85,8 @@ class BufferTests : public CxxTest::TestSuite
 
             TS_ASSERT_EQUALS( itPage->mSize(), 100 );
             // Should be the only page in the buffer
-            TS_ASSERT( itPage == pageBuffer.mFirst() );
-            TS_ASSERT( itPage == pageBuffer.mLast() );
+            TS_ASSERT( itPage.it == pageBuffer.mFirst().it );
+            TS_ASSERT( itPage.it == pageBuffer.mLast().it );
 
             // Delete the page
             ChangeSet* changeSet = pageBuffer.mDeletePage( itPage );
@@ -113,8 +113,8 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( pageBuffer.mCount(), 2 );
 
             // Should be the first page in the buffer
-            TS_ASSERT( itPage == pageBuffer.mFirst() );
-            TS_ASSERT( itPage != pageBuffer.mLast() );
+            TS_ASSERT( itPage.it == pageBuffer.mFirst().it );
+            TS_ASSERT( itPage.it != pageBuffer.mLast().it );
 
             // Append a page to the end of the buffer
             TS_ASSERT_EQUALS( pageBuffer.mAppendPage( createDataPage( 'C', 10 ) ), 100 );

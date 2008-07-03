@@ -25,6 +25,7 @@
 #include <File.h>
 #include <boost/ptr_container/ptr_list.hpp>
 #include <memory>
+#include <boost/shared_ptr.hpp>
 
 namespace Ollie {
     namespace OllieBuffer {
@@ -193,10 +194,11 @@ namespace Ollie {
 
             public:
                 PageIterator( const PageBuffer* p, const boost::ptr_list<Page>::iterator& i, const Block::Iterator& b ) 
-                            : parent(p), it(i), itBlock(this, b) {}
+                            : parent(p), it(i), itBlock( new BlockIterator( this, b ) ) {}
                 PageIterator( boost::ptr_list<Page>::iterator& i, Block::Iterator& b ) 
-                            : parent(0), it(i), itBlock(this, b) {}
+                            : parent(0), it(i), itBlock( new BlockIterator( this, b ) ) {}
                 ~PageIterator() { }
+                PageIterator( const PageIterator& i ) : it(i.it), itBlock( new BlockIterator( this, *i.itBlock ) ), parent(i.parent) { }
 
                 void            mUpdate( const boost::ptr_list<Page>::iterator &i, bool boolFirst = true );
 
@@ -205,7 +207,7 @@ namespace Ollie {
 
                 void            copy( const PageIterator &i ) {
                                     it = i.it;
-                                    itBlock = i.itBlock;
+                                    itBlock.reset( new BlockIterator( this, *i.itBlock ) );
                                     parent = i.parent;
                                 }
 
@@ -222,18 +224,18 @@ namespace Ollie {
                                 }
 
                 int             operator==( const BlockIterator& right ) const {
-                                    if( itBlock == right ) return 1;
+                                    if( *itBlock == right ) return 1;
                                     return 0;
                                 }
 
                 int             operator==( const PageIterator& right ) const {
                                     if( this == &right ) return 1;
-                                    if( it == right.it and itBlock == right.itBlock ) return 1;
+                                    if( it == right.it and *itBlock == *right.itBlock ) return 1;
                                     return 0;
                                 }
 
                 int             operator!=( const PageIterator& right ) const {
-                                    if( it != right.it or itBlock != right.itBlock ) return 1;
+                                    if( it != right.it or *itBlock != *right.itBlock ) return 1;
                                     return 0;
                                 }
                 PageIterator    operator++() { 
@@ -246,7 +248,7 @@ namespace Ollie {
                                 }
 
                 boost::ptr_list<Page>::iterator it;
-                Block::Iterator                 itBlock;
+                std::auto_ptr<Block::Iterator>  itBlock;
                 const PageBuffer*               parent;
 
         };

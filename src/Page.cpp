@@ -142,11 +142,11 @@ namespace Ollie {
             // If we didn't get passed an invalid iterator
             if( i != parent->pageList.end() ) {
                 if( boolFirst ) {
-                    itBlock = i->mFirst();
+                    *itBlock = i->mFirst();
                 } else {
-                    itBlock = i->mLast();
+                    *itBlock = i->mLast();
                 }
-                itBlock.mSetParent( this );
+                itBlock->mSetParent( this );
             }
         }
 

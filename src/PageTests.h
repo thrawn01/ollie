@@ -319,7 +319,7 @@ class PageTests : public CxxTest::TestSuite
             // Ensure our data is there
             TS_ASSERT_EQUALS( page.mByteArray( page.mFirst(), 50 ), "1111122222AAAAABBBBBCCCCCDDDDDEEEEEFFFFFGGGGGHHHHH" );
 
-            }
+        }
 
         // --------------------------------
         // Test Block Iterator movement

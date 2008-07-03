@@ -28,6 +28,19 @@ namespace Ollie {
 
         /********************************************/
 
+        Block::~Block( void ) {
+            std::cerr << "~Block()" << std::endl;
+            if( iteratorList.size() ) {
+                std::cerr << "size() " << iteratorList.size() << std::endl;
+                // Release all the iterator pointers
+                while( ! iteratorList.empty() ) {
+                    BlockIterator* it = iteratorList.pop_back().release();
+                    // If this happens someone didn't move the iterator before deleting the block
+                    it->boolValid = false;
+                }
+            }
+        }
+
         Block::Block( const ByteArray& arrBytes ) :_sizeBlockSize(0) {
             _arrBlockData.mAppend( arrBytes );
             _sizeBlockSize += arrBytes.mSize();
@@ -83,6 +96,28 @@ namespace Ollie {
             return newBlock.release();
         }
 
+        void Block::mAdd( BlockIterator* itBlock ) {
+            std::cerr << "Add" << std::endl;
+            iteratorList.push_back( itBlock );
+        }
+
+        void Block::mRemove( BlockIterator* itBlock ) {
+
+            std::cerr << "Remove" << std::endl;
+            boost::ptr_list<BlockIterator>::iterator it;
+            for( it = iteratorList.begin() ; it != iteratorList.end() ; ++it ) {
+                std::cerr << __LINE__ << std::endl;
+                // If this is the block pointer
+                if( &*it == itBlock ) {
+                    std::cerr << "Removing" << std::endl;
+                    iteratorList.release( it ).release();
+                    std::cerr << "Removed" << std::endl;
+                    return;
+                }
+                std::cerr << __LINE__ << std::endl;
+            }
+            //assert( 1 == 0 );
+        }
         // ---------- ChangeSet Methods ----------
 
         /********************************************/
@@ -413,7 +448,9 @@ namespace Ollie {
             // Record the positions we are moving back
             int intLen = itBlock->mSize() - itBlock.intPos;
             // Move to the next block
+            itBlock.it->mRemove( &itBlock );
             itBlock.it++;
+            itBlock.it->mAdd( &itBlock );
             // The pos points to the begining of the block
             itBlock.intPos = 0;
 
@@ -431,7 +468,9 @@ namespace Ollie {
             // Record the positions we are moving back
             int intLen = itBlock.intPos;
             // Move to the prev block
+            itBlock.it->mRemove( &itBlock );
             itBlock.it--;
+            itBlock.it->mAdd( &itBlock );
             // The pos points to the end of the block
             itBlock.intPos = itBlock->mSize();
 

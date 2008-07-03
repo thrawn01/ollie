@@ -7,6 +7,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 
 PROJECT(OLLIE)
 
+ADD_DEFINITIONS(-DBOOST_PTR_CONTAINER_NO_EXCEPTIONS )
+
 # Add Option to compile with shared/static libraries 
 OPTION(BUILD_SHARED "Build projects with shared libs" ON)
 IF(BUILD_SHARED)

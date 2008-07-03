@@ -76,7 +76,7 @@ namespace Ollie {
                 Block( void ) : _sizeBlockSize(0) {} 
                 Block( const ByteArray& );
                 Block( const ByteArray& , const Attributes &attr );
-                 ~Block( void ) {}
+                ~Block( void );
 
                 typedef BlockIterator Iterator;
 
@@ -92,9 +92,13 @@ namespace Ollie {
                 int                 mInsertBytes( int, const ByteArray& );
                 Block*              mDeleteBytes( int, int );
 
+                void                mAdd( BlockIterator* );
+                void                mRemove( BlockIterator* );
+
                 ByteArray           _arrBlockData;
                 size_t              _sizeBlockSize;
                 Attributes          _attr;
+                boost::ptr_list<BlockIterator> iteratorList;
 
         };
         typedef std::auto_ptr<Block> BlockPtr;
@@ -135,10 +139,14 @@ namespace Ollie {
 
             public:
                 BlockIterator( PageIterator* p, const BlockIterator& b ) 
-                            : parent(p), page(b.page), it(b.it), intPos(b.intPos) { /*it->mAdd( this );*/ }
+                            : parent(p), page(b.page), it(b.it), intPos(b.intPos) { it->mAdd( this ); }
                 BlockIterator( Page* p, const boost::ptr_list<Block>::iterator& i, int pos ) 
-                            : parent(0), page(p), it(i), intPos(pos) { /*it->mAdd( this );*/ }
-                ~BlockIterator() { /*it->mRemove( this );*/ }
+                            : parent(0), page(p), it(i), intPos(pos) { it->mAdd( this ); }
+                ~BlockIterator() { it->mRemove( this ); }
+                BlockIterator( const BlockIterator &i ) 
+                            : it(i.it), intPos(i.intPos), page(i.page), parent(i.parent) {
+                                    it->mAdd( this );
+                                }
                 
                 typedef boost::ptr_list<Block>::reference Reference;
                 typedef boost::ptr_list<Block>::pointer   Pointer;
@@ -152,7 +160,7 @@ namespace Ollie {
                                     intPos = i.intPos;
                                     page = i.page;
                                     parent = i.parent;
-                                    //it->mAdd( this );
+                                    it->mAdd( this );
                                 }
 
                 Reference       operator*() const {
@@ -186,7 +194,7 @@ namespace Ollie {
                 boost::ptr_list<Block>::iterator it;
                 int                              intPos;
                 Page*                            page;
-                const PageIterator*                    parent;
+                const PageIterator*              parent;
                 bool                             boolValid;
         };
 

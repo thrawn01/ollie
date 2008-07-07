@@ -12,6 +12,9 @@ ENABLE_TESTING()
 
 # Add our Tests
 # -----------------
+ADD_CXXTEST(PPtrListTests PPtrListTests.h )
+TARGET_LINK_LIBRARIES(PPtrListTests ollie )
+
 ADD_CXXTEST(PageTests PageTests.h )
 TARGET_LINK_LIBRARIES(PageTests ollie )
 

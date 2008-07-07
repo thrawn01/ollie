@@ -344,23 +344,23 @@ class PageTests : public CxxTest::TestSuite
             // Verify we can iterate thru blocks
             it = page.mFirst();
             TS_ASSERT_EQUALS( it->mBytes() , "AAAAABBBBBCCCCCDDDDD" );
-            TS_ASSERT_EQUALS( it.intPos , 0 );
+            TS_ASSERT_EQUALS( it.mPos() , 0 );
 
             // use Next to iterate thru all the blocks
             TS_ASSERT_EQUALS( page.mNextBlock( it ), 20 );
             TS_ASSERT_EQUALS( it->mBytes() , "EEEEEFFFFFGGGGGHHHHH" );
-            TS_ASSERT_EQUALS( it.intPos , 0 );
+            TS_ASSERT_EQUALS( it.mPos() , 0 );
             TS_ASSERT_EQUALS( page.mNextBlock( it ), 20 );
             TS_ASSERT_EQUALS( it->mBytes() , "1111122222333334444455555" );
-            TS_ASSERT_EQUALS( it.intPos , 0 );
+            TS_ASSERT_EQUALS( it.mPos() , 0 );
             TS_ASSERT_EQUALS( page.mNextBlock( it ), 25 );
             TS_ASSERT_EQUALS( it->mBytes() , "6666677777888889999900000" );
-            TS_ASSERT_EQUALS( it.intPos , 0 );
+            TS_ASSERT_EQUALS( it.mPos() , 0 );
 
             // Can't move past the last block on the page
             TS_ASSERT_EQUALS( page.mNextBlock( it ), -1 );
             TS_ASSERT_EQUALS( it->mBytes() , "6666677777888889999900000" );
-            TS_ASSERT_EQUALS( it.intPos , 0 );
+            TS_ASSERT_EQUALS( it.mPos() , 0 );
 
             // We are pointing to the last block in the page
             TS_ASSERT( it.it == page.mLast().it );
@@ -370,13 +370,13 @@ class PageTests : public CxxTest::TestSuite
             // points to 0 on the last block after the last call to mNextBlock()
             TS_ASSERT_EQUALS( page.mPrevBlock( it ), 0 );
             TS_ASSERT_EQUALS( it->mBytes() , "1111122222333334444455555" );
-            TS_ASSERT_EQUALS( it.intPos , 25 );
+            TS_ASSERT_EQUALS( it.mPos() , 25 );
             TS_ASSERT_EQUALS( page.mPrevBlock( it ), 25 );
             TS_ASSERT_EQUALS( it->mBytes() , "EEEEEFFFFFGGGGGHHHHH" );
-            TS_ASSERT_EQUALS( it.intPos , 20 );
+            TS_ASSERT_EQUALS( it.mPos() , 20 );
             TS_ASSERT_EQUALS( page.mPrevBlock( it ), 20 );
             TS_ASSERT_EQUALS( it->mBytes() , "AAAAABBBBBCCCCCDDDDD" );
-            TS_ASSERT_EQUALS( it.intPos , 20 );
+            TS_ASSERT_EQUALS( it.mPos() , 20 );
 
             // We are pointing to the first block in the page
             TS_ASSERT( it.it == page.mFirst().it );
@@ -538,10 +538,9 @@ class PageTests : public CxxTest::TestSuite
             // Goto the start of the page
             it = page.mFirst();
 
-            // Short hand version
-            TS_ASSERT_EQUALS( it.mNext( 35 ), 35 ); 
+            TS_ASSERT_EQUALS( page.mNext(it,  35 ), 35 ); 
             TS_ASSERT_EQUALS( page.mByteArray( it, 30 ), "222223333344444555556666677777" );
-            TS_ASSERT_EQUALS( it.mNext( 10 ), 10 ); 
+            TS_ASSERT_EQUALS( page.mNext(it, 10 ), 10 ); 
             TS_ASSERT_EQUALS( page.mByteArray( it, 10), "4444455555" );
 
             // Insert some bytes that will cause a block to split
@@ -549,11 +548,11 @@ class PageTests : public CxxTest::TestSuite
             //page.mPrintPage();
 
             // Because the insert places us just after the inserted bytes
-            TS_ASSERT_EQUALS( it.mPrev( 10 ), 10 ); 
+            TS_ASSERT_EQUALS( page.mPrev(it, 10 ), 10 ); 
             // Our inserted data
             TS_ASSERT_EQUALS( page.mByteArray( it, 10 ), "TTTTTYYYYY" );
             // All togeather now
-            TS_ASSERT_EQUALS( it.mPrev( 10 ), 10 ); 
+            TS_ASSERT_EQUALS( page.mPrev(it, 10 ), 10 ); 
             TS_ASSERT_EQUALS( page.mByteArray( it, 40 ), "2222233333TTTTTYYYYY44444555556666677777" );
 
         }

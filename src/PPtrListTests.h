@@ -121,7 +121,7 @@ class PageTests : public CxxTest::TestSuite
             // The persistant iterator is no longer valid, because it
             // is not apart of the container
             TS_ASSERT_EQUALS( itPersistant.mIsValid(), false );
-            // The Data is still there
+            // The Data is still there, but is not reliable, someone could have called mRelease()
             TS_ASSERT_EQUALS( itPersistant->intNum, 1 );
             // The data will be removed when our iterator is re-assigned or deleted
             itPersistant = it; 
@@ -139,6 +139,32 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it.mIsValid(), true );
             TS_ASSERT_EQUALS( it->intNum, 1 );
 
+            ++it;
+            // Can not release a valid item
+            TS_ASSERT( it.mRelease() == 0 );
+            TS_ASSERT_EQUALS( it.mIsValid(), true );
+            // Remove the last item
+            ptrList.mErase( it );
+            // Now we can release ownership of the pointer
+            TestBlock* block = it.mRelease();
+            TS_ASSERT_EQUALS( block->intNum, 2 );
+
+            delete block;
+
+            itPersistant = mFirst(); 
+            // Replace the first item with another block
+            block = ptrList.mReplace( ptrList.mFirst(), new TestBlock( 20 ) );
+            TS_ASSERT_EQUALS( block->intNum, 1 );
+
+            // Item should have been replaced
+            it = ptrList.mFirst();
+            TS_ASSERT_EQUALS( it.mIsValid(), true );
+            TS_ASSERT_EQUALS( it->intNum, 20 );
+            
+            // All iterators what were pointing to the item are now in-valid
+            TS_ASSERT_EQUALS( itPersistant.mIsValid(), false );
+
+            delete block;
         }
 
         // --------------------------------

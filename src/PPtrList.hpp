@@ -20,8 +20,12 @@
 
 #ifndef PPTR_LIST_INCLUDE_H
 #define PPTR_LIST_INCLUDE_H
+
+#include <boost/ptr_container/ptr_list.hpp>
+
 namespace Ollie {
     namespace OllieBuffer {
+        class Page;
         template< class T > class PIterator;
         template< class T > class PPtrIterator;
         template< class T > class PPtrList;
@@ -38,9 +42,16 @@ namespace Ollie {
                     // If we were passed an 0 ptr
                     if( !ptrPayLoad ) boolValid = false; 
                 }
-                ~PItem( void ) {
+                virtual ~PItem( void ) {
                     //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
-                delete ptrPayLoad; }
+                    if( ptrPayLoad ) delete ptrPayLoad; 
+                }
+
+                T* mRelease( void ) {
+                    T* ptrTemp = ptrPayLoad;
+                    ptrPayLoad = 0;
+                    return ptrTemp;
+                }
 
                 PItem<T>* mUnHook( void ) {
                     PItem<T>* ptrRtrValue;
@@ -108,19 +119,19 @@ namespace Ollie {
             friend class PPtrList<T>;
 
             public:
-                PIterator( PItem<T>* p ) : ptrItem(p), ptrPrev(0), ptrNext(0) { 
+                PIterator( PItem<T>* p ) : ptrItem(p), ptrPrev(0), ptrNext(0), intPos(0), page(0) { 
                     //std::cerr << "this: " << this << " - PIterator()" << std::endl;
                     mRegister( ptrItem );
                 }
-                PIterator( const PIterator<T>* p ) : ptrItem(p->ptrItem), ptrPrev(0), ptrNext(0) { 
+                PIterator( PIterator<T>* p ) : ptrItem(p->ptrItem), ptrPrev(0), ptrNext(0), intPos(0), page(0) { 
                     //std::cerr << "this: " << this << " - Ptr Copy PIterator()" << std::endl;
                     mRegister( ptrItem );
                 }
-                PIterator( const PIterator<T>& p ) : ptrItem(p.ptrItem), ptrPrev(0), ptrNext(0) { 
+                PIterator( const PIterator<T>& p ) : ptrItem(p.ptrItem), ptrPrev(0), ptrNext(0), intPos(0), page(0) { 
                     //std::cerr << "this: " << this << " - Copy PIterator()" << std::endl;
                     mRegister( ptrItem );
                 }
-                ~PIterator( void ) { 
+                virtual ~PIterator( void ) { 
                     //std::cerr << "this: " << this << " - ~PIterator()" << std::endl;
                     mUnRegister(); 
                 }
@@ -247,6 +258,8 @@ namespace Ollie {
                 PItem<T>* ptrItem;
                 PIterator<T>* ptrPrev;
                 PIterator<T>* ptrNext;
+                int intPos;
+                Page* page;
         };
 
         
@@ -257,15 +270,29 @@ namespace Ollie {
             public:
                 PPtrIterator( void ) : ptrIter(0) { }
                 PPtrIterator( PItem<T>* p ) : ptrIter( new PIterator<T>(p) ) { }
+                PPtrIterator( PIterator<T>* p ) : ptrIter( p ) { }
                 PPtrIterator( const PPtrIterator<T>& p ) : ptrIter( new PIterator<T>( p.ptrIter )) { }
-                ~PPtrIterator( void ) {
+                virtual ~PPtrIterator( void ) {
                     //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
-                if( ptrIter ) delete ptrIter; }
+                    if( ptrIter ) delete ptrIter; 
+                }
 
                 bool mIsValid( void ) const {
                     if( !ptrIter ) return false;
                     return ptrIter->ptrItem->boolValid; 
                 }
+
+                T* mRelease( void ) {
+                    // Can not release a valid item
+                    if( mIsValid() ) return 0;
+                    return ptrIter->ptrItem->mRelease(); 
+                }
+
+                inline void mSetPage( Page* page ) { ptrIter->page = page; }
+                inline const Page* mPage( void ) const { return ptrIter->page; }
+
+                inline void mSetPos( int intPos ) { ptrIter->intPos = intPos; }
+                inline int mPos( void ) const { return ptrIter->intPos; }
 
                 T& operator*() const {
                     assert( ptrIter != 0 );
@@ -289,7 +316,7 @@ namespace Ollie {
                     return *this;
                 }
 
-                int operator==( const PPtrIterator<T>& right ) {
+                int operator==( const PPtrIterator<T>& right ) const {
                     if( this == &right ) return 1;
                     if( ptrIter == right.ptrIter ) return 1;
                     if( *ptrIter == *right.ptrIter ) return 1;
@@ -317,7 +344,7 @@ namespace Ollie {
                     return *this;
                 }
 
-                int operator!=( const PPtrIterator<T>& right ) {
+                int operator!=( const PPtrIterator<T>& right ) const {
                     if( this != &right ) return 1;
                     assert( ptrIter != 0 );
                     if( *ptrIter == *right.ptrIter ) return 0;
@@ -335,18 +362,18 @@ namespace Ollie {
 
             public:
                 PPtrList( void ) : intCount(0), ptrFirst(0), ptrLast(0) { }
-                ~PPtrList( void ) {
+                virtual ~PPtrList( void ) {
                     //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
                 mClear(); }
                  
                 typedef PPtrIterator<T> Iterator;
 
-                Iterator mFirst( void ) {
+                virtual Iterator mFirst( void ) {
                    if( ptrFirst ) return Iterator( ptrFirst );
                    return Iterator();
                 }
 
-                Iterator mLast( void ) {
+                virtual Iterator mLast( void ) {
                    if( ptrLast ) return Iterator( ptrLast );
                    return Iterator();
                 }
@@ -356,8 +383,9 @@ namespace Ollie {
                 Iterator mInsert( const Iterator&, T* );
                 Iterator mInsert( const Iterator&, const Iterator& );
                 Iterator mErase( const Iterator& );
-                int mCount( void ) { return intCount; }
-                inline bool mIsEmpty( void ) { 
+                T* mReplace( const Iterator&, T* );
+                int mCount( void ) const { return intCount; }
+                inline bool mIsEmpty( void ) const { 
                     if( ptrFirst and ptrLast ) return false; 
                     return true; 
                 }
@@ -471,6 +499,20 @@ namespace Ollie {
             itNew.ptrIter->ptrItem->boolValid = true;
 
             return mInsert( it.ptrIter->ptrItem, itNew.ptrIter->ptrItem );
+        }
+
+        template< class T >
+        T* PPtrList<T>::mReplace( const PPtrIterator<T>& it, T* ptrNew ){
+            // Is the iterator passed valid?
+            if( ! it.mIsValid() ) return 0;
+
+            // Erase the item
+            PPtrIterator<T> itInsert = mErase( it );
+            // Insert the new item in its place
+            mInsert( itInsert, ptrNew );
+        
+            // Release the item, as it is in-valid now
+            return it.mRelease();
         }
 
     };

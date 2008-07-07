@@ -21,7 +21,9 @@
 #ifndef PAGE_INCLUDE_H
 #define PAGE_INCLUDE_H
 
+#include <boost/cast.hpp>
 #include <Ollie.h>
+#include <PPtrList.hpp>
 #include <File.h>
 #include <boost/ptr_container/ptr_list.hpp>
 #include <memory>
@@ -33,7 +35,6 @@ namespace Ollie {
         static const int nPos = std::string::npos;
 
         class Page;
-        class BlockIterator;
         class PageIterator;
         class PageBuffer;
 
@@ -78,7 +79,7 @@ namespace Ollie {
                 Block( const ByteArray& , const Attributes &attr );
                  ~Block( void ) {}
 
-                typedef BlockIterator Iterator;
+                typedef PPtrIterator<Block> Iterator;
 
                 void                mSetBytes( const ByteArray& );
                 const ByteArray&    mBytes( void ) const { return _arrBlockData; }
@@ -131,125 +132,59 @@ namespace Ollie {
         };
         typedef std::auto_ptr<ChangeSet> ChangeSetPtr;
 
-        class BlockIterator { 
-
-            public:
-                BlockIterator( PageIterator* p, const BlockIterator& b ) 
-                            : parent(p), page(b.page), it(b.it), intPos(b.intPos) { /*it->mAdd( this );*/ }
-                BlockIterator( Page* p, const boost::ptr_list<Block>::iterator& i, int pos ) 
-                            : parent(0), page(p), it(i), intPos(pos) { /*it->mAdd( this );*/ }
-                ~BlockIterator() { /*it->mRemove( this );*/ }
-                
-                typedef boost::ptr_list<Block>::reference Reference;
-                typedef boost::ptr_list<Block>::pointer   Pointer;
-
-                void            mSetParent( const PageIterator* p ) { 
-                                    parent = p; 
-                                }
-
-                void            copy( const BlockIterator &i ) {
-                                    it = i.it;
-                                    intPos = i.intPos;
-                                    page = i.page;
-                                    parent = i.parent;
-                                    //it->mAdd( this );
-                                }
-
-                Reference       operator*() const {
-                                    return *it;
-                                }
-                Pointer         operator->() const {
-                                    return &*it;
-                                }
-
-                BlockIterator&  operator=( const BlockIterator& i ) {
-                                    if( &i != this ) copy( i );
-                                    return *this;
-                                }
-
-                int             operator==( const BlockIterator& right ) const {
-                                    if( this == &right ) return 1;
-                                    if( it == right.it and intPos == right.intPos ) return 1;
-                                    return 0;
-                                }
-
-                int             operator!=( const BlockIterator& right ) const {
-                                    if( it != right.it or intPos != right.intPos ) return 1;
-                                    return 0;
-                                }
-
-                int             mNext( int );
-                int             mPrev( int );
-                int             mNextBlock( void );
-                int             mPrevBlock( void );
-
-                boost::ptr_list<Block>::iterator it;
-                int                              intPos;
-                Page*                            page;
-                const PageIterator*                    parent;
-                bool                             boolValid;
-        };
-
         class PageIterator { 
 
             public:
                 PageIterator( const PageBuffer* p, const boost::ptr_list<Page>::iterator& i, const Block::Iterator& b ) 
-                            : parent(p), it(i), itBlock( new BlockIterator( this, b ) ) {}
+                            : parent(p), it(i), itBlock( b ) {}
                 PageIterator( boost::ptr_list<Page>::iterator& i, Block::Iterator& b ) 
-                            : parent(0), it(i), itBlock( new BlockIterator( this, b ) ) {}
+                            : parent(0), it(i), itBlock( b ) {}
                 ~PageIterator() { }
-                PageIterator( const PageIterator& i ) : it(i.it), itBlock( new BlockIterator( this, *i.itBlock ) ), parent(i.parent) { }
+                PageIterator( const PageIterator& i ) : it(i.it), itBlock( i.itBlock ), parent(i.parent) { }
 
                 void            mUpdate( const boost::ptr_list<Page>::iterator &i, bool boolFirst = true );
 
                 typedef boost::ptr_list<Page>::reference Reference;
                 typedef boost::ptr_list<Page>::pointer   Pointer;
 
-                void            copy( const PageIterator &i ) {
-                                    it = i.it;
-                                    itBlock.reset( new BlockIterator( this, *i.itBlock ) );
-                                    parent = i.parent;
-                                }
-
-                Reference       operator*() const {
-                                    return *it;
-                                }
-                Pointer         operator->() const {
-                                    return &*it;
-                                }
+                Reference operator*() const { return *it; }
+                Pointer operator->() const { return &*it; }
             
-                PageIterator&   operator=( const PageIterator& i ) {
-                                    if( &i != this ) copy( i );
-                                    return *this;
-                                }
+                void copy( const PageIterator &i ) {
+                    it = i.it;
+                    itBlock = i.itBlock;
+                    parent = i.parent;
+                }
 
-                int             operator==( const BlockIterator& right ) const {
-                                    if( *itBlock == right ) return 1;
-                                    return 0;
-                                }
-
-                int             operator==( const PageIterator& right ) const {
-                                    if( this == &right ) return 1;
-                                    if( it == right.it and *itBlock == *right.itBlock ) return 1;
-                                    return 0;
-                                }
-
-                int             operator!=( const PageIterator& right ) const {
-                                    if( it != right.it or *itBlock != *right.itBlock ) return 1;
-                                    return 0;
-                                }
-                PageIterator    operator++() { 
-                                    mUpdate( ++it );
-                                    return *this;
-                                }
-                PageIterator    operator--() { 
-                                    mUpdate( --it, false );
-                                    return *this;
-                                }
+                PageIterator& operator=( const PageIterator& i ) {
+                    if( &i != this ) copy( i );
+                    return *this;
+                }
+                int operator==( const Block::Iterator& right ) const {
+                    if( itBlock == right ) return 1;
+                    return 0;
+                }
+                int operator==( const PageIterator& right ) const {
+                    if( this == &right ) return 1;
+                    if( it == right.it and itBlock == right.itBlock ) return 1;
+                    return 0;
+                }
+                int operator!=( const PageIterator& right ) const {
+                    if( it != right.it or itBlock != right.itBlock ) return 1;
+                    return 0;
+                }
+                PageIterator operator++() { 
+                    mUpdate( ++it );
+                    return *this;
+                }
+                PageIterator operator--() { 
+                    mUpdate( --it, false );
+                    return *this;
+                }
 
                 boost::ptr_list<Page>::iterator it;
-                std::auto_ptr<Block::Iterator>  itBlock;
-                const PageBuffer*               parent;
+                const PageBuffer* parent;
+                Block::Iterator itBlock;
 
         };
 
@@ -264,56 +199,79 @@ namespace Ollie {
             public:
                 Page( OffSet offTargetPageSize = DEFAULT_PAGE_SIZE ) : _offTargetPageSize( offTargetPageSize ),
                                                                        _offPageSize( 0 ), _offFileStart( -1 ) {
-                    _blockContainer.push_back( new Block() ); 
+                    blockContainer.mPushBack( new Block() ); 
                 }
                 ~Page( void ) { }
 
                 typedef PageIterator Iterator;
 
-                Block::Iterator   mFirst( void ) { 
-                                      return Block::Iterator( this, _blockContainer.begin(), 0 ); 
-                                  }
-                Block::Iterator   mLast( void ) { 
-                                      boost::ptr_list<Block>::iterator itBlock = ( --_blockContainer.end() );
-                                      return Block::Iterator( this, itBlock, itBlock->mSize() ); 
-                                  }
-                int               mInsertBlock( Block::Iterator&, Block* );
-                Block*            mDeleteBlock( Block::Iterator& );
-                void              mSplitBlock( Block::Iterator& );
-                int               mInsertBytes( Block::Iterator& , const ByteArray& , const Attributes &attr );
-                ChangeSet*        mDeleteBytes( Block::Iterator& , int );
-                ChangeSet*        mDeleteBytes( Block::Iterator& , const Block::Iterator& );
-                void              mSetTargetSize( OffSet const offSize ) { _offTargetPageSize = offSize; }
-                OffSet            mTargetSize( void ) const { return _offTargetPageSize; }
-                void              mSetFileOffSet( OffSet const offset ) { _offFileStart = offset; }
-                OffSet            mFileOffSet( void ) const { return _offFileStart; }
-                void              mSetSize( OffSet offSize ) { _offPageSize = offSize; }
-                OffSet            mSize( void ) const { return _offPageSize; }
-                int               mCount( void ) const { return _blockContainer.size(); }
-                bool              mIsFull( void ) const {
-                                      if ( _offPageSize >= _offTargetPageSize ) return true;
-                                      return false;
-                                  }
-                bool              mIsEmpty( void ) const { 
-                                      if ( _offPageSize == 0 ) return true;
-                                      return false;
-                                  }
-                bool              mCanAcceptBytes( OffSet offBytes ) const {
-                                      if( ( offBytes + _offPageSize) > _offTargetPageSize ) return false; 
-                                      return true;
-                                  }
-                int               mNext( Block::Iterator&, int );
-                int               mPrev( Block::Iterator&, int );
-                int               mNextBlock( Block::Iterator& );
-                int               mPrevBlock( Block::Iterator& );
-                const ByteArray&  mByteArray( const Block::Iterator&, int );
-                void              mPrintPage( void );
+                Block::Iterator mFirst( void ) { 
+                    Block::Iterator it = blockContainer.mLast();
+                    if( it.mIsValid() ) { 
+                        it.mSetPage( this );
+                    }
+                    return it;
+                }
+                Block::Iterator mLast( void ) { 
+                    Block::Iterator it = blockContainer.mLast();
+                    if( it.mIsValid() ) { 
+                        it.mSetPos( it->mSize() );
+                        it.mSetPage( this );
+                    }
+                    return it;
+                }
+                void mSetTargetSize( OffSet const offSize ) { 
+                    _offTargetPageSize = offSize; 
+                }
+                OffSet mTargetSize( void ) const { 
+                    return _offTargetPageSize; 
+                }
+                void mSetFileOffSet( OffSet const offset ) { 
+                    _offFileStart = offset; 
+                }
+                OffSet mFileOffSet( void ) const {
+                    return _offFileStart; 
+                }
+                void mSetSize( OffSet offSize ) {
+                    _offPageSize = offSize;
+                }
+                OffSet mSize( void ) const {
+                    return _offPageSize;
+                }
+                int mCount( void ) const { 
+                    return blockContainer.mCount(); 
+                }
+                bool mIsFull( void ) const {
+                    if ( _offPageSize >= _offTargetPageSize ) return true;
+                    return false;
+                }
+                bool mIsEmpty( void ) const { 
+                    if ( _offPageSize == 0 ) return true;
+                    return false;
+                }
+                bool mCanAcceptBytes( OffSet offBytes ) const {
+                    if( ( offBytes + _offPageSize ) > _offTargetPageSize ) return false; 
+                    return true;
+                }
 
-                boost::ptr_list<Block>  _blockContainer;
-                OffSet                  _offFileStart;
-                OffSet                  _offTargetPageSize;
-                OffSet                  _offPageSize;
-                ByteArray               _arrTemp;
+                int mInsertBlock( Block::Iterator&, Block* );
+                Block* mDeleteBlock( Block::Iterator& );
+                void mSplitBlock( Block::Iterator& );
+                int mInsertBytes( Block::Iterator& , const ByteArray& , const Attributes &attr );
+                ChangeSet* mDeleteBytes( Block::Iterator& , int );
+                ChangeSet* mDeleteBytes( Block::Iterator& , const Block::Iterator& );
+                int mNext( Block::Iterator&, int );
+                int mPrev( Block::Iterator&, int );
+                int mNextBlock( Block::Iterator& );
+                int mPrevBlock( Block::Iterator& );
+                const ByteArray& mByteArray( const Block::Iterator&, int );
+                void mPrintPage( void );
+
+                PPtrList<Block> blockContainer;
+                OffSet _offFileStart;
+                OffSet _offTargetPageSize;
+                OffSet _offPageSize;
+                ByteArray _arrTemp;
         };
         typedef std::auto_ptr<Page> PagePtr;
     };

@@ -111,26 +111,6 @@ namespace Ollie {
             catch(...){ return 0; } 
         }
 
-        // ---------- BlockIterator Methods ----------
-
-        /********************************************/
-
-        int BlockIterator::mNext( int intLen ) { 
-            return page->mNext( *this, intLen );
-        }
-
-        int BlockIterator::mPrev( int intLen ) { 
-            return page->mPrev( *this, intLen );
-        }
-
-        int BlockIterator::mNextBlock( void ) { 
-            return page->mNextBlock( *this );
-        }
-
-        int BlockIterator::mPrevBlock( void ) { 
-            return page->mPrevBlock( *this );
-        }
-
         // ---------- PageIterator Methods ----------
 
         /********************************************/
@@ -142,11 +122,10 @@ namespace Ollie {
             // If we didn't get passed an invalid iterator
             if( i != parent->pageList.end() ) {
                 if( boolFirst ) {
-                    *itBlock = i->mFirst();
+                    itBlock = i->mFirst();
                 } else {
-                    *itBlock = i->mLast();
+                    itBlock = i->mLast();
                 }
-                itBlock->mSetParent( this );
             }
         }
 
@@ -156,45 +135,36 @@ namespace Ollie {
         /********************************************/
 
         Block* Page::mDeleteBlock( Block::Iterator& itBlock ) {
-            assert( itBlock.page == this );
+            assert( itBlock.mPage() == this );
             BlockPtr delBlock;
 
             // If this is the only block in the page
-            if( itBlock.it == mLast().it and itBlock.it == mFirst().it ) {
+            if( itBlock == mLast() and itBlock == mFirst() ) {
                 // Replace the current block with an empty one
-                delBlock = BlockPtr( _blockContainer.replace( _blockContainer.begin() , new Block ).release() );
+                delBlock = BlockPtr( blockContainer.mReplace( blockContainer.mFirst() , new Block ) );
                 // Update the page size
                 _offPageSize -= delBlock->mSize();
                 // And reset our pos
-                itBlock.intPos = 0;
+                itBlock.mSetPos( 0 );
 
                 return delBlock.release();
             }
-
-            // Replace the block with an empty block, so we can get the original block
-            delBlock = BlockPtr( _blockContainer.replace( itBlock.it , new Block ).release() );
-            // Now Remove the block from the container and return an 
-            // iterator to the block after the one we deleted
-            itBlock.it = _blockContainer.erase( itBlock.it );
+            // So we can get the deleted block
+            Block::Iterator itTemp = itBlock;
+            // Erase the block, and return a new iterator
+            itBlock = blockContainer.mErase( itBlock );
+            // release the block
+            delBlock = BlockPtr( itTemp.mRelease() );
             // Update the page size
             _offPageSize -= delBlock->mSize();
-
-            // If we deleted the last block in the page
-            if( itBlock.it == _blockContainer.end() ) {
-                // Set our iterator to the last block on the page
-                itBlock = mLast();
-
-                return delBlock.release();
-            }
-
             // Update the pos 
-            itBlock.intPos = 0;
+            itBlock.mSetPos( 0 );
             
             return delBlock.release();
         }
 
         int Page::mInsertBlock( Block::Iterator& itBlock, Block* block ) {
-            assert( itBlock.page == this );
+            assert( itBlock.mPage() == this );
 
             // If the page is empty
             if( itBlock == mLast() and itBlock == mFirst() ) {

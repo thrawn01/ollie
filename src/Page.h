@@ -162,7 +162,7 @@ namespace Ollie {
                                     return &*it;
                                 }
 
-                BlockIterator   operator=( const BlockIterator& i ) {
+                BlockIterator&  operator=( const BlockIterator& i ) {
                                     if( &i != this ) copy( i );
                                     return *this;
                                 }
@@ -218,7 +218,7 @@ namespace Ollie {
                                     return &*it;
                                 }
             
-                PageIterator   operator=( const PageIterator& i ) {
+                PageIterator&   operator=( const PageIterator& i ) {
                                     if( &i != this ) copy( i );
                                     return *this;
                                 }

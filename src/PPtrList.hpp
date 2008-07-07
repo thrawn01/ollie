@@ -38,8 +38,61 @@ namespace Ollie {
                     // If we were passed an 0 ptr
                     if( !ptrPayLoad ) boolValid = false; 
                 }
-                    
-                ~PItem( void ) { delete ptrPayLoad; }
+                ~PItem( void ) {
+                    //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
+                delete ptrPayLoad; }
+
+                PItem<T>* mUnHook( void ) {
+                    PItem<T>* ptrRtrValue;
+
+                    // If we are the first item on the list
+                    if( ptrNext and ( ptrPrev == 0 ) ) {
+                        ptrNext->ptrPrev = 0;
+                        ptrRtrValue = ptrNext;
+                        mInValidate();
+                        return ptrRtrValue;
+                    }
+
+                    // If we are the last item on the list
+                    if( ptrPrev and ( ptrNext == 0 ) ) {
+                        ptrPrev->ptrNext = 0;
+                        ptrRtrValue = ptrPrev;
+                        mInValidate();
+                        return ptrRtrValue;
+                    }
+
+                    // Remove ourselves from the list
+                    ptrNext->ptrPrev = ptrPrev;
+                    ptrPrev->ptrNext = ptrNext;
+                    ptrRtrValue = ptrNext;
+                    mInValidate();
+                    return ptrRtrValue; 
+                }
+
+                void mInsert( PItem<T>* ptrItem ) {
+                    // if this is the first item in the list
+                    if( ptrPrev == 0 ) {
+                        // Update our prev pointer
+                        ptrPrev = ptrItem;
+                        // Tell our new insert about us
+                        ptrPrev->ptrNext = this;
+                        return;
+                    }
+                    // Else tell the prev item about the new item
+                    ptrPrev->ptrNext = ptrItem;
+                    // tell the new item about the prev item
+                    ptrItem->ptrPrev = ptrPrev;
+                    // And update our prev pointer
+                    ptrPrev = ptrItem;
+                    // Tell our new insert about us
+                    ptrItem->ptrNext = this;
+                }
+
+                inline void mInValidate( void ) {
+                    boolValid = false;
+                    ptrNext = 0;
+                    ptrPrev = 0;
+                }
 
             protected:
                 PIterator<T>* ptrIter;
@@ -52,10 +105,15 @@ namespace Ollie {
         template< class T >
         class PIterator {
             friend class PPtrIterator<T>;
+            friend class PPtrList<T>;
 
             public:
                 PIterator( PItem<T>* p ) : ptrItem(p), ptrPrev(0), ptrNext(0) { 
                     //std::cerr << "this: " << this << " - PIterator()" << std::endl;
+                    mRegister( ptrItem );
+                }
+                PIterator( const PIterator<T>* p ) : ptrItem(p->ptrItem), ptrPrev(0), ptrNext(0) { 
+                    //std::cerr << "this: " << this << " - Ptr Copy PIterator()" << std::endl;
                     mRegister( ptrItem );
                 }
                 PIterator( const PIterator<T>& p ) : ptrItem(p.ptrItem), ptrPrev(0), ptrNext(0) { 
@@ -129,12 +187,15 @@ namespace Ollie {
 
                     // If we are the only iterator pointing to this item
                     if( ( ptrNext == 0 )  and ( ptrPrev == 0 ) and ptrItem->ptrIter == this ) {
+                    //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
                         ptrItem->ptrIter = 0;
                         // and it's not in the list anymore
                         if( ! ptrItem->boolValid ) { 
+                    //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
                             delete ptrItem; 
                             ptrItem = 0;
                         }
+                    //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
                         return;
                     }
 
@@ -170,6 +231,18 @@ namespace Ollie {
                     return 0;
                 }
 
+                PIterator<T>& operator=( const PIterator<T>& i ) {
+                    //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
+                    if( &i != this ) {
+                    //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
+                        mUnRegister();
+                        ptrItem = i.ptrItem;
+                        mRegister( ptrItem );
+                    }
+                    //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
+                    return *this;
+                }
+
             protected:
                 PItem<T>* ptrItem;
                 PIterator<T>* ptrPrev;
@@ -179,14 +252,17 @@ namespace Ollie {
         
         template< class T >
         class PPtrIterator {
+            friend class PPtrList<T>;
 
             public:
                 PPtrIterator( void ) : ptrIter(0) { }
                 PPtrIterator( PItem<T>* p ) : ptrIter( new PIterator<T>(p) ) { }
-                PPtrIterator( const PPtrIterator<T>& p ) : ptrIter(p.ptrIter) { }
-                ~PPtrIterator( void ) { if( ptrIter ) delete ptrIter; }
+                PPtrIterator( const PPtrIterator<T>& p ) : ptrIter( new PIterator<T>( p.ptrIter )) { }
+                ~PPtrIterator( void ) {
+                    //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
+                if( ptrIter ) delete ptrIter; }
 
-                bool mIsValid( void ) {
+                bool mIsValid( void ) const {
                     if( !ptrIter ) return false;
                     return ptrIter->ptrItem->boolValid; 
                 }
@@ -215,9 +291,30 @@ namespace Ollie {
 
                 int operator==( const PPtrIterator<T>& right ) {
                     if( this == &right ) return 1;
-                    assert( ptrIter != 0 );
+                    if( ptrIter == right.ptrIter ) return 1;
                     if( *ptrIter == *right.ptrIter ) return 1;
                     return 0;
+                }
+
+                PPtrIterator<T>& operator=( const PPtrIterator<T>& i ) {
+                    if( &i != this ) {
+                        // If we want to copy a null pointer
+                        if( i.ptrIter == 0 ) {
+                            // Delete our current iterator
+                            if( ptrIter ) delete ptrIter;
+                            // And assign the null pointer
+                            ptrIter = i.ptrIter;
+                            return *this;
+                        }
+                        // If our pointer is null
+                        if( ptrIter == 0 ) {
+                            ptrIter = new PIterator<T>( i.ptrIter );
+                            return *this;
+                        }
+                        // Else, make these iterators equal
+                        *ptrIter = *i.ptrIter;
+                    }
+                    return *this;
                 }
 
                 int operator!=( const PPtrIterator<T>& right ) {
@@ -238,7 +335,9 @@ namespace Ollie {
 
             public:
                 PPtrList( void ) : intCount(0), ptrFirst(0), ptrLast(0) { }
-                ~PPtrList( void ) { mClear(); }
+                ~PPtrList( void ) {
+                    //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
+                mClear(); }
                  
                 typedef PPtrIterator<T> Iterator;
 
@@ -253,10 +352,12 @@ namespace Ollie {
                 }
 
                 void mPushBack( T* );
+                Iterator mInsert( PItem<T>* , PItem<T>* );
                 Iterator mInsert( const Iterator&, T* );
+                Iterator mInsert( const Iterator&, const Iterator& );
                 Iterator mErase( const Iterator& );
                 int mCount( void ) { return intCount; }
-                bool mIsEmpty( void ) { 
+                inline bool mIsEmpty( void ) { 
                     if( ptrFirst and ptrLast ) return false; 
                     return true; 
                 }
@@ -306,12 +407,70 @@ namespace Ollie {
             ptrItem->ptrPrev = ptrLast;
             // Make the new item the last one
             ptrLast = ptrItem;
+            // Increment our item count
+            ++intCount;
         }
 
         template< class T >
         PPtrIterator<T> PPtrList<T>::mErase( const PPtrIterator<T>& it ) {
-            // TODO, finish me
+            // If the iterator passed valid?
+            if( ! it.mIsValid() ) return PPtrIterator<T>();
+            // Get a copy of the item pointer
+            PItem<T>* ptrItem = it.ptrIter->ptrItem;
+            // Un-Hook the item from the list
+            PItem<T>* ptrRtrItem = ptrItem->mUnHook();
+            // Decrement our item count
+            --intCount;
+            // Did we just remove the first item in the list?
+            if( ptrItem == ptrFirst ) { ptrFirst = ptrRtrItem; }
+            // Did we just remove the last item in the list?
+            if( ptrItem == ptrLast ) { ptrLast = ptrRtrItem; }
+            // If Un-Hook returned a valid Item
+            if( ptrRtrItem ) return PPtrIterator<T>( ptrRtrItem );
+
+            // else return an invalid iterator
             return PPtrIterator<T>();
+        }
+
+        template< class T >
+        PPtrIterator<T> PPtrList<T>::mInsert( PItem<T>* ptrItem, PItem<T>* ptrNewItem ) {
+            // If the list is empty
+            if( mIsEmpty() ) {
+                ptrFirst = ptrNewItem;
+                ptrLast = ptrNewItem;
+                ++intCount;
+                return PPtrIterator<T>( ptrNewItem );
+            }
+
+            ptrItem->mInsert( ptrNewItem );
+            ++intCount;
+            // Did we just insert the first item in the list?
+            if( ptrItem == ptrFirst ) { ptrFirst = ptrNewItem; }
+
+            // Return a new iterator to our item
+           return PPtrIterator<T>( ptrNewItem );
+
+        }
+
+        template< class T >
+        PPtrIterator<T> PPtrList<T>::mInsert( const PPtrIterator<T>& it, T* ptrValue ) {
+            // If the iterator passed valid?
+            if( ! it.mIsValid() ) return PPtrIterator<T>();
+
+            return mInsert( it.ptrIter->ptrItem, new PItem<T>(ptrValue) );
+        }
+
+        template< class T >
+        PPtrIterator<T> PPtrList<T>::mInsert( const PPtrIterator<T>& it, const PPtrIterator<T>& itNew ) {
+            // Is the iterator passed in-valid?
+            if( ! it.mIsValid() ) return PPtrIterator<T>();
+            // Do not accept insert iterators that are already apart of a container
+            if( itNew.mIsValid() ) return PPtrIterator<T>();
+
+            // Tell the item it is now valid again
+            itNew.ptrIter->ptrItem->boolValid = true;
+
+            return mInsert( it.ptrIter->ptrItem, itNew.ptrIter->ptrItem );
         }
 
     };

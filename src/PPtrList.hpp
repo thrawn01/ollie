@@ -67,8 +67,30 @@ namespace Ollie {
                     mUnRegister(); 
                 }
 
-                void mPrev( void );
-                void mNext( void );
+                void mNext( void ) { 
+                    // If there is a next item
+                    if( ptrItem->ptrNext != 0 ) {
+                        // Un-Register with our current item
+                        mUnRegister();
+                        // Register with the next item
+                        mRegister( ptrItem->ptrNext );
+                        // Make the next item our current
+                        ptrItem = ptrItem->ptrNext;
+                    }
+                }
+
+                void mPrev( void ) {
+                    // If there is a Prev item
+                    if( ptrItem->ptrPrev != 0 ) {
+                        // Un-Register with our current item
+                        mUnRegister();
+                        // Register with the Prev item
+                        mRegister( ptrItem->ptrPrev );
+                        // Make the next item our current
+                        ptrItem = ptrItem->ptrPrev;
+                    }
+                }
+
                 PIterator<T>* mFindLastIter( PItem<T>* ptrItem ) {
                     PIterator<T>* ptrIter = ptrItem->ptrIter;
                     // While there is a next iter
@@ -79,33 +101,40 @@ namespace Ollie {
                     return ptrIter;
                 }
 
-                inline void mRegister( PItem<T>* p ) {
-                    assert( p != 0 );
+                inline void mRegister( PItem<T>* ptrNew ) {
+                    assert( ptrNew != 0 );
 
                     // If there is already an iterator pointing to this item
-                    if( ptrItem->ptrIter ) {
+                    if( ptrNew->ptrIter ) {
                     //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
-                        PIterator<T>* ptrLast = mFindLastIter( ptrItem );
+                        PIterator<T>* ptrLast = mFindLastIter( ptrNew );
                         // Tell the last iterator in the list about us
                     //std::cerr << "this: " << this << " - ptrLast: " << ptrLast << std::endl;
                         ptrLast->ptrNext = this;
-                        // An record the previous iterator with us
+                        // And update the previous iterator with us
                         ptrPrev = ptrLast;
                         return;
                     }
                     //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
                     // else, we are the only one pointing to this item
-                    ptrItem->ptrIter = this;
+                    ptrNew->ptrIter = this;
                 }
 
                 inline void mUnRegister( void ) {
                     assert( ptrItem != 0 );
 
+                    //if( ptrNext == 0 ) std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
+                    //if( ptrPrev == 0 ) std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
+                    //std::cerr << "this: " << this << " - item: " << ptrItem->ptrIter << std::endl;
+
                     // If we are the only iterator pointing to this item
                     if( ( ptrNext == 0 )  and ( ptrPrev == 0 ) and ptrItem->ptrIter == this ) {
                         ptrItem->ptrIter = 0;
                         // and it's not in the list anymore
-                        if( ! ptrItem->boolValid ) delete ptrItem; 
+                        if( ! ptrItem->boolValid ) { 
+                            delete ptrItem; 
+                            ptrItem = 0;
+                        }
                         return;
                     }
 
@@ -113,18 +142,24 @@ namespace Ollie {
                     if( ptrNext and ( ptrPrev == 0 ) ) {
                         ptrItem->ptrIter = ptrNext;
                         ptrNext->ptrPrev = 0;
+                        mReset();
                         return;
                     }
 
                     // If we are the last iterator on the list
                     if( ptrPrev and ( ptrNext == 0 ) ) {
                         ptrPrev->ptrNext = 0;
+                        mReset();
                         return;
                     }
 
                     // Remove ourselves from the list
                     ptrNext->ptrPrev = ptrPrev;
                     ptrPrev->ptrNext = ptrNext;
+                    mReset();
+                }
+
+                inline void mReset( void ) {
                     ptrPrev = 0;
                     ptrNext = 0;
                 }
@@ -158,12 +193,12 @@ namespace Ollie {
 
                 T& operator*() const {
                     assert( ptrIter != 0 );
-                    return *static_cast<T*>( *ptrIter->ptrItem->ptrPayLoad );
+                    return *ptrIter->ptrItem->ptrPayLoad;
                 }
 
                 T* operator->() const {
                     assert( ptrIter != 0 );
-                    return static_cast<T*>( *ptrIter->ptrItem->ptrPayLoad );
+                    return ptrIter->ptrItem->ptrPayLoad;
                 }
 
                 PPtrIterator& operator++() {
@@ -177,11 +212,19 @@ namespace Ollie {
                     ptrIter->mPrev();
                     return *this;
                 }
+
                 int operator==( const PPtrIterator<T>& right ) {
-                    assert( ptrIter != 0 );
                     if( this == &right ) return 1;
+                    assert( ptrIter != 0 );
                     if( *ptrIter == *right.ptrIter ) return 1;
                     return 0;
+                }
+
+                int operator!=( const PPtrIterator<T>& right ) {
+                    if( this != &right ) return 1;
+                    assert( ptrIter != 0 );
+                    if( *ptrIter == *right.ptrIter ) return 0;
+                    return 1;
                 }
 
             protected:
@@ -191,7 +234,7 @@ namespace Ollie {
 
         // Persistant Pointer List Container
         template< class T >
-        class PPtrList {
+        class PPtrList : boost::noncopyable {
 
             public:
                 PPtrList( void ) : intCount(0), ptrFirst(0), ptrLast(0) { }
@@ -211,7 +254,7 @@ namespace Ollie {
 
                 void mPushBack( T* );
                 Iterator mInsert( const Iterator&, T* );
-                Iterator mErase( const Iterator&, T* );
+                Iterator mErase( const Iterator& );
                 int mCount( void ) { return intCount; }
                 bool mIsEmpty( void ) { 
                     if( ptrFirst and ptrLast ) return false; 
@@ -264,6 +307,13 @@ namespace Ollie {
             // Make the new item the last one
             ptrLast = ptrItem;
         }
+
+        template< class T >
+        PPtrIterator<T> PPtrList<T>::mErase( const PPtrIterator<T>& it ) {
+            // TODO, finish me
+            return PPtrIterator<T>();
+        }
+
     };
 };
 

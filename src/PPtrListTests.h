@@ -45,7 +45,7 @@ class PageTests : public CxxTest::TestSuite
         // --------------------------------
         // Test ByteArray Class
         // --------------------------------
-        void testPPtrList( void ) {
+        void testPPtrListBasic( void ) {
 
             PPtrList<TestBlock> ptrList;
 
@@ -59,14 +59,15 @@ class PageTests : public CxxTest::TestSuite
             // Should be 1 item in the list
             TS_ASSERT_EQUALS( ptrList.mCount(), 1 );
             // Get an iterator to the first item
-            PPtrList<TestBlock>::Iterator it( ptrList.mFirst() );
+            PPtrList<TestBlock>::Iterator it = ptrList.mFirst();
+            TS_ASSERT_EQUALS( it.mIsValid(), true );
 
             // Should point to the beginning and end of the list
             TS_ASSERT( it == ptrList.mFirst() );
             TS_ASSERT( it == ptrList.mLast() );
 
             // The block we add should be there
-            /*TS_ASSERT_EQUALS( it->intNum , 1 );
+            TS_ASSERT_EQUALS( it->intNum, 1 );
             // Move to a non-existant item
             ++it;
             // The move request is ignored
@@ -74,7 +75,46 @@ class PageTests : public CxxTest::TestSuite
             // Move to a non-existant item
             --it;
             // The move request is ignored
-            TS_ASSERT_EQUALS( it->intNum, 1 );*/
+            TS_ASSERT_EQUALS( it->intNum, 1 );
+
+            ptrList.mPushBack( new TestBlock( 2 ) );
+
+            TS_ASSERT( it == ptrList.mFirst() );
+            TS_ASSERT( it != ptrList.mLast() );
+
+            // Iterator still points to the first item
+            TS_ASSERT_EQUALS( it->intNum, 1 );
+            // Move to the next item
+            ++it;
+            // Iterator now points to the next item
+            TS_ASSERT_EQUALS( it->intNum, 2 );
+            // Move back to the first item
+            --it;
+            // Iterator now points to the next item
+            TS_ASSERT_EQUALS( it->intNum, 1 );
+            TS_ASSERT_EQUALS( it.mIsValid(), true );
+
+            // Make a copy of our iterator
+            PPtrList<TestBlock>::Iterator itPersistant = it;
+            // Ensure they both point to the same thing
+            TS_ASSERT_EQUALS( itPersistant->intNum, 1 );
+            TS_ASSERT_EQUALS( it->intNum, 1 );
+
+            // Erase the item and give me a new 
+            // iterator to the next item
+            it = ptrList.mErase( it );
+            // The new iterator should point to the only item
+            TS_ASSERT_EQUALS( it->intNum, 2 );
+            // And is still valid
+            TS_ASSERT_EQUALS( it.mIsValid(), true );
+
+            // The persistant iterator is no longer valid, because it
+            // is not apart of the container
+            TS_ASSERT_EQUALS( itPersistant.mIsValid(), false );
+            // The Data is still there
+            TS_ASSERT_EQUALS( itPersistant->intNum, 1 );
+            // The data will be removed when our iterator is re-assigned or deleted
+            itPersistant = it; 
 
         }
 

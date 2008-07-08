@@ -144,9 +144,18 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT( it.mRelease() == 0 );
             TS_ASSERT_EQUALS( it.mIsValid(), true );
             // Remove the last item
-            ptrList.mErase( it );
+            itPersistant = ptrList.mErase( it );
+
+            // Should be only 1 item in the container
+            TS_ASSERT( itPersistant == ptrList.mFirst() );
+            TS_ASSERT( itPersistant == ptrList.mLast() );
+            TS_ASSERT_EQUALS( ptrList.mCount(), 1 );
+
             // Now we can release ownership of the pointer
             TestBlock* block = it.mRelease();
+            // If release returned zero, the release was denied, 
+            // someone else is pointing to this item
+            TS_ASSERT( block != 0 );
             TS_ASSERT_EQUALS( block->intNum, 2 );
 
             delete block;
@@ -155,6 +164,7 @@ class PageTests : public CxxTest::TestSuite
             itPersistant = it; 
             // Replace the first item with another block
             block = ptrList.mReplace( it, new TestBlock( 20 ) );
+            TS_ASSERT( block != 0 );
             TS_ASSERT_EQUALS( block->intNum, 1 );
 
             // Item should have been replaced

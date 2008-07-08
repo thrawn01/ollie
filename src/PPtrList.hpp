@@ -56,6 +56,12 @@ namespace Ollie {
                 PItem<T>* mUnHook( void ) {
                     PItem<T>* ptrRtrValue;
 
+                    // If this item is the only item in the list
+                    if( ( ptrNext == 0 )  and ( ptrPrev == 0 ) ) {
+                        boolValid = false;
+                        return 0;
+                    }
+
                     // If we are the first item on the list
                     if( ptrNext and ( ptrPrev == 0 ) ) {
                         ptrNext->ptrPrev = 0;
@@ -450,9 +456,13 @@ namespace Ollie {
             // Decrement our item count
             --intCount;
             // Did we just remove the first item in the list?
-            if( ptrItem == ptrFirst ) { ptrFirst = ptrRtrItem; }
+            if( ( ptrItem == ptrFirst ) or ( intCount == 1 ) ) { 
+                ptrFirst = ptrRtrItem; 
+            }
             // Did we just remove the last item in the list?
-            if( ptrItem == ptrLast ) { ptrLast = ptrRtrItem; }
+            if( ( ptrItem == ptrLast ) or ( intCount == 1 ) ) {
+                ptrLast = ptrRtrItem;
+            }
             // If Un-Hook returned a valid Item
             if( ptrRtrItem ) return PPtrIterator<T>( ptrRtrItem );
 
@@ -508,8 +518,13 @@ namespace Ollie {
 
             // Erase the item
             PPtrIterator<T> itInsert = mErase( it );
-            // Insert the new item in its place
-            mInsert( itInsert, ptrNew );
+            // If we deleted the last item in the container 
+            if( mIsEmpty() ) {
+                mPushBack( ptrNew );
+            } else {
+                // Insert the new item in its place
+                mInsert( itInsert, ptrNew );
+            }
         
             // Release the item, as it is in-valid now
             return it.mRelease();

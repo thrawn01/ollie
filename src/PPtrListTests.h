@@ -50,7 +50,7 @@ class PageTests : public CxxTest::TestSuite
             PPtrList<TestBlock> ptrList;
 
             // If you call these on an empty buffer will return an in-valid iterator
-            // Calling anything but mIsValid() will abort the application
+            // Calling anything but mIsValid() on an in-valid iterator could seq fault
             TS_ASSERT_EQUALS( ptrList.mFirst().mIsValid(), false );
             TS_ASSERT_EQUALS( ptrList.mLast().mIsValid(), false );
             // Ensure we can not delete an empty list, And test assignment of in-valid iterators
@@ -64,6 +64,7 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( ptrList.mCount(), 1 );
             // Get an iterator to the first item
             it = ptrList.mFirst();
+            // Should be a valid iterator
             TS_ASSERT_EQUALS( it.mIsValid(), true );
 
             // Should point to the beginning and end of the list
@@ -179,7 +180,7 @@ class PageTests : public CxxTest::TestSuite
         }
 
         // --------------------------------
-        // Test Persistant iterators accross containers
+        // Test Persistant iterators across containers
         // --------------------------------
         void testPPtrListPersistantMove( void ) {
 

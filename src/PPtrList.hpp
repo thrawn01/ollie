@@ -265,7 +265,7 @@ namespace Ollie {
                 PIterator<T>* ptrPrev;
                 PIterator<T>* ptrNext;
                 int intPos;
-                Page* page;
+                const Page* page;
         };
 
         
@@ -294,11 +294,12 @@ namespace Ollie {
                     return ptrIter->ptrItem->mRelease(); 
                 }
 
-                inline void mSetPage( Page* page ) { ptrIter->page = page; }
+                inline void mSetPage( const Page* page ) { ptrIter->page = page; }
                 inline const Page* mPage( void ) const { return ptrIter->page; }
 
                 inline void mSetPos( int intPos ) { ptrIter->intPos = intPos; }
                 inline int mPos( void ) const { return ptrIter->intPos; }
+                inline T* mPointer( void ) const { return ptrIter->ptrItem->ptrPayLoad; }
 
                 T& operator*() const {
                     assert( ptrIter != 0 );

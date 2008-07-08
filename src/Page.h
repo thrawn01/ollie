@@ -35,6 +35,7 @@ namespace Ollie {
         static const int nPos = std::string::npos;
 
         class Page;
+        class BlockIterator;
         class PageIterator;
         class PageBuffer;
 
@@ -79,7 +80,7 @@ namespace Ollie {
                 Block( const ByteArray& , const Attributes &attr );
                  ~Block( void ) {}
 
-                typedef PPtrIterator<Block> Iterator;
+                typedef BlockIterator Iterator;
 
                 void                mSetBytes( const ByteArray& );
                 const ByteArray&    mBytes( void ) const { return _arrBlockData; }
@@ -131,6 +132,77 @@ namespace Ollie {
                  OffSet                 _offSet;
         };
         typedef std::auto_ptr<ChangeSet> ChangeSetPtr;
+
+        class BlockIterator {
+          
+            public:
+                BlockIterator( void ) : it() { }
+                BlockIterator( PPtrIterator<Block>& itBlock ) : it(itBlock) { }
+
+                inline void mSetPos( int intPos ) { 
+                    it.mSetPos( intPos );
+                }
+
+                inline int mPos( void ) const { 
+                    return it.mPos( );
+                }
+
+                inline void mSetPage( const Page* page ) { 
+                    it.mSetPage( page );
+                }
+
+                inline const Page* mPage( void ) const {
+                    return it.mPage();
+                }
+
+                inline bool mIsValid( void ) const { 
+                    return it.mIsValid();
+                }
+
+                inline Block* mRelease( void ) {
+                    return it.mRelease();
+                }
+
+                Block& operator*() const {
+                    return *it;
+                }
+
+                Block* operator->() const {
+                    return it.mPointer();
+                }
+
+                BlockIterator& operator++() {
+                    ++it;
+                    return *this;
+                }
+
+                BlockIterator& operator--() {
+                    --it;
+                    return *this;
+                }
+
+                int operator==( const BlockIterator& right ) const {
+                    if( this == &right ) return 1;
+                    if( it == right.it and it.mPos() == right.it.mPos() ) return 1;
+                    return 0;
+                }
+
+                BlockIterator& operator=( const BlockIterator& i ) {
+                    if( &i != this ) {
+                        it = i.it;
+                        it.mSetPos( i.it.mPos() );
+                    }
+                    return *this;
+                }
+
+                int operator!=( const BlockIterator& right ) const {
+                    if( this != &right ) return 1;
+                    if( it == right.it ) return 0;
+                    return 1;
+                }
+
+                PPtrIterator<Block> it;
+        };
 
         class PageIterator { 
 
@@ -206,19 +278,19 @@ namespace Ollie {
                 typedef PageIterator Iterator;
 
                 Block::Iterator mFirst( void ) { 
-                    Block::Iterator it = blockContainer.mLast();
+                    PPtrIterator<Block> it = blockContainer.mFirst();
                     if( it.mIsValid() ) { 
                         it.mSetPage( this );
                     }
-                    return it;
+                    return BlockIterator( it );
                 }
                 Block::Iterator mLast( void ) { 
-                    Block::Iterator it = blockContainer.mLast();
+                    PPtrIterator<Block> it = blockContainer.mLast();
                     if( it.mIsValid() ) { 
                         it.mSetPos( it->mSize() );
                         it.mSetPage( this );
                     }
-                    return it;
+                    return BlockIterator( it );
                 }
                 void mSetTargetSize( OffSet const offSize ) { 
                     _offTargetPageSize = offSize; 

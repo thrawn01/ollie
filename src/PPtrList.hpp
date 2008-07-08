@@ -383,7 +383,7 @@ namespace Ollie {
                 Iterator mInsert( const Iterator&, T* );
                 Iterator mInsert( const Iterator&, const Iterator& );
                 Iterator mErase( const Iterator& );
-                T* mReplace( const Iterator&, T* );
+                T* mReplace( Iterator&, T* );
                 int mCount( void ) const { return intCount; }
                 inline bool mIsEmpty( void ) const { 
                     if( ptrFirst and ptrLast ) return false; 
@@ -502,7 +502,7 @@ namespace Ollie {
         }
 
         template< class T >
-        T* PPtrList<T>::mReplace( const PPtrIterator<T>& it, T* ptrNew ){
+        T* PPtrList<T>::mReplace( PPtrIterator<T>& it, T* ptrNew ){
             // Is the iterator passed valid?
             if( ! it.mIsValid() ) return 0;
 

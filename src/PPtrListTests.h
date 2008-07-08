@@ -151,9 +151,10 @@ class PageTests : public CxxTest::TestSuite
 
             delete block;
 
-            itPersistant = mFirst(); 
+            it = ptrList.mFirst();
+            itPersistant = it; 
             // Replace the first item with another block
-            block = ptrList.mReplace( ptrList.mFirst(), new TestBlock( 20 ) );
+            block = ptrList.mReplace( it, new TestBlock( 20 ) );
             TS_ASSERT_EQUALS( block->intNum, 1 );
 
             // Item should have been replaced

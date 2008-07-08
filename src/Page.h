@@ -111,11 +111,11 @@ namespace Ollie {
 
                  int        mSetSize( int intSize ) { _intSize = intSize; }
                  int        mSize( void ) { return _intSize; }
-                 int        mCount( void ) { return _blockContainer.size(); }
+                 int        mCount( void ) { return blockContainer.size(); }
                  void       mPushPage( Page* page );
                  void       mPush( Block* block );
                  Block*     mPop( void );
-                 Iterator   mPeek( void ) { return _blockContainer.begin(); }
+                 Iterator   mPeek( void ) { return blockContainer.begin(); }
                  void       mSetOffSet( OffSet offset ) { _offSet = offset; }
                  OffSet     mOffSet( void ) { return _offSet; }
                  bool       mIsInsert( void ) { return _boolIsInsert; }
@@ -125,7 +125,7 @@ namespace Ollie {
                                 _boolIsInsert = true; 
                             }
 
-                 boost::ptr_list<Block> _blockContainer;
+                 boost::ptr_list<Block> blockContainer;
                  int                    _intSize;
                  bool                   _boolIsInsert;
                  OffSet                 _offSet;

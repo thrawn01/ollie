@@ -363,7 +363,7 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it.mPos() , 0 );
 
             // We are pointing to the last block in the page
-            TS_ASSERT( it.it == page.mLast().it );
+            TS_ASSERT( it == page.mLast() );
 
             // use Prev to iterate back thru all the blocks
             // Prev only returned 0 zero because the iterator 
@@ -379,7 +379,7 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it.mPos() , 20 );
 
             // We are pointing to the first block in the page
-            TS_ASSERT( it.it == page.mFirst().it );
+            TS_ASSERT( it == page.mFirst() );
         }
 
         // --------------------------------

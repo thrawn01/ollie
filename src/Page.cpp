@@ -98,13 +98,13 @@ namespace Ollie {
         void ChangeSet::mPush( Block* block ) { 
             _boolIsInsert = false;
             _intSize += block->mSize();
-            _blockContainer.push_front( block ); 
+            blockContainer.push_front( block ); 
         }
         Block* ChangeSet::mPop( void ) { 
             try{ 
                 if( mCount() == 0 ) return 0;
                 _boolIsInsert = false;
-                Block* block = _blockContainer.release( _blockContainer.begin() ).release(); 
+                Block* block = blockContainer.release( blockContainer.begin() ).release(); 
                 _intSize -= block->mSize();
                 return block;
             }
@@ -141,7 +141,9 @@ namespace Ollie {
             // If this is the only block in the page
             if( itBlock == mLast() and itBlock == mFirst() ) {
                 // Replace the current block with an empty one
-                delBlock = BlockPtr( blockContainer.mReplace( blockContainer.mFirst() , new Block ) );
+                delBlock = BlockPtr( blockContainer.mReplace( itBlock, new Block ) );
+                // Assign the iterator to the only block in the page
+                itBlock = mLast(); 
                 // Update the page size
                 _offPageSize -= delBlock->mSize();
                 // And reset our pos
@@ -149,16 +151,24 @@ namespace Ollie {
 
                 return delBlock.release();
             }
-            // So we can get the deleted block
-            Block::Iterator itTemp = itBlock;
             // Erase the block, and return a new iterator
-            itBlock = blockContainer.mErase( itBlock );
+            Block::Iterator itTemp = blockContainer.mErase( itBlock );
             // release the block
-            delBlock = BlockPtr( itTemp.mRelease() );
+            delBlock = BlockPtr( itBlock.mRelease() );
             // Update the page size
             _offPageSize -= delBlock->mSize();
-            // Update the pos 
-            itBlock.mSetPos( 0 );
+
+            // If we deleted the last item in the container
+            if( itTemp == mLast() ) {
+                // Set the itBlock to the end of the page
+                // including the intPos
+                itBlock = mLast();
+            } else {
+                // Update the block iterator
+                itBlock = itTemp;
+                // Update the pos 
+                itBlock.mSetPos( 0 );
+            }
             
             return delBlock.release();
         }
@@ -168,27 +178,25 @@ namespace Ollie {
 
             // If the page is empty
             if( itBlock == mLast() and itBlock == mFirst() ) {
-                // Erase the empty block
-                _blockContainer.erase( itBlock.it );
-                // Insert the new block
-                _blockContainer.push_back( block );
-                // Assign the iterator to the last block in the page
-                itBlock.it = ( --_blockContainer.end() ); 
+                // Replace the currentl empty block
+                blockContainer.mReplace( itBlock, block );
+                // Assign the iterator to the only block in the page
+                itBlock = mLast(); 
             }else {
                 // If our iterator points to the end of the page
                 if( itBlock == mLast() ) {
                     // Append the block 
-                    _blockContainer.push_back( block ); 
+                    blockContainer.mPushBack( block ); 
                     // Assign the iterator to the last block in the page
-                    itBlock.it = ( --_blockContainer.end() ); 
+                    itBlock = mLast();
                 }else {
                     // If the intPos points to the end of the block
-                    if( itBlock.intPos == itBlock->mSize() ) {
+                    if( itBlock.mPos() == itBlock->mSize() ) {
                         // Insert the block after this block
-                        itBlock.it = _blockContainer.insert( ++itBlock.it, block ); 
+                        itBlock = blockContainer.mInsert( ++itBlock, block ); 
                     } else { 
                         // Insert the block
-                        itBlock.it = _blockContainer.insert( itBlock.it, block ); 
+                        itBlock = blockContainer.mInsert( itBlock, block ); 
                     }
                 }
             }
@@ -196,32 +204,32 @@ namespace Ollie {
             // Record Incr the Cur size of our page
             _offPageSize += block->mSize();
             // Update the pos to the end of the block
-            itBlock.intPos = block->mSize();
+            itBlock.mSetPos( block->mSize() );
 
             return block->mSize();
         }
 
         void Page::mSplitBlock( Block::Iterator& itBlock ) {
-            assert( itBlock.page == this );
+            assert( itBlock.mPage() == this );
             
             // Refuse to split at the begining or end of a block
-            if( itBlock.intPos == 0 or itBlock.intPos == itBlock->mSize() ) return;
+            if( itBlock.mPos() == 0 or itBlock.mPos() == itBlock->mSize() ) return;
             // Split the block of text starting 0 and ending at intPos
-            BlockPtr newBlock( itBlock->mDeleteBytes( 0 , itBlock.intPos ) );
+            BlockPtr newBlock( itBlock->mDeleteBytes( 0 , itBlock.mPos() ) );
             // Reset the pos here, so the InsertBlock can correct it
-            itBlock.intPos = 0;
+            itBlock.mSetPos( 0 );
             // Insert the block just before the current block
             mInsertBlock( itBlock, newBlock.release() );
 
         }
 
         ChangeSet* Page::mDeleteBytes( Block::Iterator& itStart, int intLen ) {
-            assert( itStart.page == this );
+            assert( itStart.mPage() == this );
 
             // Copy of the start iterator
             Block::Iterator itEnd( itStart );
             // Move the end iterator over X number of bytes
-            itEnd.mNext( intLen );
+            mNext( itEnd, intLen );
 
             return mDeleteBytes( itStart, itEnd );
 
@@ -229,25 +237,26 @@ namespace Ollie {
 
         // NOTE: If itEnd actually precedes itStart, the result is undefined.
         ChangeSet* Page::mDeleteBytes( Block::Iterator& itBlock, const Block::Iterator& itEnd ) {
-            assert( itBlock.page == this );
+            assert( itBlock.mPage() == this );
             ChangeSetPtr changeSet( new ChangeSet );
 
             // Make a copy of our iterator
-            Block::Iterator itStart = itBlock;
+            Block::Iterator itStart( itBlock );
 
             // If the end block is the same as the start block
-            if( itEnd.it == itStart.it ) {
+            if( itEnd == itStart ) {
                 // If itStart points to the start of the block and the itEnd to the end of the block
-                if( itStart.intPos == 0 and itEnd.intPos == itStart->mSize() ) {
+                if( itStart.mPos() == 0 and itEnd.mPos() == itStart->mSize() ) {
                     // Delete the entire block
                     changeSet->mPush( mDeleteBlock( itStart ) );
                     // Our originating block was deleted, update the iterator passed
                     itBlock = itStart;
+                    itBlock.mSetPos( itStart.mPos() );
 
                     return changeSet.release();
                 }
                 // delete the bytes in this block
-                changeSet->mPush( itStart->mDeleteBytes( itStart.intPos, itEnd.intPos - itStart.intPos ) );
+                changeSet->mPush( itStart->mDeleteBytes( itStart.mPos(), itEnd.mPos() - itStart.mPos() ) );
                 // Update the page size
                 _offPageSize -= changeSet->mSize();
 
@@ -255,20 +264,20 @@ namespace Ollie {
             }
 
             // If itStart does not point to the end of the start block
-            if( itStart.intPos != itStart->mSize() ) {
+            if( itStart.mPos() != itStart->mSize() ) {
                 // Delete bytes until the end of the start block
-                changeSet->mPush( itStart->mDeleteBytes( itStart.intPos, nPos ) );
+                changeSet->mPush( itStart->mDeleteBytes( itStart.mPos(), nPos ) );
             }
         
             // Delete blocks until we find our end block
-            itStart.it++;
-            while( itEnd.it != itStart.it or itStart.it == mLast().it ) {
+            ++itStart;
+            while( itEnd != itStart or itStart == mLast() ) {
                 // Delete the entire block
                 changeSet->mPush( mDeleteBlock( itStart ) );
             }
 
             // If itEnd points to the end of the block
-            if( itEnd.intPos == itStart->mSize() ) {
+            if( itEnd.mPos() == itStart->mSize() ) {
                 // Delete the entire block
                 changeSet->mPush( mDeleteBlock( itStart ) );
 
@@ -276,7 +285,7 @@ namespace Ollie {
             }
 
             // Delete bytes until the itEnd
-            changeSet->mPush( itStart->mDeleteBytes( 0, itEnd.intPos ) );
+            changeSet->mPush( itStart->mDeleteBytes( 0, itEnd.mPos() ) );
             // Update the page size
             _offPageSize -= changeSet->mSize();
 
@@ -285,7 +294,7 @@ namespace Ollie {
         }
 
         int Page::mInsertBytes( Block::Iterator& itBlock, const ByteArray& arrBytes, const Attributes &attr ) {
-            assert( itBlock.page == this );
+            assert( itBlock.mPage() == this );
 
             // If the attr is NOT the same as 
             // the block we are inserting into
@@ -300,18 +309,18 @@ namespace Ollie {
             }
 
             // Insert the data into the block
-            int intLen = itBlock->mInsertBytes( itBlock.intPos, arrBytes );
+            int intLen = itBlock->mInsertBytes( itBlock.mPos(), arrBytes );
 
             // Update the page size
             _offPageSize += intLen;
             // Update the pos
-            itBlock.intPos += intLen;
+            itBlock.mSetPos( itBlock.mPos() + intLen );
 
             return intLen;
         }
 
         int Page::mNext( Block::Iterator& itBlock, int intCount ) {
-            assert( itBlock.page == this );
+            assert( itBlock.mPage() == this );
 
             // OK, lol
             if( intCount == 0 ) return 0;
@@ -319,7 +328,7 @@ namespace Ollie {
             // Remeber the requested positions
             int intRequested = intCount;
             // Figure out how many positions we have left till the end of the block
-            int intPosLeft = itBlock->mSize() - itBlock.intPos;
+            int intPosLeft = itBlock->mSize() - itBlock.mPos();
 
             // If we are asking to move past the current block
             while( intCount > intPosLeft ) {
@@ -338,13 +347,13 @@ namespace Ollie {
             }
 
             // Update our position in the block
-            itBlock.intPos += intCount;
+            itBlock.mSetPos( itBlock.mPos() + intCount );
 
             return intRequested;
         }
 
         int Page::mPrev( Block::Iterator& itBlock, int intCount ) {
-            assert( itBlock.page == this );
+            assert( itBlock.mPage() == this );
 
             // OK, lol
             if( intCount == 0 ) return 0;
@@ -353,7 +362,7 @@ namespace Ollie {
             int intRequested = intCount;
             
             // If we are asking to move to the previous block
-            while( intCount > itBlock.intPos ) {
+            while( intCount > itBlock.mPos() ) {
 
                 // Move to the previous block
                 int intMoved = mPrevBlock( itBlock );
@@ -367,58 +376,59 @@ namespace Ollie {
             }
            
             // Move back the requested positions in this block
-            itBlock.intPos -= intCount;
+            itBlock.mSetPos( itBlock.mPos() - intCount );
 
             return intRequested;
         }
 
         int Page::mNextBlock( Block::Iterator& itBlock ) {
-            assert( itBlock.page == this );
+            assert( itBlock.mPage() == this );
 
             // If itBlock.it points to the last block in the page
-            if( itBlock.it == mLast().it ) {
+            if( itBlock == mLast() ) {
                 return -1;
             }
            
             // Record the positions we are moving back
-            int intLen = itBlock->mSize() - itBlock.intPos;
+            int intLen = itBlock->mSize() - itBlock.mPos();
             // Move to the next block
-            itBlock.it++;
+            ++itBlock;
             // The pos points to the begining of the block
-            itBlock.intPos = 0;
+            itBlock.mSetPos( 0 );
 
             return intLen;
         }
 
         int Page::mPrevBlock( Block::Iterator& itBlock ) {
-            assert( itBlock.page == this );
+            assert( itBlock.mPage() == this );
 
             // If itBlock.it points to the first block in the page
-            if( itBlock.it == mFirst().it ) {
+            if( itBlock == mFirst() ) {
                 return -1;
             }
          
             // Record the positions we are moving back
-            int intLen = itBlock.intPos;
+            int intLen = itBlock.mPos();
             // Move to the prev block
-            itBlock.it--;
+            --itBlock;
             // The pos points to the end of the block
-            itBlock.intPos = itBlock->mSize();
+            itBlock.mSetPos( itBlock->mSize() );
 
             return intLen;
         }
 
         void Page::mPrintPage( void ) {
 
-            boost::ptr_list<Block>::iterator it;
+            Block::Iterator it;
 
-            for( it = _blockContainer.begin() ; it != _blockContainer.end() ; it++ ) {
+            for( it = blockContainer.mFirst() ; it != blockContainer.mLast() ; ++it ) {
                 std::cout << "\tBlock: " << it->mBytes() << std::endl;
             }
+            std::cout << "\tBlock: " << it->mBytes() << std::endl;
         }
 
         const ByteArray& Page::mByteArray( const Block::Iterator& itBlock, int intCount ) { 
-            assert( itBlock.page == this );
+            assert( itBlock.mPage() == this );
 
             _arrTemp.mClear();
 
@@ -431,13 +441,13 @@ namespace Ollie {
             // Remeber the requested positions
             int intRequested = intCount;
             // Figure out how many positions we have left till the end of the block
-            int intPosLeft = itTemp->mSize() - itTemp.intPos;
+            int intPosLeft = itTemp->mSize() - itTemp.mPos();
 
             // If we are asking to move past the current block
             while( intCount > intPosLeft ) {
 
                 // Append the data in this block to the temp
-                _arrTemp.mAppend( itTemp->mBytes( itTemp.intPos, intPosLeft ) );
+                _arrTemp.mAppend( itTemp->mBytes( itTemp.mPos(), intPosLeft ) );
                 // Move to the next block
                 int intMoved = mNextBlock( itTemp );
                 // Couldn't move forward anymore
@@ -452,7 +462,7 @@ namespace Ollie {
                 intPosLeft = itTemp->mSize();
             }
             // Append the remaining bytes in the block
-            _arrTemp.mAppend( itTemp->mBytes( itTemp.intPos, intCount ) );
+            _arrTemp.mAppend( itTemp->mBytes( itTemp.mPos(), intCount ) );
 
             return _arrTemp;
 

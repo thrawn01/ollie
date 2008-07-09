@@ -5,7 +5,7 @@ use vars qw( %opt %ConfigList);
 
 @cmakeFiles = ('CMakeFiles', 'Makefile', 'progress.make', 'cmake_install.cmake',
                'config-bsg.h', 'CMakeCache.txt', 'DartTestfile.txt', 'Testing',
-               'DartTestfile.txt', 'DartConfiguration.tcl');
+               'DartTestfile.txt', 'DartConfiguration.tcl', 'CTestTestfile.cmake');
 
 # -------------------------
 # Main

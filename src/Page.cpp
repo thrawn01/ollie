@@ -180,7 +180,7 @@ namespace Ollie {
             // If the page is empty
             if( itBlock == mLast() and itBlock == mFirst() ) {
                 // Replace the currentl empty block
-                blockContainer.mReplace( itBlock.it, block );
+                delete blockContainer.mReplace( itBlock.it, block );
                 // Assign the iterator to the only block in the page
                 itBlock.it = mLast().it; 
             }else {

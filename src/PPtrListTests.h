@@ -68,6 +68,7 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it.mIsValid(), true );
 
             // Should point to the beginning and end of the list
+            TS_ASSERT_EQUALS( it != ptrList.mFirst(), 0 );
             TS_ASSERT( it == ptrList.mFirst() );
             TS_ASSERT( it == ptrList.mLast() );
 
@@ -175,6 +176,21 @@ class PageTests : public CxxTest::TestSuite
             
             // All iterators what were pointing to the item are now in-valid
             TS_ASSERT_EQUALS( itPersistant.mIsValid(), false );
+
+            delete block;
+
+            it = ptrList.mFirst();
+            ++it; ++it;
+            ptrList.mInsert( it, new TestBlock( 5 ) );
+            ++it;
+            block = ptrList.mReplace( it, new TestBlock( 50 ) );
+            ptrList.mPushBack( new TestBlock( 1 ) );
+            ptrList.mPushBack( new TestBlock( 2 ) );
+            ptrList.mPushBack( new TestBlock( 3 ) );
+            ptrList.mPushBack( new TestBlock( 3 ) );
+            ptrList.mPushBack( new TestBlock( 4 ) );
+            it = ptrList.mFirst();
+            itPersistant = ptrList.mFirst();
 
             delete block;
         }

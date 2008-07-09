@@ -264,7 +264,7 @@ class PageTests : public CxxTest::TestSuite
 
             TS_ASSERT_EQUALS( block->mSize(), 0 );
             delete block;
-
+            TS_ABORT();
             TS_ASSERT_EQUALS( page.mCount() , 1 );
             TS_ASSERT_EQUALS( page.mSize() , 0 );
 
@@ -363,7 +363,7 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it.mPos() , 0 );
 
             // We are pointing to the last block in the page
-            TS_ASSERT( it == page.mLast() );
+            TS_ASSERT( it.it == page.mLast().it );
 
             // use Prev to iterate back thru all the blocks
             // Prev only returned 0 zero because the iterator 
@@ -379,7 +379,7 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it.mPos() , 20 );
 
             // We are pointing to the first block in the page
-            TS_ASSERT( it == page.mFirst() );
+            TS_ASSERT( it.it == page.mFirst().it );
         }
 
         // --------------------------------
@@ -415,7 +415,6 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( page.mCount() , 1 );
             TS_ASSERT_EQUALS( page.mSize() , 0 );
             TS_ASSERT_EQUALS( page.mByteArray( it, 10 ), "" );
-
             // Try to delete an empty page
             changeSet = page.mDeleteBytes( it, page.mLast() );
             TS_ASSERT_EQUALS( changeSet->mSize(), 0 );

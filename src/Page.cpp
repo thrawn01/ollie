@@ -89,7 +89,7 @@ namespace Ollie {
 
         void ChangeSet::mPushPage( Page* page ) {
             Block::Iterator it = page->mFirst();
-            _boolIsInsert = false;
+            assert( it.mIsValid() == true );
 
             while( page->mSize() != 0 ) {
                 mPush( page->mDeleteBlock( it ).mRelease() );
@@ -160,6 +160,8 @@ namespace Ollie {
 
         Block::Iterator Page::mDeleteBlock( Block::Iterator& itBlock ) {
             assert( itBlock.mPage() == this );
+            assert( itBlock.mIsValid() == true );
+
             Block::Iterator itOld;
 
             // If this is the only block in the page
@@ -181,13 +183,11 @@ namespace Ollie {
             _offPageSize -= itOld->mSize();
 
             // If we deleted the last item in the container
-            if( itOld.it == mLast().it ) {
+            if( itBlock.it == mLast().it ) {
                 // Set the itBlock to the end of the page
                 // including the intPos
                 itBlock = mLast();
             } else {
-                // Update the block iterator
-                itBlock = itOld;
                 // Update the pos 
                 itBlock.mSetPos( 0 );
             }
@@ -196,7 +196,22 @@ namespace Ollie {
         }
 
         void Page::mMoveBlock( Block::Iterator& itFrom, Block::Iterator& itTo ) {
+            assert( itFrom.mIsValid() == true );
+            assert( itTo.mIsValid() == true );
 
+            // Get the pages from the iterators
+            Page* pageFrom = itFrom.mPage();
+            Page* pageTo = itTo.mPage();
+
+            // Delete the block from the first page
+            Block::Iterator itDeleted = pageFrom->mDeleteBlock( itFrom );
+            // Insert the block into the second page
+            pageTo->mInsertBlock( itTo, itDeleted.mItem() );
+            // The insert makes itTo point to the insert block
+            // Make the itFrom iterator point to the inserted block
+            itFrom = itTo;
+            // Remind all the iterators pointing to this item we have changed pages
+            itFrom.mUpdate( pageTo );
 
         }
 
@@ -206,6 +221,7 @@ namespace Ollie {
 
         int Page::mInsertBlock( Block::Iterator& itBlock, PItem<Block>* ptrItem ) {
             assert( itBlock.mPage() == this );
+            assert( itBlock.mIsValid() == true );
 
             // If the page is empty
             if( itBlock == mLast() and itBlock == mFirst() ) {
@@ -242,6 +258,7 @@ namespace Ollie {
 
         void Page::mSplitBlock( Block::Iterator& itBlock ) {
             assert( itBlock.mPage() == this );
+            assert( itBlock.mIsValid() == true );
             Block::Iterator itTemp = itBlock;
             
             // Refuse to split at the begining or end of a block
@@ -258,6 +275,7 @@ namespace Ollie {
 
         ChangeSet* Page::mDeleteBytes( Block::Iterator& itStart, int intLen ) {
             assert( itStart.mPage() == this );
+            assert( itStart.mIsValid() == true );
 
             // Copy of the start iterator
             Block::Iterator itEnd( itStart );
@@ -271,6 +289,8 @@ namespace Ollie {
         // NOTE: If itEnd actually precedes itStart, the result is undefined.
         ChangeSet* Page::mDeleteBytes( Block::Iterator& itBlock, const Block::Iterator& itEnd ) {
             assert( itBlock.mPage() == this );
+            assert( itBlock.mIsValid() == true );
+
             ChangeSetPtr changeSet( new ChangeSet );
 
             // Make a copy of our iterator
@@ -328,6 +348,7 @@ namespace Ollie {
 
         int Page::mInsertBytes( Block::Iterator& itBlock, const ByteArray& arrBytes, const Attributes &attr ) {
             assert( itBlock.mPage() == this );
+            assert( itBlock.mIsValid() == true );
 
             // If the attr is NOT the same as 
             // the block we are inserting into
@@ -354,6 +375,7 @@ namespace Ollie {
 
         int Page::mNext( Block::Iterator& itBlock, int intCount ) {
             assert( itBlock.mPage() == this );
+            assert( itBlock.mIsValid() == true );
 
             // OK, lol
             if( intCount == 0 ) return 0;
@@ -387,6 +409,7 @@ namespace Ollie {
 
         int Page::mPrev( Block::Iterator& itBlock, int intCount ) {
             assert( itBlock.mPage() == this );
+            assert( itBlock.mIsValid() == true );
 
             // OK, lol
             if( intCount == 0 ) return 0;
@@ -416,12 +439,13 @@ namespace Ollie {
 
         int Page::mNextBlock( Block::Iterator& itBlock ) {
             assert( itBlock.mPage() == this );
+            assert( itBlock.mIsValid() == true );
 
             // If itBlock.it points to the last block in the page
             if( itBlock.it == mLast().it ) {
                 return -1;
             }
-           
+
             // Record the positions we are moving back
             int intLen = itBlock->mSize() - itBlock.mPos();
             // Move to the next block
@@ -434,6 +458,7 @@ namespace Ollie {
 
         int Page::mPrevBlock( Block::Iterator& itBlock ) {
             assert( itBlock.mPage() == this );
+            assert( itBlock.mIsValid() == true );
 
             // If itBlock.it points to the first block in the page
             if( itBlock.it == mFirst().it ) {
@@ -462,6 +487,7 @@ namespace Ollie {
 
         const ByteArray& Page::mByteArray( const Block::Iterator& itBlock, int intCount ) { 
             assert( itBlock.mPage() == this );
+            assert( itBlock.mIsValid() == true );
 
             _arrTemp.mClear();
 

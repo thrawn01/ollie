@@ -551,6 +551,7 @@ namespace Ollie {
 
         template< class T >
         void PPtrList<T>::mPushBack( PItem<T>* ptrItem ) {
+            ptrItem->boolValid = true;
 
             // If the list is empty
             if( mIsEmpty() ) {
@@ -603,9 +604,32 @@ namespace Ollie {
             // return an iterator to the deleted item
             return PPtrIterator<T>( ptrItem );
         }
+        /*
+            // Doing this preserves any additional members 
+            // in the iterator like intPos or page
+            PPtrIterator<T> itDeleted = it;
+            // Mark it as valid so the (it) will not delete it
+            // when we re-assign it
+            //ptrItem->boolValid = true;
+
+            if( ptrRtrItem == 0 ) {
+                it.mSetInValid();
+            }else {
+                // Update our iterator to the new item
+                it = ptrRtrItem;
+            }
+
+            //ptrItem->boolValid = false;
+
+            itDeleted = ptrItem;
+            itDeleted.mSetInValid();
+            // return an iterator to the deleted item
+            return itDeleted;
+        }*/
 
         template< class T >
         PItem<T>* PPtrList<T>::mInsert( PItem<T>* ptrItem, PItem<T>* ptrNewItem ) {
+            ptrNewItem->boolValid = true;
             // If the list is empty
             if( mIsEmpty() ) {
                 ptrFirst = ptrNewItem;

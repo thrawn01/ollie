@@ -571,5 +571,69 @@ class PageTests : public CxxTest::TestSuite
 
         }
 
+        // --------------------------------
+        // Test Moving Blocks Between Pages
+        // --------------------------------
+        void testMovingBlocks( void ) {
+            Page* page1 = new Page();
+            Page* page2 = new Page();
+
+            // Get some iterators for testing
+            Block::Iterator it1 = page1->mFirst();
+            Block::Iterator it2 = page2->mFirst();
+
+            // Insert bytes into the first page
+            TS_ASSERT_EQUALS( page1->mInsertBytes( it1, STR("AAAAABBBBBCCCCCDDDDD"), Attributes(1) ), 20 );
+
+            // Page 1 has 1 block
+            TS_ASSERT_EQUALS( page1->mIsEmpty(), false );
+            TS_ASSERT_EQUALS( page1->mSize(), 20 );
+            TS_ASSERT_EQUALS( page2->mIsEmpty(), true );
+            TS_ASSERT_EQUALS( page2->mSize(), 0 );
+
+            // Point another iterator at the first block, 10 bytes in
+            Block::Iterator itPersist1 = page1->mFirst();
+            //TODO: Replace should not make a iterator in-valid, 
+            // because the only time we use replace is to replace an empty page with data
+            itPersist1.mNext(10);
+            TS_ASSERT_EQUALS( page1->mByteArray( itPersist1, 10 ), "CCCCCDDDDD" );
+
+            // Iterator 1 points to a block in page 1
+            TS_ASSERT( it1.mPage() == page1 );
+            
+            // Move the block pointed to with it1 from page1 to page2
+            page1->mMoveBlock( it1, it2 );
+
+            TS_ASSERT_EQUALS( page1->mIsEmpty(), true );
+            TS_ASSERT_EQUALS( page1->mSize(), 0 );
+            TS_ASSERT_EQUALS( page2->mIsEmpty(), false );
+            TS_ASSERT_EQUALS( page2->mSize(), 20 );
+
+            // The page should have changed
+            TS_ASSERT( it1.mPage() == page2 );
+
+            // The iterator should still point to valid data
+            TS_ASSERT_EQUALS( it1.mIsValid(), true );
+            TS_ASSERT_EQUALS( it1->mBytes(), "AAAAABBBBBCCCCCDDDDD" );
+            // The pos should be at the end of the inserted data
+            TS_ASSERT_EQUALS( page2->mByteArray( it1, 10 ), "" );
+            // Move back 20 bytes
+            it1.mPrev( 20 );
+            // And there is our data
+            TS_ASSERT_EQUALS( page2->mByteArray( it1, 10 ), "AAAAABBBBB" );
+
+            // Because the insert occured at the same place as it2, 
+            // it2 now points to the same block as it1
+            TS_ASSERT_EQUALS( it2.mIsValid(), true );
+            TS_ASSERT_EQUALS( it2->mBytes(), "AAAAABBBBBCCCCCDDDDD" );
+
+            // Our other iterator should still point to the correct block
+            TS_ASSERT_EQUALS( itPersist1.mIsValid(), true );
+            TS_ASSERT_EQUALS( itPersist1->mBytes(), "AAAAABBBBBCCCCCDDDDD" );
+            TS_ASSERT_EQUALS( page2->mByteArray( itPersist1, 10 ), "CCCCCDDDDD" );
+
+            delete page1;
+            delete page2;
+        }
 };
 

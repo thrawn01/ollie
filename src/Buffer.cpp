@@ -62,7 +62,7 @@ namespace Ollie {
         ChangeSet* PageBuffer::mDeletePage( Page::Iterator& it ) {
             ChangeSetPtr changeSet( new ChangeSet );
 
-            // If we are trying to delete the last page in the list
+            // If we are trying to delete the only page in the list
             if( it.it == mFirst().it and it.it == mLast().it ) {
                 // Replace the current page with an empty one, and push the page into the change set
                 changeSet->mPushPage( pageList.replace( pageList.begin() , new Page( _offTargetPageSize ) ).release() );
@@ -107,11 +107,13 @@ namespace Ollie {
                         // Split the block
                         itPage->mSplitBlock( itOld );
                     }
-                   
-                    // Delete the block from the first page, and insert the block into the new page
-                    page->mInsertBlock( itNew, itPage->mDeleteBlock( itOld ).mRelease() );
-                    // Tell the iterators pointing to this item, they are now in a new page
-                    itNew.mUpdate( page.get() );
+                    Block::Iterator itBlock = itOld;
+                    // Move the block from the first page and into the new page
+                    page->mMoveBlock( itBlock, itNew );
+                    itOld = itBlock;
+
+                    // Move to the next Block
+                    ++itOld.it;
                 }
                 // Get a temp iterator from the original page
                 Page::Iterator itTemp = itPage;

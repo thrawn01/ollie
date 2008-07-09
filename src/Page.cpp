@@ -94,7 +94,11 @@ namespace Ollie {
             while( page->mSize() != 0 ) {
                 mPush( page->mDeleteBlock( it ) );
             }
+            // We take ownership
+            delete page;
+            page = 0;
         }
+
         void ChangeSet::mPush( Block* block ) { 
             _boolIsInsert = false;
             _intSize += block->mSize();
@@ -109,6 +113,26 @@ namespace Ollie {
                 return block;
             }
             catch(...){ return 0; } 
+        }
+
+        // ---------- BlockIterator Methods ----------
+
+        /********************************************/
+
+        int BlockIterator::mNext( int intLen ) {
+            return it.mPage()->mNext( *this, intLen );
+        }
+
+        int BlockIterator::mPrev( int intLen ) {
+            return it.mPage()->mPrev( *this, intLen );
+        }
+            
+        int BlockIterator::mNextBlock( void ) {
+            return it.mPage()->mNextBlock( *this );
+        }
+
+        int BlockIterator::mPrevBlock( void ) {
+            return it.mPage()->mPrevBlock( *this );
         }
 
         // ---------- PageIterator Methods ----------

@@ -39,11 +39,14 @@ namespace Ollie {
             public:
                 PItem( T* p ) : ptrPayLoad(p), ptrNext(0), ptrPrev(0), 
                                 ptrIter(0), boolValid(true) { 
+                    //std::cerr << "this: " << this << " - PItem()" << std::endl;
                     // If we were passed an 0 ptr
                     if( !ptrPayLoad ) boolValid = false; 
                 }
                 virtual ~PItem( void ) {
+                    //std::cerr << "this: " << this << " - ~PItem()" << std::endl;
                     if( ptrPayLoad ) {
+                        //std::cerr << "this: " << this << " - ~PItem() delete " << ptrPayLoad << std::endl;
                         delete ptrPayLoad; 
                     }
                 }
@@ -182,13 +185,14 @@ namespace Ollie {
 
                 inline void mRegister( PItem<T>* ptrNew ) {
                     assert( ptrNew != 0 );
+                    //std::cerr << "this: " << this << " -  mRegister() for: " << ptrNew << std::endl;
 
                     // If there is already an iterator pointing to this item
-                    if( ptrNew->ptrIter ) {
-                    //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
+                    if( ptrNew->ptrIter != 0 ) {
+                        //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
                         PIterator<T>* ptrLast = mFindLastIter( ptrNew );
                         // Tell the last iterator in the list about us
-                    //std::cerr << "this: " << this << " - ptrLast: " << ptrLast << std::endl;
+                        //std::cerr << "this: " << this << " - ptrLast InList: " << ptrLast << std::endl;
                         ptrLast->ptrNext = this;
                         // And update the previous iterator with us
                         ptrPrev = ptrLast;
@@ -201,10 +205,13 @@ namespace Ollie {
 
                 inline void mUnRegister( void ) {
                     assert( ptrItem != 0 );
+                    //std::cerr << "this: " << this << " -  mUnRegister() for: " << ptrItem << std::endl;
 
-                    //if( ptrNext == 0 ) std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
-                    //if( ptrPrev == 0 ) std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
-                    //std::cerr << "this: " << this << " - item: " << ptrItem->ptrIter << std::endl;
+                    //if( ptrNext == 0 ) std::cerr << "this: " << this << " - ptrNext == 0 " << std::endl;
+                    //else std::cerr << "this: " << this << " - ptrNext == " << ptrNext << std::endl;
+                    //if( ptrPrev == 0 ) std::cerr << "this: " << this << " - ptrNext == 0 " << std::endl;
+                    //else std::cerr << "this: " << this << " - ptrPrev == " << ptrPrev << std::endl;
+                    //std::cerr << "this: " << this << " - first iter in list: " << ptrItem->ptrIter << " for: " << ptrItem << std::endl;
 
                     // If we are the only iterator pointing to this item
                     if( ( ptrNext == 0 )  and ( ptrPrev == 0 ) and ptrItem->ptrIter == this ) {
@@ -212,7 +219,7 @@ namespace Ollie {
                         ptrItem->ptrIter = 0;
                         // and it's not in the list anymore
                         if( ! ptrItem->boolValid ) { 
-                    //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
+                            //std::cerr << "this: " << this << " - delete: " << ptrItem << std::endl;
                             delete ptrItem; 
                             ptrItem = 0;
                         }
@@ -222,6 +229,7 @@ namespace Ollie {
 
                     // If we are the first iterator on the list
                     if( ptrNext and ( ptrPrev == 0 ) ) {
+                        //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
                         ptrItem->ptrIter = ptrNext;
                         ptrNext->ptrPrev = 0;
                         mReset();
@@ -230,12 +238,14 @@ namespace Ollie {
 
                     // If we are the last iterator on the list
                     if( ptrPrev and ( ptrNext == 0 ) ) {
+                        //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
                         ptrPrev->ptrNext = 0;
                         mReset();
                         return;
                     }
 
                     // Remove ourselves from the list
+                    //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
                     ptrNext->ptrPrev = ptrPrev;
                     ptrPrev->ptrNext = ptrNext;
                     mReset();
@@ -269,7 +279,7 @@ namespace Ollie {
                 PIterator<T>* ptrPrev;
                 PIterator<T>* ptrNext;
                 int intPos;
-                const Page* page;
+                Page* page;
         };
 
         
@@ -283,8 +293,11 @@ namespace Ollie {
                 PPtrIterator( PIterator<T>* p ) : ptrIter( p ) { }
                 PPtrIterator( const PPtrIterator<T>& p ) : ptrIter( new PIterator<T>( p.ptrIter )) { }
                 virtual ~PPtrIterator( void ) {
-                    //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
-                    if( ptrIter ) delete ptrIter; 
+                    //std::cerr << "this: " << this << " - ~PPtrIterator() " << __LINE__ << std::endl;
+                    if( ptrIter ) {
+                        //std::cerr << "this: " << this << " - ~PPtrIterator() delete " << ptrIter << std::endl;
+                        delete ptrIter; 
+                    }
                 }
 
                 bool mIsValid( void ) const {
@@ -298,8 +311,8 @@ namespace Ollie {
                     return ptrIter->ptrItem->mRelease(); 
                 }
 
-                inline void mSetPage( const Page* page ) { ptrIter->page = page; }
-                inline const Page* mPage( void ) const {
+                inline void mSetPage( Page* page ) { ptrIter->page = page; }
+                inline Page* mPage( void ) const {
                     return ptrIter->page; 
                 }
 
@@ -341,7 +354,10 @@ namespace Ollie {
                         // If we want to copy a null pointer
                         if( i.ptrIter == 0 ) {
                             // Delete our current iterator
-                            if( ptrIter ) delete ptrIter;
+                            if( ptrIter ) {
+                                //std::cerr << "this: " << this << " - PPtrIterator::operator=() delete " << ptrIter << std::endl;
+                                delete ptrIter;
+                            }
                             // And assign the null pointer
                             ptrIter = i.ptrIter;
                             return *this;
@@ -375,7 +391,7 @@ namespace Ollie {
             public:
                 PPtrList( void ) : intCount(0), ptrFirst(0), ptrLast(0) { }
                 virtual ~PPtrList( void ) {
-                    //std::cerr << "this: " << this << " - " << __LINE__ << std::endl;
+                    //std::cerr << "this: " << this << " - ~PPtrList() " << __LINE__ << std::endl;
                 mClear(); }
                  
                 typedef PPtrIterator<T> Iterator;
@@ -410,8 +426,14 @@ namespace Ollie {
                     while( ptrCurr != 0 ) {
                         // Record the next item
                         PItem<T>* ptrNext = ptrCurr->ptrNext;
-                        // delete the current item
-                        delete ptrCurr;
+                        // Un-hook the item incase the item still has iterators
+                        ptrCurr->mUnHook();
+                        // If the item does not have iterators pointing to them
+                        if( ! ptrCurr->ptrIter ) {
+                            // delete the current item
+                            //std::cerr << "this: " << this << " - PPtrList::mClear=() delete " << ptrCurr << std::endl;
+                            delete ptrCurr;
+                        }
                         // Make the next item the current one
                         ptrCurr = ptrNext;
                     }
@@ -502,6 +524,7 @@ namespace Ollie {
             if( ! it.mIsValid() ) {
                 // The ptrValue passed is now owned by us 
                 // so we are responsible for deleting it
+                //std::cerr << "this: " << this << " - PPtrIterator::mInsert() delete " << ptrValue << std::endl;
                 delete ptrValue;
                 ptrValue = 0;
                 return PPtrIterator<T>();
@@ -529,6 +552,7 @@ namespace Ollie {
             if( ! it.mIsValid() ) { 
                 // The ptrValue passed is now owned by us 
                 // so we are responsible for deleting it
+                //std::cerr << "this: " << this << " - PPtrIterator::mReplace() delete " << ptrNew << std::endl;
                 delete ptrNew;
                 ptrNew = 0;
                 return 0;

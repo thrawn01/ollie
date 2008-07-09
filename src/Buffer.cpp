@@ -45,7 +45,6 @@ namespace Ollie {
                     // Replace the current page with the new page
                     pageList.replace( it.it , page );
                     // Update the iterator
-                    it.mUpdate( it.it );
 
                     return page->mSize();
                 }
@@ -55,7 +54,7 @@ namespace Ollie {
             page->mSetTargetSize( _offTargetPageSize );
 
             // Insert the page where it is needed, and update the iterator
-            it.mUpdate( pageList.insert( it.it, page ) );
+            it.it = pageList.insert( it.it, page );
 
             return page->mSize();
         }
@@ -75,7 +74,7 @@ namespace Ollie {
             changeSet->mPushPage( pageList.replace( it.it , new Page( _offTargetPageSize ) ).release() );
 
             // Erase the replaced page
-            it.mUpdate( pageList.erase( it.it ) );
+            pageList.erase( it.it );
 
             // If we erased the last page in the buffer
             if( it.it == pageList.end() ) {
@@ -115,12 +114,12 @@ namespace Ollie {
                             // Split the block
                             itOriginal->mSplitBlock( itOld );
                             // If we are on the left side of the split
-                            if( itBlock.intPos < itOld.intPos ) {
+                            if( itBlock.mPos() < itOld.mPos() ) {
                                 // Update the iterator with the new block
                                 itBlock.it = itOld.it;
                             } else {
                                 // Update the pos, the .it iterator will remain
-                                itBlock.intPos = itBlock.intPos - itOld.intPos;
+                                itBlock.mSetPos( itBlock.mPos() - itOld.mPos() );
                             }
                         } else {
                             // Split the block
@@ -134,14 +133,14 @@ namespace Ollie {
                         page->mInsertBlock( itNew, itOriginal->mDeleteBlock( itOld ) );
                         // Assign the iterator to the new place in the new page
                         itBlock.it = itNew.it;
-                        itBlock.page = itNew.page;
+                        itBlock.mSetPage( itNew.mPage() );
                     }else {
                         // Delete the block from the first page, and insert the block into the new page
                         page->mInsertBlock( itNew, itOriginal->mDeleteBlock( itOld ) );
                     }
                 }
                 // If this is the page our block iterator points to
-                if( itBlock.page == page.get() ) {
+                if( itBlock.mPage() == page.get() ) {
                     // Insert the page
                     mInsertPage( itTemp, page.release() );
                     // And update the page iterator

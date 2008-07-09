@@ -166,6 +166,7 @@ class PageTests : public CxxTest::TestSuite
             itPersistant = it; 
             // Replace the first item with another block
             block = ptrList.mReplace( it, new TestBlock( 20 ) );
+            TS_ASSERT_EQUALS( it.mIsValid(), false );
             TS_ASSERT( block != 0 );
             TS_ASSERT_EQUALS( block->intNum, 1 );
 
@@ -179,18 +180,46 @@ class PageTests : public CxxTest::TestSuite
 
             delete block;
 
-            it = ptrList.mFirst();
-            ++it; ++it;
-            ptrList.mInsert( it, new TestBlock( 5 ) );
-            ++it;
-            block = ptrList.mReplace( it, new TestBlock( 50 ) );
             ptrList.mPushBack( new TestBlock( 1 ) );
             ptrList.mPushBack( new TestBlock( 2 ) );
             ptrList.mPushBack( new TestBlock( 3 ) );
-            ptrList.mPushBack( new TestBlock( 3 ) );
             ptrList.mPushBack( new TestBlock( 4 ) );
+            ptrList.mPushBack( new TestBlock( 5 ) );
+
+            // Go to the first block ( should be 20 ) 
+            it = ptrList.mFirst();
+            TS_ASSERT_EQUALS( it->intNum, 20 );
+
+            // Insert 6 just before 20
+            it = ptrList.mInsert( it, new TestBlock( 6 ) );
+            // Iterator now points to 6
+            TS_ASSERT_EQUALS( it->intNum, 6 );
+            // Move up 2 spaces
+            ++it; ++it;
+            // Should be 1
+            TS_ASSERT_EQUALS( it->intNum, 1 );
+            // Replace 1 with 50
+            block = ptrList.mReplace( it, new TestBlock( 50 ) );
+            TS_ASSERT_EQUALS( it.mIsValid(), false );
+
+            /*for( it = ptrList.mFirst() ; it != ptrList.mLast() ; ++it ) {
+                std::cout << "\tBlock: " << it->intNum << std::endl;
+            }
+            std::cout << "\tBlock: " << it->intNum << std::endl;*/
+
             it = ptrList.mFirst();
             itPersistant = ptrList.mFirst();
+
+            // Clear all the items
+            ptrList.mClear();
+
+            // After clearing the item, the iterators should be invalid. 
+            // but the items should be intact
+            TS_ASSERT_EQUALS( itPersistant.mIsValid(), false );
+            TS_ASSERT_EQUALS( it.mIsValid(), false );
+
+            TS_ASSERT_EQUALS( it->intNum, 6 );
+            TS_ASSERT_EQUALS( itPersistant->intNum, 6 );
 
             delete block;
         }

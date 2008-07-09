@@ -45,7 +45,7 @@ class BufferTests : public CxxTest::TestSuite
             block->mInsertBytes( 0, STR( arrBlockData, intSize ) );
             block->mSetAttributes( Attributes( intAttribute ) );
 
-            delete arrBlockData;
+            delete[] arrBlockData;
 
             return block.release();
         }

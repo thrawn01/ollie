@@ -537,9 +537,9 @@ class PageTests : public CxxTest::TestSuite
             // Goto the start of the page
             it = page.mFirst();
 
-            TS_ASSERT_EQUALS( page.mNext(it,  35 ), 35 ); 
+            TS_ASSERT_EQUALS( it.mNext( 35 ), 35 ); 
             TS_ASSERT_EQUALS( page.mByteArray( it, 30 ), "222223333344444555556666677777" );
-            TS_ASSERT_EQUALS( page.mNext(it, 10 ), 10 ); 
+            TS_ASSERT_EQUALS( it.mNext( 10 ), 10 ); 
             TS_ASSERT_EQUALS( page.mByteArray( it, 10), "4444455555" );
 
             // Insert some bytes that will cause a block to split
@@ -547,11 +547,11 @@ class PageTests : public CxxTest::TestSuite
             //page.mPrintPage();
 
             // Because the insert places us just after the inserted bytes
-            TS_ASSERT_EQUALS( page.mPrev(it, 10 ), 10 ); 
+            TS_ASSERT_EQUALS( it.mPrev( 10 ), 10 ); 
             // Our inserted data
             TS_ASSERT_EQUALS( page.mByteArray( it, 10 ), "TTTTTYYYYY" );
             // All togeather now
-            TS_ASSERT_EQUALS( page.mPrev(it, 10 ), 10 ); 
+            TS_ASSERT_EQUALS( it.mPrev( 10 ), 10 ); 
             TS_ASSERT_EQUALS( page.mByteArray( it, 40 ), "2222233333TTTTTYYYYY44444555556666677777" );
 
         }

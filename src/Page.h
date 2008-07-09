@@ -147,11 +147,11 @@ namespace Ollie {
                     return it.mPos( );
                 }
 
-                inline void mSetPage( const Page* page ) { 
+                inline void mSetPage( Page* page ) { 
                     it.mSetPage( page );
                 }
 
-                inline const Page* mPage( void ) const {
+                inline Page* mPage( void ) const {
                     return it.mPage();
                 }
 
@@ -162,6 +162,11 @@ namespace Ollie {
                 inline Block* mRelease( void ) {
                     return it.mRelease();
                 }
+
+                int mNext( int intLen );
+                int mPrev( int intLen );
+                int mNextBlock( void );
+                int mPrevBlock( void );
 
                 Block& operator*() const {
                     return *it;

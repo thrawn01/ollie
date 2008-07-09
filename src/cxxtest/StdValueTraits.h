@@ -9,7 +9,7 @@
 
 #include <cxxtest/ValueTraits.h>
 #include <cxxtest/StdHeaders.h>
-#include <Page.h>
+#include <ByteArray.h>
 
 #ifdef _CXXTEST_OLD_STD
 #   define CXXTEST_STD(x) x

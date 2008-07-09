@@ -115,6 +115,64 @@ namespace Ollie {
                     ptrPrev = 0;
                 }
 
+                void mUpdate( Page* page ) {
+                    // Get a copy of the iterator
+                    PIterator<T>* ptrCurIter = ptrIter;
+                    // Tell the iterator about the new page
+                    ptrCurIter->page = page ;
+                    // While there is a next iter
+                    while( ptrCurIter->ptrNext != 0 ) {
+                        // Make ptrCurIter the next iterator
+                        ptrCurIter = ptrCurIter->ptrNext;
+                        // Tell the iterator about the new page
+                        ptrCurIter->page = page ;
+                    }
+                }
+
+                void mUpdate( PItem<T>* ptrItem, int intPos ) {
+                    //std::cerr << "this: " << this << " - mUpdate( " << ptrItem << ", " << intPos << ")" << std::endl;
+                    // Get a copy of the iterator
+                    PIterator<T>* ptrCurIter = ptrIter;
+                    // Remeber what the next item is
+                    PIterator<T>* ptrIterNext = ptrIter->ptrNext;
+
+                    // If the pos is less than pos passed
+                    if( ptrCurIter->intPos < intPos ) {
+                        // Relocate the iterator to the new item
+                        //std::cerr << "this: " << this << " - mRelocate( " << ptrItem << ")" << std::endl;
+                        ptrCurIter->mRelocate( ptrItem );
+                    }else { 
+                        // Subtract the pos from the iterator
+                        ptrCurIter->intPos -= intPos;
+                        //std::cerr << "this: " << this << " - sub to: " << ptrCurIter->intPos << std::endl;
+                    }
+
+                    // While there is a next iter
+                    while( ptrIterNext != 0 ) {
+                        ptrCurIter = ptrIterNext;
+                        // Make ptrCurIter the next iterator
+                        ptrIterNext = ptrCurIter->ptrNext;
+                        // If the pos is less than pos passed
+                        if( ptrCurIter->intPos < intPos ) {
+                            // Relocate the iterator to the new item
+                            //std::cerr << "this: " << this << " - mRelocate( " << ptrItem << ")" << std::endl;
+                            ptrCurIter->mRelocate( ptrItem );
+                        }else { 
+                            // Subtract the pos from the iterator
+                            ptrCurIter->intPos -= intPos;
+                            //std::cerr << "this: " << this << " - sub to: " << ptrCurIter->intPos << std::endl;
+                        }
+                    }
+                }
+
+                T& operator*() const {
+                    return *ptrPayLoad;
+                }
+
+                T* operator->() const {
+                    return ptrPayLoad;
+                }
+
             protected:
                 PIterator<T>* ptrIter;
                 PItem* ptrPrev;
@@ -127,6 +185,7 @@ namespace Ollie {
         class PIterator {
             friend class PPtrIterator<T>;
             friend class PPtrList<T>;
+            friend class PItem<T>;
 
             public:
                 PIterator( PItem<T>* p ) : ptrItem(p), ptrPrev(0), 
@@ -147,6 +206,15 @@ namespace Ollie {
                 virtual ~PIterator( void ) { 
                     //std::cerr << "this: " << this << " - ~PIterator()" << std::endl;
                     mUnRegister(); 
+                }
+
+                void mRelocate( PItem<T>* ptrNewItem ) {
+                    // Un-Register with our current item
+                    mUnRegister();
+                    // Register with the new item
+                    mRegister( ptrNewItem );
+                    // Make the new item our current
+                    ptrItem = ptrNewItem;
                 }
 
                 void mNext( void ) { 
@@ -300,11 +368,25 @@ namespace Ollie {
                     }
                 }
 
+                void mSetInValid( void ) {
+                    ptrIter->ptrItem->boolValid = true; 
+                }
+
                 bool mIsValid( void ) const {
                     if( !ptrIter ) return false;
                     return ptrIter->ptrItem->boolValid; 
                 }
 
+                inline void mUpdate( Page* page ) {
+                    if( ! mIsValid() ) return;
+                    ptrIter->ptrItem->mUpdate( page );
+                }
+
+                inline void mUpdate( PItem<T>* ptrItem, int intPos ) {
+                    if( ! mIsValid() ) return;
+                    ptrIter->ptrItem->mUpdate( ptrItem, intPos );
+                }
+                    
                 T* mRelease( void ) {
                     // Can not release a valid item
                     if( mIsValid() ) return 0;
@@ -319,6 +401,7 @@ namespace Ollie {
                 inline void mSetPos( int intPos ) { ptrIter->intPos = intPos; }
                 inline int mPos( void ) const { return ptrIter->intPos; }
                 inline T* mPointer( void ) const { return ptrIter->ptrItem->ptrPayLoad; }
+                inline PItem<T>* mItem( void ) const { return ptrIter->ptrItem; }
 
                 T& operator*() const {
                     assert( ptrIter != 0 );
@@ -347,6 +430,13 @@ namespace Ollie {
                     if( ptrIter == right.ptrIter ) return 1;
                     if( *ptrIter == *right.ptrIter ) return 1;
                     return 0;
+                }
+
+                PPtrIterator<T>& operator=( PItem<T>* i ) {
+                    if( i != ptrIter->ptrItem ) {
+                        ptrIter->mRelocate( i );
+                    }
+                    return *this;
                 }
 
                 PPtrIterator<T>& operator=( const PPtrIterator<T>& i ) {
@@ -407,11 +497,14 @@ namespace Ollie {
                 }
 
                 void mPushBack( T* );
-                Iterator mInsert( PItem<T>* , PItem<T>* );
+                void mPushBack( PItem<T>* );
+                PItem<T>* mInsert( PItem<T>* , PItem<T>* );
+                Iterator mInsert( const Iterator&, PItem<T>* );
                 Iterator mInsert( const Iterator&, T* );
                 Iterator mInsert( const Iterator&, const Iterator& );
-                Iterator mErase( const Iterator& );
-                T* mReplace( Iterator&, T* );
+                Iterator mErase( Iterator& );
+                Iterator mReplace( Iterator&, T* );
+                Iterator mReplace( Iterator&, PItem<T>* );
                 int mCount( void ) const { return intCount; }
                 inline bool mIsEmpty( void ) const { 
                     if( ptrFirst and ptrLast ) return false; 
@@ -453,7 +546,11 @@ namespace Ollie {
 
         template< class T >
         void PPtrList<T>::mPushBack( T* ptrValue ) {
-            PItem<T>* ptrItem = new PItem<T>(ptrValue);
+            return mPushBack( new PItem<T>(ptrValue) );
+        }
+
+        template< class T >
+        void PPtrList<T>::mPushBack( PItem<T>* ptrItem ) {
 
             // If the list is empty
             if( mIsEmpty() ) {
@@ -474,7 +571,7 @@ namespace Ollie {
         }
 
         template< class T >
-        PPtrIterator<T> PPtrList<T>::mErase( const PPtrIterator<T>& it ) {
+        PPtrIterator<T> PPtrList<T>::mErase( PPtrIterator<T>& it ) {
             // If the iterator passed valid?
             if( ! it.mIsValid() ) return PPtrIterator<T>();
             // Get a copy of the item pointer
@@ -491,21 +588,30 @@ namespace Ollie {
             if( ( ptrItem == ptrLast ) or ( intCount == 1 ) ) {
                 ptrLast = ptrRtrItem;
             }
-            // If Un-Hook returned a valid Item
-            if( ptrRtrItem ) return PPtrIterator<T>( ptrRtrItem );
+            // Mark it as valid so the (it) will not delete it
+            // when we re-assign it
+            ptrItem->boolValid = true;
 
-            // else return an invalid iterator
-            return PPtrIterator<T>();
+            if( ptrRtrItem == 0 ) {
+                it.mSetInValid();
+            }else {
+                // Update our iterator to the new item
+                it = ptrRtrItem;
+            }
+
+            ptrItem->boolValid = false;
+            // return an iterator to the deleted item
+            return PPtrIterator<T>( ptrItem );
         }
 
         template< class T >
-        PPtrIterator<T> PPtrList<T>::mInsert( PItem<T>* ptrItem, PItem<T>* ptrNewItem ) {
+        PItem<T>* PPtrList<T>::mInsert( PItem<T>* ptrItem, PItem<T>* ptrNewItem ) {
             // If the list is empty
             if( mIsEmpty() ) {
                 ptrFirst = ptrNewItem;
                 ptrLast = ptrNewItem;
                 ++intCount;
-                return PPtrIterator<T>( ptrNewItem );
+                return ptrNewItem;
             }
 
             ptrItem->mInsert( ptrNewItem );
@@ -514,23 +620,34 @@ namespace Ollie {
             if( ptrItem == ptrFirst ) { ptrFirst = ptrNewItem; }
 
             // Return a new iterator to our item
-           return PPtrIterator<T>( ptrNewItem );
+           return ptrNewItem;
 
         }
 
         template< class T >
         PPtrIterator<T> PPtrList<T>::mInsert( const PPtrIterator<T>& it, T* ptrValue ) {
+            return mInsert( it, new PItem<T>( ptrValue ) );
+        }
+        
+        template< class T >
+        PPtrIterator<T> PPtrList<T>::mInsert( const PPtrIterator<T>& it, PItem<T>* ptrItem ) {
             // If the iterator passed valid?
             if( ! it.mIsValid() ) {
                 // The ptrValue passed is now owned by us 
                 // so we are responsible for deleting it
                 //std::cerr << "this: " << this << " - PPtrIterator::mInsert() delete " << ptrValue << std::endl;
-                delete ptrValue;
-                ptrValue = 0;
+                delete ptrItem;
+                ptrItem = 0;
                 return PPtrIterator<T>();
             }
+            // Doing this preserves any additional members 
+            // in the iterator like intPos or page
+            PPtrIterator<T> itNew = it;
 
-            return mInsert( it.ptrIter->ptrItem, new PItem<T>(ptrValue) );
+            // Set the iterator to point to the newly inserted item
+            itNew = mInsert( it.ptrIter->ptrItem, ptrItem );
+
+            return itNew;
         }
 
         template< class T >
@@ -543,33 +660,47 @@ namespace Ollie {
             // Tell the item it is now valid again
             itNew.ptrIter->ptrItem->boolValid = true;
 
-            return mInsert( it.ptrIter->ptrItem, itNew.ptrIter->ptrItem );
+            // Doing this preserves any additional members 
+            // in the iterator like intPos or page
+            PPtrIterator<T> itUpdated = it;
+
+            // Set the iterator to point to the newly inserted item
+            itUpdated = mInsert( it.ptrIter->ptrItem, itNew.ptrIter->ptrItem );
+
+            return itUpdated;
+
         }
 
         template< class T >
-        T* PPtrList<T>::mReplace( PPtrIterator<T>& it, T* ptrNew ){
+        PPtrIterator<T> PPtrList<T>::mReplace( PPtrIterator<T>& it, T* ptrNew ){
+            return mReplace( it, new PItem<T>( ptrNew ) );
+        }
+
+        template< class T >
+        PPtrIterator<T> PPtrList<T>::mReplace( PPtrIterator<T>& it, PItem<T>* ptrItem ){
             // Is the iterator passed valid?
             if( ! it.mIsValid() ) { 
                 // The ptrValue passed is now owned by us 
                 // so we are responsible for deleting it
                 //std::cerr << "this: " << this << " - PPtrIterator::mReplace() delete " << ptrNew << std::endl;
-                delete ptrNew;
-                ptrNew = 0;
-                return 0;
+                delete ptrItem;
+                ptrItem = 0;
+                return PPtrIterator<T>();
             }
 
             // Erase the item
-            PPtrIterator<T> itInsert = mErase( it );
+            PPtrIterator<T> itOld = mErase( it );
             // If we deleted the last item in the container 
             if( mIsEmpty() ) {
-                mPushBack( ptrNew );
+                mPushBack( ptrItem );
+                it = mFirst();
             } else {
                 // Insert the new item in its place
-                mInsert( itInsert, ptrNew );
+                mInsert( it, ptrItem );
             }
         
-            // Release the item, as it is in-valid now
-            return it.mRelease();
+            // return the old iterator 
+            return itOld;
         }
 
     };

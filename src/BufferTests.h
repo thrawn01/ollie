@@ -137,13 +137,18 @@ class BufferTests : public CxxTest::TestSuite
 
             // The insert plus the original data should be there
             TS_ASSERT_EQUALS( itPage->mByteArray( itBlock, 70 ), "111112222233333CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC" );
-            //pageBuffer.mPrintPageBuffer();
+            pageBuffer.mPrintPageBuffer();
+
+            TS_ASSERT_EQUALS( itBlock.mIsValid(), true );
          
             // Split the page we are pointing to
-            pageBuffer.mSplitPage( itPage, itBlock );
+            pageBuffer.mSplitPage( itPage );
 
-            //pageBuffer.mPrintPageBuffer();
-            
+            pageBuffer.mPrintPageBuffer();
+          
+            TS_ASSERT_EQUALS( itBlock.mIsValid(), true );
+            cout << "itBlock: " << itBlock->mBytes() << endl;
+
             // The block we were pointing to should have been preserved during the split,
             // but 11111 should be on 1 page and 2222233333 should be on the second page
             TS_ASSERT_EQUALS( itPage->mByteArray( itBlock, 15 ), "11111" );

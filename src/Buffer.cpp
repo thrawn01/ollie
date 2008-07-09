@@ -84,18 +84,13 @@ namespace Ollie {
             return changeSet.release();
         }
 
-        void PageBuffer::mSplitPage( Page::Iterator& itPage, Block::Iterator& itBlock ) {
-            //assert( itBlock.page == *itPage.get() );
+        void PageBuffer::mSplitPage( Page::Iterator& itPage ) {
 
-            // Remeber where the original page was
-            Page::Iterator itOriginal = itPage;
             // Get a Block iterator to the original page
-            Block::Iterator itOld = itOriginal->mFirst();
+            Block::Iterator itOld = itPage->mFirst();
 
             // For as long as the original page is over it's target size, keep splitting
-            while( itOriginal->mSize() > itOriginal->mTargetSize() ) {
-                // Get a temp iterator from the original page
-                Page::Iterator itTemp = itOriginal;
+            while( itPage->mSize() > itPage->mTargetSize() ) {
                 // Create our new page
                 PagePtr page( new Page( _offTargetPageSize ) );
                 // Get an iterator to the new page
@@ -109,46 +104,19 @@ namespace Ollie {
                     if( intNewSize > page->mTargetSize() ) {
                         // Place the iterator at the place we want to split
                         itOld.mNext( itOld->mSize() - (intNewSize - page->mTargetSize()) );
-                        // If this is the iterator that needs to be preserved
-                        if( itBlock.it == itOld.it ) {
-                            // Split the block
-                            itOriginal->mSplitBlock( itOld );
-                            // If we are on the left side of the split
-                            if( itBlock.mPos() < itOld.mPos() ) {
-                                // Update the iterator with the new block
-                                itBlock.it = itOld.it;
-                            } else {
-                                // Update the pos, the .it iterator will remain
-                                itBlock.mSetPos( itBlock.mPos() - itOld.mPos() );
-                            }
-                        } else {
-                            // Split the block
-                            itOriginal->mSplitBlock( itOld );
-                        }
+                        // Split the block
+                        itPage->mSplitBlock( itOld );
                     }
                    
-                    // If we are about to copy the iterator that needs to be preserved
-                    if( itBlock.it == itOld.it ) {
-                        // Delete the block from the first page, and insert the block into the new page
-                        page->mInsertBlock( itNew, itOriginal->mDeleteBlock( itOld ) );
-                        // Assign the iterator to the new place in the new page
-                        itBlock.it = itNew.it;
-                        itBlock.mSetPage( itNew.mPage() );
-                    }else {
-                        // Delete the block from the first page, and insert the block into the new page
-                        page->mInsertBlock( itNew, itOriginal->mDeleteBlock( itOld ) );
-                    }
+                    // Delete the block from the first page, and insert the block into the new page
+                    page->mInsertBlock( itNew, itPage->mDeleteBlock( itOld ).mRelease() );
+                    // Tell the iterators pointing to this item, they are now in a new page
+                    itNew.mUpdate( page.get() );
                 }
-                // If this is the page our block iterator points to
-                if( itBlock.mPage() == page.get() ) {
-                    // Insert the page
-                    mInsertPage( itTemp, page.release() );
-                    // And update the page iterator
-                    itPage = itTemp;
-                } else {
-                    // Insert the page
-                    mInsertPage( itTemp, page.release() );
-                }
+                // Get a temp iterator from the original page
+                Page::Iterator itTemp = itPage;
+                // Insert the newly created page
+                mInsertPage( itTemp, page.release() );
             }
         }
 

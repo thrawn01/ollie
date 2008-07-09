@@ -49,7 +49,7 @@ namespace Ollie {
                 int          mAppendPage( Page* );
                 int          mInsertPage( Page::Iterator&, Page* );
                 ChangeSet*   mDeletePage( Page::Iterator& );
-                void         mSplitPage( Page::Iterator&, Block::Iterator& );
+                void         mSplitPage( Page::Iterator& );
                 int          mCount( void ) { return pageList.size(); }
                 void         mClear( void ) { pageList.clear(); }
                 int          mNext( Page::Iterator&, int intCount = 1 );

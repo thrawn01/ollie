@@ -32,7 +32,14 @@ class TestBlock {
         TestBlock( int x ) : intNum(x) {  }
         ~TestBlock( void ) { }
         int intNum;
+};
 
+class Ollie::OllieBuffer::Page {
+
+    public:
+        Page( int x ) : intNum(x) {  }
+        ~Page( void ) { }
+        int intNum;
 };
 
 // --------------------------------
@@ -46,6 +53,7 @@ class PageTests : public CxxTest::TestSuite
         // Test Basic PushBack,Insert,Erase operations
         // --------------------------------
         void testPPtrListBasic( void ) {
+            Page* page = new Page( 1 );
 
             PPtrList<TestBlock> ptrList;
 
@@ -54,7 +62,8 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( ptrList.mFirst().mIsValid(), false );
             TS_ASSERT_EQUALS( ptrList.mLast().mIsValid(), false );
             // Ensure we can not delete an empty list, And test assignment of in-valid iterators
-            PPtrList<TestBlock>::Iterator it = ptrList.mErase( ptrList.mFirst() );
+            PPtrList<TestBlock>::Iterator it = ptrList.mFirst();
+            it = ptrList.mErase( it );
             TS_ASSERT_EQUALS( it.mIsValid(), false );
             TS_ASSERT_EQUALS( ptrList.mCount(), 0 );
 
@@ -107,8 +116,8 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( itPersistant->intNum, 1 );
             TS_ASSERT_EQUALS( it->intNum, 1 );
 
-            // Erase the item and give me a new iterator to the next item
-            it = ptrList.mErase( it );
+            // Erase the item
+            ptrList.mErase( it );
 
             // Should be the only item in the list
             TS_ASSERT( it == ptrList.mFirst() );
@@ -130,9 +139,17 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( itPersistant.mIsValid(), true );
             TS_ASSERT_EQUALS( it.mIsValid(), true );
 
+            // Set some extra values 
+            it.mSetPage( page );
+            it.mSetPos( 1 );
+
             // Insert a new block before the first block in the list
             it = ptrList.mInsert( it, new TestBlock( 1 ) );
             TS_ASSERT_EQUALS( ptrList.mCount(), 2 );
+
+            // Extra Values should be preserved
+            TS_ASSERT( it.mPage() == page );
+            TS_ASSERT_EQUALS( it.mPos(), 1 );
 
             // The persistant iterator should still point to the second block
             TS_ASSERT_EQUALS( itPersistant.mIsValid(), true );
@@ -149,12 +166,12 @@ class PageTests : public CxxTest::TestSuite
             itPersistant = ptrList.mErase( it );
 
             // Should be only 1 item in the container
-            TS_ASSERT( itPersistant == ptrList.mFirst() );
-            TS_ASSERT( itPersistant == ptrList.mLast() );
+            TS_ASSERT( it == ptrList.mFirst() );
+            TS_ASSERT( it == ptrList.mLast() );
             TS_ASSERT_EQUALS( ptrList.mCount(), 1 );
 
             // Now we can release ownership of the pointer
-            TestBlock* block = it.mRelease();
+            TestBlock* block = itPersistant.mRelease();
             // If release returned zero, the release was denied, 
             // someone else is pointing to this item
             TS_ASSERT( block != 0 );
@@ -163,19 +180,34 @@ class PageTests : public CxxTest::TestSuite
             delete block;
 
             it = ptrList.mFirst();
-            itPersistant = it; 
+            itPersistant = ptrList.mFirst();
+            TS_ASSERT_EQUALS( it->intNum, 1 );
+
+            // Set some extra values 
+            it.mSetPage( page );
+            it.mSetPos( 1 );
+
             // Replace the first item with another block
-            block = ptrList.mReplace( it, new TestBlock( 20 ) );
-            TS_ASSERT_EQUALS( it.mIsValid(), false );
+            PPtrList<TestBlock>::Iterator itNew = ptrList.mReplace( it, new TestBlock( 20 ) );
+
+            // Extra Values should be preserved
+            TS_ASSERT( it.mPage() == page );
+            TS_ASSERT_EQUALS( it.mPos(), 1 );
+
+            // The iterator should point to the newly inserted item
+            TS_ASSERT_EQUALS( it.mIsValid(), true );
+            TS_ASSERT_EQUALS( it->intNum, 20 );
+
+            // The returned iterator should be invalid
+            TS_ASSERT_EQUALS( itNew.mIsValid(), false );
+            TS_ASSERT_EQUALS( itNew->intNum, 1 );
+
+            // But we can release it's payload
+            block = itNew.mRelease();
             TS_ASSERT( block != 0 );
             TS_ASSERT_EQUALS( block->intNum, 1 );
 
-            // Item should have been replaced
-            it = ptrList.mFirst();
-            TS_ASSERT_EQUALS( it.mIsValid(), true );
-            TS_ASSERT_EQUALS( it->intNum, 20 );
-            
-            // All iterators what were pointing to the item are now in-valid
+            // All other iterators pointing to the item that was replaced are now in-valid
             TS_ASSERT_EQUALS( itPersistant.mIsValid(), false );
 
             delete block;
@@ -198,9 +230,9 @@ class PageTests : public CxxTest::TestSuite
             ++it; ++it;
             // Should be 1
             TS_ASSERT_EQUALS( it->intNum, 1 );
+
             // Replace 1 with 50
-            block = ptrList.mReplace( it, new TestBlock( 50 ) );
-            TS_ASSERT_EQUALS( it.mIsValid(), false );
+            itPersistant = ptrList.mReplace( it, new TestBlock( 50 ) );
 
             /*for( it = ptrList.mFirst() ; it != ptrList.mLast() ; ++it ) {
                 std::cout << "\tBlock: " << it->intNum << std::endl;
@@ -221,7 +253,7 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it->intNum, 6 );
             TS_ASSERT_EQUALS( itPersistant->intNum, 6 );
 
-            delete block;
+            delete page;
         }
 
         // --------------------------------
@@ -256,7 +288,7 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( itPersistant->intNum, 4 );
 
             // Remove the last item from list1
-            ptrList1.mErase( it1 );
+            it1 = ptrList1.mErase( it1 );
             TS_ASSERT_EQUALS( ptrList1.mCount(), 3 );
 
             // Insert the item from  container1 into container2

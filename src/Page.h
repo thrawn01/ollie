@@ -25,6 +25,7 @@
 #include <Ollie.h>
 #include <PPtrList.hpp>
 #include <File.h>
+#include <ByteArray.h>
 #include <boost/ptr_container/ptr_list.hpp>
 #include <memory>
 #include <boost/shared_ptr.hpp>
@@ -32,45 +33,10 @@
 namespace Ollie {
     namespace OllieBuffer {
 
-        static const int nPos = std::string::npos;
-
         class Page;
         class BlockIterator;
         class PageIterator;
         class PageBuffer;
-
-        class ByteArray {
-
-            public: 
-                ByteArray( void ) {}
-                ByteArray( const char* array ) : _strData( array ) {}
-                ByteArray( const char* array, int intLen ) : _strData( array, intLen ) {}
-                ByteArray( const std::string &strData ) : _strData( strData ) {}
-                void mAppend( const ByteArray& b ) { _strData.append( b.str() ); }
-                void mInsert( int p, const ByteArray& b ) { _strData.insert( p, b.str() ); }
-                void mErase( int p, int l ) { _strData.erase( p, l ); }
-                void mClear( void ) { _strData.clear(); }
-                bool mIsEmpty( void ) const { _strData.empty(); }
-                ByteArray mSubStr( int p, int l ) { return ByteArray( _strData.substr( p, l ) ); }
-                size_t mSize( void ) const { return _strData.size(); }
-
-                // Implementation Specific ( Users should not rely on these methods existing )
-                friend std::ostream& operator<<( std::ostream& os, const ByteArray& byteArray ) { os << byteArray._strData; }
-                int operator==( const ByteArray& right ) {
-                    if( this->_strData == right._strData ) return 1;
-                    return 0;
-                }
-                int operator==( const char *right ) {
-                    if( this->_strData == right ) return 1;
-                    return 0;
-                }
-                const std::string& str() const { return _strData; }
-
-                std::string _strData;
-        };
-
-        // Mostly for tests
-        typedef ByteArray STR;
 
         class Block {
 
@@ -153,6 +119,18 @@ namespace Ollie {
 
                 inline Page* mPage( void ) const {
                     return it.mPage();
+                }
+
+                inline PItem<Block>* mItem( void ) const {
+                    return it.mItem( );
+                }
+
+                inline void mUpdate( Page* page ) {
+                    return it.mUpdate( page );
+                }
+
+                inline void mUpdate( PItem<Block>* ptrItem, int intPos ) {
+                    return it.mUpdate( ptrItem, intPos );
                 }
 
                 inline bool mIsValid( void ) const { 
@@ -332,7 +310,9 @@ namespace Ollie {
                 }
 
                 int mInsertBlock( Block::Iterator&, Block* );
-                Block* mDeleteBlock( Block::Iterator& );
+                int mInsertBlock( Block::Iterator&, PItem<Block>* );
+                void mMoveBlock( Block::Iterator&, Block::Iterator& );
+                Block::Iterator mDeleteBlock( Block::Iterator& );
                 void mSplitBlock( Block::Iterator& );
                 int mInsertBytes( Block::Iterator& , const ByteArray& , const Attributes &attr );
                 ChangeSet* mDeleteBytes( Block::Iterator& , int );

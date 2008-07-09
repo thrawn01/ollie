@@ -254,13 +254,13 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT( it != page.mFirst() );
 
             // Delete the block just inserted
-            Block* block = page.mDeleteBlock( it );
+            Block* block = page.mDeleteBlock( it ).mRelease();
             delete block;
             TS_ASSERT_EQUALS( page.mCount() , 1 );
             TS_ASSERT_EQUALS( page.mSize() , 0 );
 
             // Delete block on an empty page
-            block = page.mDeleteBlock( it );
+            block = page.mDeleteBlock( it ).mRelease();
 
             TS_ASSERT_EQUALS( block->mSize(), 0 );
             delete block;
@@ -280,7 +280,7 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( page.mSize() , 80 );
 
             // Delete the last block on the page
-            block = page.mDeleteBlock( it );
+            block = page.mDeleteBlock( it ).mRelease();
             delete block;
             TS_ASSERT( it == page.mLast() );
             TS_ASSERT_EQUALS( page.mCount() , 3 );
@@ -288,7 +288,7 @@ class PageTests : public CxxTest::TestSuite
 
             // Delete the first block on the page
             it = page.mFirst();
-            block = page.mDeleteBlock( it );
+            block = page.mDeleteBlock( it ).mRelease();
             delete block;
             TS_ASSERT( it == page.mFirst() );
             TS_ASSERT_EQUALS( page.mCount() , 2 );
@@ -539,12 +539,27 @@ class PageTests : public CxxTest::TestSuite
 
             TS_ASSERT_EQUALS( it.mNext( 35 ), 35 ); 
             TS_ASSERT_EQUALS( page.mByteArray( it, 30 ), "222223333344444555556666677777" );
-            TS_ASSERT_EQUALS( it.mNext( 10 ), 10 ); 
+            // Create another iterator pointing to the block
+            Block::Iterator itPersist1 = it; 
+            TS_ASSERT_EQUALS( page.mByteArray( itPersist1, 10 ), "2222233333" );
+
+            // Move up our iterator
+            TS_ASSERT_EQUALS( it.mNext( 15 ), 15 ); 
+            TS_ASSERT_EQUALS( page.mByteArray( it, 5), "55555" );
+            Block::Iterator itPersist2 = it; 
+            TS_ASSERT_EQUALS( page.mByteArray( itPersist2, 5), "55555" );
+
+            // Move back, Now we have 2 iterators before and after the split
+            TS_ASSERT_EQUALS( it.mPrev( 5 ), 5 ); 
             TS_ASSERT_EQUALS( page.mByteArray( it, 10), "4444455555" );
 
             // Insert some bytes that will cause a block to split
             TS_ASSERT_EQUALS( page.mInsertBytes( it,  STR("TTTTTYYYYY"), Attributes(20) ), 10 );
             //page.mPrintPage();
+           
+            // Our other iterators should not have moved
+            TS_ASSERT_EQUALS( page.mByteArray( itPersist2, 5), "55555" );
+            TS_ASSERT_EQUALS( page.mByteArray( itPersist1, 10 ), "2222233333" );
 
             // Because the insert places us just after the inserted bytes
             TS_ASSERT_EQUALS( it.mPrev( 10 ), 10 ); 

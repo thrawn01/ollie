@@ -42,6 +42,7 @@ class Attributes {
             if( _intValue != right._intValue ) return 1;
             return 0;
         }
+        inline int mTestValue( void ) const { return _intValue; }
         int _intValue;
 };
 

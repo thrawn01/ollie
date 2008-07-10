@@ -19,9 +19,9 @@
  **/
 
 #include "cxxtest/TestSuite.h"
-#include <PPtrList.hpp>
 #include <iostream>
 #include <sstream>
+#include <PPtrList.hpp>
 
 using namespace std;
 using namespace Ollie::OllieBuffer;

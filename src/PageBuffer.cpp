@@ -27,6 +27,15 @@ namespace Ollie {
 
         /********************************************/
         int PageBuffer::mAppendPage( Page* page ) {
+            
+            // If the pagebuffer is empty
+            if( mIsEmpty() ) {
+                // Replace the current page with the new page
+                pageList.replace( pageList.begin(), page );
+                // Update the iterator
+
+                return page->mSize();
+            }
 
             // Force new pages to have the same page size as the container
             page->mSetTargetSize( _offTargetPageSize );
@@ -115,6 +124,88 @@ namespace Ollie {
                 // Insert the newly created page
                 mInsertPage( itTemp, page.release() );
             }
+        }
+
+        int PageBuffer::mPrevBlock( Page::Iterator& itPage ) {
+        
+            // If this is first block in the page
+            if( itPage.itBlock.it == itPage->mFirst().it ) {
+                // And this is the first page in the buffer
+                if( itPage.it == mFirst().it ) {
+                    return -1;
+                }
+                // Move to the prev page, This should also update our 
+                // block iterator to the last block in the new page
+                --itPage;
+
+                return itPage.itBlock->mSize();
+            }
+
+            // Move to the next block
+            return itPage.it->mPrevBlock( itPage.itBlock );
+
+        }
+
+        int PageBuffer::mNextBlock( Page::Iterator& itPage ) {
+        
+            // If this is last block in the page
+            if( itPage.itBlock.it == itPage->mLast().it ) {
+                // And this is the last page in the buffer
+                if( itPage.it == mLast().it ) {
+                    return -1;
+                }
+                // Recall the current block size
+                int intLen = itPage.itBlock->mSize();
+                // Move to the next page, This should also update our 
+                // block iterator to the first block in the new page
+                ++itPage;
+
+                return intLen;
+            }
+
+            // Move to the next block
+            return itPage.it->mNextBlock( itPage.itBlock );
+
+        }
+
+        const ByteArray& PageBuffer::mByteArray( const Page::Iterator& itPage, int intCount ) { 
+
+            _arrTemp.mClear();
+
+            // OK, lol
+            if( intCount == 0 ) return _arrTemp;
+
+            // Make a copy of the iterator passed
+            Page::Iterator itTemp( itPage );
+
+            // Remeber the requested positions
+            int intRequested = intCount;
+            // Figure out how many positions we have left till the end of the block
+            int intPosLeft = itTemp.itBlock->mSize() - itTemp.itBlock.mPos();
+
+            // If we are asking to move past the current block
+            while( intCount > intPosLeft ) {
+
+                // Append the data in this block to the temp
+                _arrTemp.mAppend( itTemp.itBlock->mBytes( itTemp.itBlock.mPos(), intPosLeft ) );
+                // Move to the next block
+                int intMoved = mNextBlock( itTemp );
+                // Couldn't move forward anymore
+                if( intMoved == -1 ) {
+                    // Return what we have so far
+                    return _arrTemp;
+                }
+
+                // Remeber how many we moved forward
+                intCount -= intMoved;
+                // how many pos are left in this block
+                intPosLeft = itTemp.itBlock->mSize();
+            }
+            // Append the remaining bytes in the block
+            _arrTemp.mAppend( itTemp.itBlock->mBytes( itTemp.itBlock.mPos(), intCount ) );
+
+            return _arrTemp;
+
         }
 
         void PageBuffer::mPrintPageBuffer( void ) {

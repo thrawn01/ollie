@@ -51,8 +51,8 @@ namespace Ollie {
                 void                mSetBytes( const ByteArray& );
                 const ByteArray&    mBytes( void ) const { return _arrBlockData; }
                 const ByteArray     mBytes( int intPos, int intLen ) { return _arrBlockData.mSubStr( intPos, intLen ); }
-                bool                mSetAttributes( const Attributes& attr ) { return false; }
-                const Attributes&   mAttributes( void ) { return _attr; } 
+                void                mSetAttributes( const Attributes& attr ) { _attr = attr; }
+                const Attributes&   mAttributes( void ) const { return _attr; } 
                 bool                mIsEmpty( void ) const { return _arrBlockData.mIsEmpty(); }
                 void                mClear( void ) { _arrBlockData.mClear(); _sizeBlockSize = 0; }
                 size_t              mSize( void ) const { return _sizeBlockSize; }
@@ -198,7 +198,7 @@ namespace Ollie {
                 ~PageIterator() { }
                 PageIterator( const PageIterator& i ) : it(i.it), itBlock( i.itBlock ), parent(i.parent) { }
 
-                void            mUpdate( const boost::ptr_list<Page>::iterator &i, bool boolFirst = true );
+                void mUpdate( const boost::ptr_list<Page>::iterator &i, bool boolFirst = true );
 
                 typedef boost::ptr_list<Page>::reference Reference;
                 typedef boost::ptr_list<Page>::pointer   Pointer;

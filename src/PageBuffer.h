@@ -34,14 +34,24 @@ namespace Ollie {
                     pageList.push_back( new Page( _offTargetPageSize ) ); 
                 }
                 ~PageBuffer( void ){ };
+
                 Page::Iterator mFirst( void ) { 
                     boost::ptr_list<Page>::iterator it = pageList.begin();
                     return PageIterator( this, it, it->mFirst() ); 
                 }
+
                 Page::Iterator mLast( void ) { 
                     boost::ptr_list<Page>::iterator it = (--pageList.end());
                     return PageIterator( this, it, it->mLast() );
                 }
+
+                bool mIsEmpty( void ) { 
+                    if( mCount() == 1 ) {
+                        if( pageList.begin()->mSize() == 0 ) return true; 
+                    }
+                    return false;
+                }
+
                 int mAppendPage( Page* );
                 int mInsertPage( Page::Iterator&, Page* );
                 ChangeSet* mDeletePage( Page::Iterator& );
@@ -52,10 +62,12 @@ namespace Ollie {
                 int mPrev( Page::Iterator&, int intCount = 1 );
                 int mNextBlock( Page::Iterator& );
                 int mPrevBlock( Page::Iterator& );
+                const ByteArray& PageBuffer::mByteArray( const Page::Iterator&, int );
                 void mPrintPageBuffer( void );
 
                 boost::ptr_list<Page> pageList;
                 OffSet _offTargetPageSize;
+                ByteArray _arrTemp;
         };
     };
 };

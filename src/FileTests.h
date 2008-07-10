@@ -19,8 +19,7 @@
  **/
 
 #include "cxxtest/TestSuite.h"
-#include <file.h>
-#include <buffer.h>
+#include <File.h>
 #include <iostream>
 #include <fstream>
 #include <errno.h>
@@ -32,7 +31,7 @@ using namespace std;
 // --------------------------------
 //  Unit Test for buffer.cpp
 // --------------------------------
-class BufferTests : public CxxTest::TestSuite
+class FileTests : public CxxTest::TestSuite
 {
     public: 
 
@@ -101,12 +100,14 @@ class BufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( file->mFinalizeLoad(), true );
 
             // Clean up the blockdata
-            delete arrBlockData;
+            delete[] arrBlockData;
 
             // Delete the test file
             if ( unlink(TEST_FILE) ) {
                 TS_FAIL( string("Unable to delete test file '" TEST_FILE  "' ") + strerror( errno ) );
             }
+
+            delete file;
         }
 
         // --------------------------------
@@ -181,7 +182,8 @@ class BufferTests : public CxxTest::TestSuite
             }
 
             // Clean up the blockdata
-            delete arrBlockData;
+            delete[] arrBlockData;
+            delete file;
         }
 
 };

@@ -18,7 +18,7 @@
  *  Copyright (C) 2007 Derrick J. Wippler <thrawn01@gmail.com>
  **/
 
-#include <iohandle.h>
+#include <IOHandle.h>
 
 // --- Begin posixfile.cpp ---
 
@@ -46,7 +46,7 @@ PosixIOHandle::~PosixIOHandle() {
  * Close the file
  */
 bool PosixIOHandle::mClose( void ) {
-    
+   
     close(_ioFile); 
     _ioFile = 0;
     return true;
@@ -215,17 +215,6 @@ bool PosixIOHandle::mTruncate( OffSet offset ) {
 
 // --- End posixfile.cpp ---
 
-
-/*!
- * IOHandle Constructor
- */
-IOHandle::IOHandle() { }
-
-/*!
- * IOHandle Destructor
- */
-IOHandle::~IOHandle() { }
-
 /*!
  * Return the default IOHandle handler for the current operating system
  */
@@ -256,7 +245,7 @@ OffSet IOHandle::mRead( std::string& strBuffer, OffSet offSize ) {
 
     strBuffer.assign(buf,offSize);
 
-    delete buf;
+    delete[] buf;
     return offVal;
 
 }

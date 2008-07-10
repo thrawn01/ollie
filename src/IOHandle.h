@@ -31,43 +31,42 @@ class IOHandle : public OllieCommon {
 
     public:
         // Constructor / Destructor
-        IOHandle();
-        virtual ~IOHandle();
+        IOHandle() : _ioFile(0), _offFileSize(0) { }
+        virtual ~IOHandle() { }
         static IOHandle* mGetDefaultIOHandler( void );
 
         // IOHandle Modes
         enum OpenMode { ReadWrite, ReadOnly };
 
         // Open / Close 
-        virtual bool        mOpen( std::string &strFileName , OpenMode mode );
-        virtual bool        mOpen( const char*, OpenMode mode )  = 0;
-        virtual bool        mClose( void ) = 0;
+        virtual bool mOpen( std::string &strFileName , OpenMode mode );
+        virtual bool mOpen( const char*, OpenMode mode )  = 0;
+        virtual bool mClose( void ) = 0;
 
         //! Does the IO offer int64 for large files?
-        virtual bool        mOffersLargeFileSupport( void ) = 0;
+        virtual bool mOffersLargeFileSupport( void ) = 0;
 
         //! Does the IO offer seek()?
-        virtual bool        mOffersSeek( void )  = 0;
+        virtual bool mOffersSeek( void )  = 0;
 
         // Read/Write Methods
-        virtual int         mWaitForClearToRead( int ) = 0;
-        virtual int         mWaitForClearToWrite( int )  = 0;
-        virtual OffSet      mSeek( OffSet )  = 0;
-        virtual OffSet      mRead( char*, OffSet ) = 0;
-        virtual OffSet      mWrite( const char*, OffSet  ) = 0;
-        virtual bool        mTruncate( OffSet offset ) = 0;
-        OffSet              mRead( std::string&, OffSet );
-        OffSet              mWrite( std::string&, OffSet );
+        virtual int mWaitForClearToRead( int ) = 0;
+        virtual int mWaitForClearToWrite( int )  = 0;
+        virtual OffSet mSeek( OffSet )  = 0;
+        virtual OffSet mRead( char*, OffSet ) = 0;
+        virtual OffSet mWrite( const char*, OffSet  ) = 0;
+        virtual bool mTruncate( OffSet offset ) = 0;
+        OffSet mRead( std::string&, OffSet );
+        OffSet mWrite( std::string&, OffSet );
         
-
         //! Return the name of the iohandle ( IE: filename, network address )
         std::string& mGetName( void ) { return _strName; }
         OffSet mGetFileSize( void ) { return _offFileSize; }
 
         // Private IOHandleName
-        std::string     _strName;
-        OffSet          _offFileSize;
-        int             _ioFile;
+        std::string _strName;
+        OffSet _offFileSize;
+        int _ioFile;
 };
 
 /*!

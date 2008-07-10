@@ -19,8 +19,7 @@
  **/
 
 #include "cxxtest/TestSuite.h"
-#include <iohandle.h>
-#include <file.h>
+#include <IOHandle.h>
 #include <iostream>
 #include <fstream>
 #include <sys/types.h>
@@ -79,6 +78,8 @@ class IOTests : public CxxTest::TestSuite
             
             TS_ASSERT_EQUALS( ioHandle->mGetError().substr(0,47), "IO Error: Unable to open '/tmp/unKnownFile.txt'" );
 
+            delete ioHandle;
+
         }
 
         // --------------------------------
@@ -91,6 +92,8 @@ class IOTests : public CxxTest::TestSuite
 
             // Open should return false
             TS_ASSERT_EQUALS( ioHandle->mOpen(READ_ONLY_TEST_FILE, IOHandle::ReadWrite ), false );
+
+            delete ioHandle;
 
         } 
 
@@ -140,6 +143,7 @@ class IOTests : public CxxTest::TestSuite
             // Close the IO Handle
             TS_ASSERT_EQUALS( ioHandle->mClose(), true );
 
+            delete ioHandle;
         }
 
         // --------------------------------
@@ -208,6 +212,7 @@ class IOTests : public CxxTest::TestSuite
             // Size of the file should be 50 bytes
             TS_ASSERT_EQUALS( sb.st_size , 50 );
 
+            delete ioHandle;
         }
 
         // --------------------------------

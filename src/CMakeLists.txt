@@ -5,7 +5,7 @@
 # ----------------------------------------------------------------
 
 # Add the ollie Library
-ADD_LIBRARY(ollie Ollie.cpp Page.cpp Buffer.cpp )
+ADD_LIBRARY(ollie Ollie.cpp Page.cpp Buffer.cpp File.cpp IOHandle.cpp )
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 
 ENABLE_TESTING()
@@ -21,8 +21,8 @@ TARGET_LINK_LIBRARIES(PageTests ollie )
 ADD_CXXTEST(BufferTests BufferTests.h )
 TARGET_LINK_LIBRARIES(BufferTests ollie )
 
-#ADD_CXXTEST(ioTests iotests.h )
-#TARGET_LINK_LIBRARIES(ioTests ollie )
+ADD_CXXTEST(IOHandleTests IOHandleTests.h )
+TARGET_LINK_LIBRARIES(IOHandleTests ollie )
 
-#ADD_CXXTEST(fileTests filetests.h )
-#TARGET_LINK_LIBRARIES(fileTests ollie )
+ADD_CXXTEST(FileTests FileTests.h )
+TARGET_LINK_LIBRARIES(FileTests ollie )

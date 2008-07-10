@@ -19,7 +19,7 @@
  **/
 
 #include "cxxtest/TestSuite.h"
-#include <Buffer.h>
+#include <PageBuffer.h>
 #include <iostream>
 #include <sstream>
 
@@ -29,7 +29,7 @@ using namespace Ollie::OllieBuffer;
 // --------------------------------
 //  Unit Test for buffer.cpp
 // --------------------------------
-class BufferTests : public CxxTest::TestSuite
+class PageBufferTests : public CxxTest::TestSuite
 {
     public: 
 

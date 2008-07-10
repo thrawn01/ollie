@@ -137,27 +137,27 @@ class BufferTests : public CxxTest::TestSuite
 
             // The insert plus the original data should be there
             TS_ASSERT_EQUALS( itPage->mByteArray( itBlock, 70 ), "111112222233333CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC" );
-            pageBuffer.mPrintPageBuffer();
+            //pageBuffer.mPrintPageBuffer();
 
             TS_ASSERT_EQUALS( itBlock.mIsValid(), true );
          
             // Split the page we are pointing to
             pageBuffer.mSplitPage( itPage );
 
-            pageBuffer.mPrintPageBuffer();
+            //pageBuffer.mPrintPageBuffer();
           
             TS_ASSERT_EQUALS( itBlock.mIsValid(), true );
-            cout << "itBlock: " << itBlock->mBytes() << endl;
 
             // The block we were pointing to should have been preserved during the split,
             // but 11111 should be on 1 page and 2222233333 should be on the second page
-            TS_ASSERT_EQUALS( itPage->mByteArray( itBlock, 15 ), "11111" );
+            TS_ASSERT_EQUALS( itBlock->mBytes(), "11111" );
+            
+            //TODO: Use a mByteArray() at the PageBuffer level, so we can get data across pages
+            //TS_ASSERT_EQUALS( pageBuffer.mByteArray( itBlock, 15 ), "111112222233333" );
 
-            // Go to the next page and get our iterator
-            ++itPage;
+            // The page iterator should point to the same page, but smaller
             itBlock = itPage->mFirst();
-
-            TS_ASSERT_EQUALS( itPage->mByteArray( itBlock, 10 ), "2222233333" );
+            TS_ASSERT_EQUALS( itPage->mByteArray( itBlock, 15 ), "CCCCCCCCCCCCCCC" );
             
             TS_ASSERT_EQUALS( pageBuffer.mCount(), 5 );
             
@@ -167,6 +167,6 @@ class BufferTests : public CxxTest::TestSuite
 
 // TODO 
 // Add Tests for Page offset with multiple pages 
-// Add tests for deleting blocks thru pages 
-// Add test for inserting blocks thru multiple pages
+// Add tests for deleting thru pages 
+// Add test for inserting thru multiple pages
 

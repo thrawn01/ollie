@@ -84,7 +84,7 @@ namespace Ollie {
             return changeSet.release();
         }
 
-        void PageBuffer::mSplitPage( Page::Iterator& itPage ) {
+        void PageBuffer::mSplitPage( const Page::Iterator& itPage ) {
 
             // Get a Block iterator to the original page
             Block::Iterator itOld = itPage->mFirst();
@@ -107,13 +107,8 @@ namespace Ollie {
                         // Split the block
                         itPage->mSplitBlock( itOld );
                     }
-                    Block::Iterator itBlock = itOld;
                     // Move the block from the first page and into the new page
-                    page->mMoveBlock( itBlock, itNew );
-                    itOld = itBlock;
-
-                    // Move to the next Block
-                    ++itOld.it;
+                    page->mMoveBlock( itOld, itNew );
                 }
                 // Get a temp iterator from the original page
                 Page::Iterator itTemp = itPage;
@@ -128,7 +123,7 @@ namespace Ollie {
     
             int intCount = 1;
             for( it = pageList.begin() ; it != pageList.end() ; it++ ) {
-                std::cout << "Page: " << intCount << std::endl;
+                std::cout << "Page: " << intCount << " - " << &(*it) << std::endl;
                 it->mPrintPage();
                 ++intCount;
             }

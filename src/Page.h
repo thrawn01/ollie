@@ -174,6 +174,7 @@ namespace Ollie {
                     if( &i != this ) {
                         it = i.it;
                         it.mSetPos( i.it.mPos() );
+                        it.mSetPage( i.it.mPage() );
                     }
                     return *this;
                 }

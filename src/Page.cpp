@@ -207,11 +207,8 @@ namespace Ollie {
             Block::Iterator itDeleted = pageFrom->mDeleteBlock( itFrom );
             // Insert the block into the second page
             pageTo->mInsertBlock( itTo, itDeleted.mItem() );
-            // The insert makes itTo point to the insert block
-            // Make the itFrom iterator point to the inserted block
-            itFrom = itTo;
             // Remind all the iterators pointing to this item we have changed pages
-            itFrom.mUpdate( pageTo );
+            itDeleted.mUpdate( pageTo );
 
         }
 
@@ -480,9 +477,9 @@ namespace Ollie {
             PPtrIterator<Block> it;
 
             for( it = blockContainer.mFirst() ; it != blockContainer.mLast() ; ++it ) {
-                std::cout << "\tBlock: " << it->mBytes() << std::endl;
+                std::cout << it.mPage() << " Block " << &(*it) <<  " - " << it->mBytes() << std::endl;
             }
-            std::cout << "\tBlock: " << it->mBytes() << std::endl;
+            std::cout << it.mPage() << " Block " << &(*it) <<  " - " << it->mBytes() << std::endl;
         }
 
         const ByteArray& Page::mByteArray( const Block::Iterator& itBlock, int intCount ) { 

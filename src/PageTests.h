@@ -609,28 +609,33 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( page2->mIsEmpty(), false );
             TS_ASSERT_EQUALS( page2->mSize(), 20 );
 
-            // The page should have changed
-            TS_ASSERT( it1.mPage() == page2 );
+            // The page should still point at page1
+            TS_ASSERT( it1.mPage() == page1 );
+            TS_ASSERT( it2.mPage() == page2 );
 
-            // The iterator should still point to valid data
+            // The iterator should still be valid
             TS_ASSERT_EQUALS( it1.mIsValid(), true );
-            TS_ASSERT_EQUALS( it1->mBytes(), "AAAAABBBBBCCCCCDDDDD" );
-            // The pos should be at the end of the inserted data
-            TS_ASSERT_EQUALS( page2->mByteArray( it1, 10 ), "" );
+            // Should now point to the empty page
+            TS_ASSERT_EQUALS( it1->mBytes(), "" );
+
+            // second iterator be at the end of the inserted data in the new page
+            TS_ASSERT_EQUALS( page2->mByteArray( it2, 10 ), "" );
             // Move back 20 bytes
-            it1.mPrev( 20 );
+            it2.mPrev( 20 );
             // And there is our data
-            TS_ASSERT_EQUALS( page2->mByteArray( it1, 10 ), "AAAAABBBBB" );
+            TS_ASSERT_EQUALS( page2->mByteArray( it2, 10 ), "AAAAABBBBB" );
 
-            // Because the insert occured at the same place as it2, 
-            // it2 now points to the same block as it1
-            TS_ASSERT_EQUALS( it2.mIsValid(), true );
-            TS_ASSERT_EQUALS( it2->mBytes(), "AAAAABBBBBCCCCCDDDDD" );
-
-            // Our other iterator should still point to the correct block
+            // Our other iterator should now point to page2 and the correct block
+            TS_ASSERT( itPersist1.mPage() == page2 );
             TS_ASSERT_EQUALS( itPersist1.mIsValid(), true );
             TS_ASSERT_EQUALS( itPersist1->mBytes(), "AAAAABBBBBCCCCCDDDDD" );
             TS_ASSERT_EQUALS( page2->mByteArray( itPersist1, 10 ), "CCCCCDDDDD" );
+
+            // Test iterator assignment operator
+            it1 = it2;
+            TS_ASSERT( it1.mPage() == page2 );
+            TS_ASSERT( it2.mPage() == page2 );
+            TS_ASSERT( it1.mPos() == it2.mPos() );
 
             delete page1;
             delete page2;

@@ -302,7 +302,36 @@ class PageBufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( it.itBlock->mBytes(), "1234567890" );
             TS_ASSERT_EQUALS( pageBuffer.mByteArray( it, 10 ), "" );
             TS_ASSERT_EQUALS( it.itBlock->mAttributes().mTestValue(), 10 );
+        }
 
+        void testPageInsertSplit( void ) {
+            PageBuffer pageBuffer( 10 );
+
+            Page::Iterator it = pageBuffer.mFirst();
+
+            // Fill 1 page
+            TS_ASSERT_EQUALS( pageBuffer.mInsertBytes( it, STR("AAAAABBBBB"), Attributes(1) ), 10 );
+            // Double the size of the page, this should force the page to split
+            TS_ASSERT_EQUALS( pageBuffer.mInsertBytes( it, STR("CCCCCDDDDD"), Attributes(2) ), 10 );
+
+            // The iterator should still point to the last inserted block
+            TS_ASSERT_EQUALS( it.itBlock->mBytes(), "CCCCCDDDDD" );
+
+            // The iterator should point to the end of the buffer
+            TS_ASSERT_EQUALS( pageBuffer.mByteArray( it, 10 ), "" );
+            TS_ASSERT( it == pageBuffer.mLast() );
+
+            // Should report the correct position
+            TS_ASSERT_EQUALS( it.mPosition(), 20 );
+
+            // The offset for this page should be 10
+            TS_ASSERT_EQUALS( it->mOffSet(), 10 );
+           
+            // Move back 10 bytes and verify the data is there
+            TS_ASSERT_EQUALS( pageBuffer.mPrev( it, 10), 10 );
+            TS_ASSERT_EQUALS( pageBuffer.mByteArray( it, 10 ), "CCCCCDDDDD" );
+
+            //pageBuffer.mPrintPageBuffer();
         }
 };
 

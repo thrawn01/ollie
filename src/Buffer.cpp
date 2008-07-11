@@ -20,8 +20,33 @@
 
 #include <Buffer.h>
 
-/*namespace Ollie {
+namespace Ollie {
     namespace OllieBuffer {
 
+                Buffer::Iterator Buffer::first( void ) {
+                    return Buffer::Iterator( this, pageBuffer.mFirst() );
+                }
+
+                Buffer::Iterator Buffer::last( void ) {
+                    return Buffer::Iterator( this, pageBuffer.mLast() );
+                }
+
+                const ByteArray& Buffer::getText( Buffer::Iterator& it, int intCount ) {
+                    return pageBuffer.mByteArray( it.itPage, intCount );
+                }
+
+                int Buffer::insertBytes( Buffer::Iterator& it, const ByteArray& arrBytes ) {
+
+                    // Preform the insert
+                    int intLen = pageBuffer.mInsertBytes( it.itPage, arrBytes, defaultAttributes );    
+
+                    // Update our buffer size
+                    offSize += intLen;
+
+                    // Notify the buffer we were modified
+                    boolModified = true;
+
+                    return intLen;
+                }
     };
-};*/
+};

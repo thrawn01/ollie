@@ -141,6 +141,10 @@ namespace Ollie {
                     return it.mRelease();
                 }
 
+                inline Block* mPointer( void ) const {
+                    return it.mPointer();
+                }
+
                 int mNext( int intLen );
                 int mPrev( int intLen );
                 int mNextBlock( void );
@@ -192,11 +196,11 @@ namespace Ollie {
 
             public:
                 PageIterator( const PageBuffer* p, const boost::ptr_list<Page>::iterator& i, const Block::Iterator& b ) 
-                            : parent(p), it(i), itBlock( b ), offPagePosition(0) {}
+                            : parent(p), it(i), itBlock( b ) {}
                 PageIterator( boost::ptr_list<Page>::iterator& i, Block::Iterator& b ) 
-                            : parent(0), it(i), itBlock( b ), offPagePosition(0) {}
+                            : parent(0), it(i), itBlock( b ) {}
                 ~PageIterator() { }
-                PageIterator( const PageIterator& i ) : it(i.it), itBlock( i.itBlock ), parent(i.parent), offPagePosition(0) { }
+                PageIterator( const PageIterator& i ) : it(i.it), itBlock( i.itBlock ), parent(i.parent) { }
 
                 void mUpdate( const boost::ptr_list<Page>::iterator &i, bool boolFirst = true );
 
@@ -210,7 +214,6 @@ namespace Ollie {
                     it = i.it;
                     itBlock = i.itBlock;
                     parent = i.parent;
-                    offPagePosition = i.offPagePosition;
                 }
 
                 PageIterator& operator=( const PageIterator& i ) {
@@ -249,7 +252,6 @@ namespace Ollie {
                 boost::ptr_list<Page>::iterator it;
                 const PageBuffer* parent;
                 Block::Iterator itBlock;
-                OffSet offPagePosition;
 
         };
 
@@ -259,7 +261,7 @@ namespace Ollie {
         // 2. DeleteBlock() must always leave 1 empty block 
         // 3. InsertBlock()/InsertBytes() if the current block is empty, must replace 
         //    ( or insert ) the current block with the bytes and attributes
-        class Page {
+        class Page : boost::noncopyable {
 
             public:
                 Page( OffSet offTargetPageSize = DEFAULT_PAGE_SIZE ) : _offTargetPageSize( offTargetPageSize ),
@@ -325,6 +327,7 @@ namespace Ollie {
                     return true;
                 }
 
+                int mFindPos( const Block::Iterator& );
                 int mInsertBlock( Block::Iterator&, Block* );
                 int mInsertBlock( Block::Iterator&, PItem<Block>* );
                 void mMoveBlock( Block::Iterator&, Block::Iterator& );

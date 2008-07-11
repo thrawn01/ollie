@@ -313,5 +313,19 @@ namespace Ollie {
             }
         }
 
+        int PageBuffer::mInsertBytes( Page::Iterator& it, const ByteArray& arrBytes, const Attributes& attr ) {
+           
+            // Insert the bytes at the page level
+            int intLen = it->mInsertBytes( it.itBlock, arrBytes, attr );
+           
+            // If the size of the page is equal or greater than the target size
+            if( it->mSize() >= it->mTargetSize() ) {
+                // Split the page
+                mSplitPage( it );
+            }
+
+            return intLen;
+        }
+
     };
 };

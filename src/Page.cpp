@@ -148,19 +148,15 @@ namespace Ollie {
                 if( boolFirst ) {
                     // Set our block iterator to the beginning of the page
                     itBlock = i->mFirst();
-                    // Update our page position to the beginning of the page
-                    offPagePosition = 0;
                 } else {
                     // Set our block iterator to the end of the page
                     itBlock = i->mLast();
-                    // Update our page position to the end of the page
-                    offPagePosition = i->mSize();
                 }
             }
         }
 
         OffSet PageIterator::mPosition( void ) const { 
-            return it->mOffSet() + offPagePosition;
+            return it->mOffSet() + it->mFindPos( itBlock );
         }
 
         bool PageIterator::mMoveToPosition( OffSet offset ) {
@@ -170,6 +166,23 @@ namespace Ollie {
         // ---------- Page Methods ----------
 
         /********************************************/
+
+        int Page::mFindPos( const Block::Iterator& it ) {
+            Block::Iterator itTemp(it); 
+
+            int intTotal = 0;
+            int intMoved = 0;
+
+            // Move back a block and record how many pos we move
+            while( ( intMoved = mPrevBlock( itTemp ) ) != -1 ) {
+                intTotal += intMoved;
+            }
+            // Once we are pointing to the first block
+            // Add the size of that block to our total
+            intTotal += itTemp.mPos();
+
+            return intTotal;
+        }
 
         Block::Iterator Page::mDeleteBlock( Block::Iterator& itBlock ) {
             assert( itBlock.mPage() == this );

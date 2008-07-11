@@ -475,6 +475,9 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( page.mPrev( it, 1 ), 0 );
             TS_ASSERT_EQUALS( page.mNext( it, 1 ), 0 );
 
+            // Find the position of this iterator in side the page
+            TS_ASSERT_EQUALS( page.mFindPos( it ), 0 );
+
             // Add new block to the end of the page
             TS_ASSERT_EQUALS( page.mInsertBytes( it, STR("AAAAABBBBBCCCCCDDDDD"), Attributes(1) ), 20 );
             TS_ASSERT_EQUALS( page.mInsertBytes( it, STR("EEEEEFFFFFGGGGGHHHHH"), Attributes(2) ), 20 );
@@ -489,6 +492,7 @@ class PageTests : public CxxTest::TestSuite
             // Now move to the end of the page
             TS_ASSERT_EQUALS( page.mNext( it, 115 ), 115 );
             TS_ASSERT_EQUALS( page.mByteArray( it, 10 ), "" );
+            TS_ASSERT_EQUALS( page.mFindPos( it ), 115 );
             TS_ASSERT( it == page.mLast() );
 
             // Reset to the beginning of the page
@@ -496,14 +500,17 @@ class PageTests : public CxxTest::TestSuite
 
             // Move 10 bytes into the first block
             TS_ASSERT_EQUALS( page.mNext( it, 10 ), 10 ); 
+            TS_ASSERT_EQUALS( page.mFindPos( it ), 10 );
             TS_ASSERT_EQUALS( page.mByteArray( it, 10 ), "CCCCCDDDDD" );
 
             // Move 10 more bytes into the second block
             TS_ASSERT_EQUALS( page.mNext( it, 10 ), 10 ); 
+            TS_ASSERT_EQUALS( page.mFindPos( it ), 20 );
             TS_ASSERT_EQUALS( page.mByteArray( it, 10 ), "EEEEEFFFFF" );
 
             // Move 10 more bytes into the second block
             TS_ASSERT_EQUALS( page.mNext( it, 10 ), 10 ); 
+            TS_ASSERT_EQUALS( page.mFindPos( it ), 30 );
             TS_ASSERT_EQUALS( page.mByteArray( it, 10 ), "GGGGGHHHHH" );
 
             // Make a copy of the current iterator position
@@ -566,6 +573,8 @@ class PageTests : public CxxTest::TestSuite
             //page.mPrintPage();
            
             // Our other iterators should not have moved
+            TS_ASSERT_EQUALS( page.mFindPos( itPersist2 ), 60 );
+            TS_ASSERT_EQUALS( page.mFindPos( itPersist1 ), 35 );
             TS_ASSERT_EQUALS( page.mByteArray( itPersist2, 5), "55555" );
             TS_ASSERT_EQUALS( page.mByteArray( itPersist1, 10 ), "2222233333" );
 

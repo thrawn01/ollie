@@ -29,86 +29,104 @@ namespace Ollie {
 
         class BufferIterator;
 
-        class Buffer {
+        class Buffer : boost::noncopyable {
 
             public:
-                Buffer() : offSize(0), boolModified(false) { };
+                Buffer() : offSize(0), boolModified(false), pageBuffer( DEFAULT_PAGE_SIZE ) { };
                 ~Buffer(){ };
 
                 typedef BufferIterator Iterator;
 
-                Iterator mFirst( void );
-                Iterator mLast( void );
+                Buffer::Iterator first( void );
+                Buffer::Iterator last( void );
 
                 // Buffer Editing Methods
                 // -------------------------
                 
                 // Insert bytes into the buffer at the position specifed by the buffer iterator
                 // The default attributes will apply to the newly inserted bytes
-                int mInsertBytes( Buffer::Iterator& , const ByteArray& );
+                int insertBytes( Buffer::Iterator& , const ByteArray& );
                 // Insert bytes into the buffer at the position specifed by the buffer iterator 
                 // with a specific attribute assignment
-                int mInsertBytes( Buffer::Iterator& , const ByteArray& , const Attributes &attr );
+                int insertBytes( Buffer::Iterator& , const ByteArray& , const Attributes &attr );
+                // Insert 1 Byte at the iterator position
+                int insertByte( Buffer::Iterator& , const int );
                 // Delete bytes from the start of the iterator plus +int number of bytes
-                int mDeleteBytes( Buffer::Iterator& , int );
+                int deleteBytes( Buffer::Iterator& , int );
                 // Delete bytes from the start of the iterator till the end of the iterator
-                int mDeleteBytes( Buffer::Iterator& , const Buffer::Iterator& );
+                int deleteBytes( Buffer::Iterator& , const Buffer::Iterator& );
+                // Delete 1 byte at the iterator posistion
+                int deleteByte( Buffer::Iterator& );
                 // Move the iterator forward intCount number of bytes
-                int mNext( Buffer::Iterator&, int intCount = 1 );
+                int next( Buffer::Iterator&, int intCount = 1 );
                 // Move the iterator backward intCount number of bytes
-                int mPrev( Buffer::Iterator&, int intCount = 1 );
+                int prev( Buffer::Iterator&, int intCount = 1 );
                 // Move the iterator to the next block in the buffer and position the 
                 // iterator on the first byte in the block, unless it is the last block 
                 // in the buffer, then place it on the last character
-                int mNextBlock( Buffer::Iterator& );
+                int nextBlock( Buffer::Iterator& );
                 // Move the iterator to the prev block in the buffer and position the 
                 // iterator on the last byte in the block
-                int mPrevBlock( Buffer::Iterator& );
+                int prevBlock( Buffer::Iterator& );
                 // Begin Recording Insert / Delete operations for undo
-                void mRecordUndoBegin( void );
+                void recordUndoBegin( void );
                 // End Recording Insert / Delete operations for undo
-                void mRecordUndoEnd( void );
+                void recordUndoEnd( void );
                 // Undo the last recorded Insert / Delete operation
-                Iterator mUndo( void );
+                Iterator undo( void );
                 // Redo the last Undone Insert / Delete operation
-                Iterator mRedo( void );
+                Iterator redo( void );
+                // Get some text from the buffer starting at the iterator and ending at int
+                const ByteArray& getText( Buffer::Iterator&, int );
 
                 // Buffer Control Methods
                 // -------------------------
                                   
                 // Default Attributes assigned to bytes inserted
-                void mSetDefaultAttributes( const Attributes &attr );
+                void setDefaultAttributes( const Attributes &attr );
                 // Controls the default page size
-                void mSetPageSize( OffSet );
-                OffSet mPageSize( void );
+                void setDefaultPageSize( OffSet );
+                OffSet defaultPageSize( void );
                 // Returns the buffer size in bytes 
-                OffSet mSize( void ) { return offSize; }
+                OffSet size( void ) { return offSize; }
                 // Returns the number of blocks in the buffer
-                int mCount( void ) { return pageBuffer.mCount(); }
+                int count( void );
                 // Clears all blocks from the buffer
-                void mClear( void ) { pageBuffer.mClear(); }
+                void clear( void ) { pageBuffer.mClear(); }
                 // Returns true if the buffer is full
-                bool mIsModified( void ) { return boolModified; }
+                bool isModified( void ) { return boolModified; }
                 // Prints the contents of the buffer to stdout ( for debug )
-                void mPrintBuffer( void );
+                void printBuffer( void );
                
             protected:
                 PageBuffer        pageBuffer; 
                 OffSet            offSize;
                 bool              boolModified;
+                Attributes        defaultAttributes;
         };
 
         class BufferIterator { 
 
             public:
-                BufferIterator( Buffer& impl, Page::Iterator& iPage, 
-                          Block::Iterator& iBlock ) : _impl(&impl), itPage(iPage), itBlock(iBlock) {}
-                ~BufferIterator() {}
+                BufferIterator( Buffer* buf, const Page::Iterator& iPage ) 
+                        : buf(buf), itPage(iPage) { }
+                ~BufferIterator() { }
 
                 void copy( const BufferIterator &i ) {
                     itPage = i.itPage;
-                    itBlock = i.itBlock;
-                    _impl = i._impl;
+                    buf = i.buf;
+                }
+
+                OffSet position( void ) {
+                    return itPage.mPosition();
+                }
+
+                Block& operator*() const {
+                    return *itPage.itBlock;
+                }
+
+                Block* operator->() const {
+                    return itPage.itBlock.mPointer();
                 }
 
                 BufferIterator operator=( const BufferIterator& i ) {
@@ -118,35 +136,34 @@ namespace Ollie {
 
                 int operator==( const BufferIterator& right ) const {
                     if( this == &right ) return 1;
-                    //TODO: fixme
+                    if( itPage == right.itPage ) return 1;
                     return 0;
                 }
-
+/*
                 BufferIterator operator++( int ) { 
                     BufferIterator itTemp = *this;
-                    _impl->mNext( *this );
+                    buf->mNext( *this );
                     return itTemp; 
                 }
 
                 BufferIterator operator++() { 
-                    _impl->mNext( *this );
+                    buf->mNext( *this );
                     return *this;
                 }
 
                 BufferIterator operator--( int ) { 
                     BufferIterator itTemp = *this;
-                    _impl->mPrev( *this );
+                    buf->mPrev( *this );
                     return itTemp; 
                 }
 
                 BufferIterator operator--() { 
-                    _impl->mPrev( *this );
+                    buf->mPrev( *this );
                     return *this;
                 }
-
+*/
                 Page::Iterator itPage;
-                Block::Iterator itBlock;
-                Buffer* _impl;
+                Buffer* buf;
         };
     };
 };

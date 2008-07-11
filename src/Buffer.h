@@ -54,7 +54,7 @@ namespace Ollie {
                 // Delete bytes from the start of the iterator plus +int number of bytes
                 int deleteBytes( Buffer::Iterator& , int );
                 // Delete bytes from the start of the iterator till the end of the iterator
-                int deleteBytes( Buffer::Iterator& , const Buffer::Iterator& );
+                int deleteBytes( Buffer::Iterator& , Buffer::Iterator& );
                 // Delete 1 byte at the iterator posistion
                 int deleteByte( Buffer::Iterator& );
                 // Move the iterator forward intCount number of bytes

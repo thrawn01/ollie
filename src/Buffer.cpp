@@ -48,5 +48,33 @@ namespace Ollie {
 
                     return intLen;
                 }
+
+                int Buffer::deleteBytes( Buffer::Iterator& itStart, int intLen ) {
+
+                    // Make a copy of our iterator
+                    Buffer::Iterator itEnd( itStart );
+    
+                    // Move the iterator up intLen of positions
+                    pageBuffer.mNext( itEnd.it, intLen );
+
+                    // Preform the deletion
+                    return deleteBytes( itStart, itEnd );
+
+                }
+                        
+
+                int Buffer::deleteBytes( Buffer::Iterator& itStart, Buffer::Iterator& itEnd ) {
+
+                    // Preform the delete
+                    ChangeSetPtr changeSet( pageBuffer.mDeleteBytes( itStart.it, itEnd.it ) );    
+
+                    // Update our buffer size
+                    offSize -= changeSet->mSize();
+
+                    // Notify the buffer we were modified
+                    boolModified = true;
+
+                    return intLen;
+                }
     };
 };

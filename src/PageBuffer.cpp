@@ -327,5 +327,46 @@ namespace Ollie {
             return intLen;
         }
 
+        ChangeSet* mDeleteBytes( Page::Iterator& itBlock, Page::Iterator& itEnd ) {
+            bool boolUpdateIterator = false;
+
+            // If the start and end are on the same page
+            if( itBlock.it == itEnd.it ) {
+                // Delete the bytes at the page level
+                return itStart->mDeleteBytes( itBlock.itBlock, itEnd.itBlock );
+            }
+
+            // Make a copy of the start block/page
+            Page::Iterator itStart( itBlock );
+
+            // Delete all the blocks till the end of the current page
+            ChangeSet changeSet( itStart->mDeleteBytes( itStart.itBlock, itStart->mLast() ) );
+
+            // If the page we were on, is now completely empty
+            if( itStart->mSize() == 0 ) {
+                // Delete the page
+                delete mDeletePage( itStart );
+                boolUpdateIterator = true;
+            }else {
+                // Move to the next page
+                ++itStart.it
+            }
+
+            while( itEnd.it != itStart.it or itStart.it == mLast().it ) {
+                // Delete the entire Page
+                changeSet->mPush( mDeletePage( itStart ) );
+            }
+
+            // Delete all the blocks until we find the last block
+            changeSet->mPush( itStart->mDeleteBytes( itStart.itBlock, itEnd.itBlock ) );
+
+            // If our original page was deleted, we need to restore our iterator here
+            if( boolUpdateIterator == true ) {
+                itBlock = itStart;
+            }
+
+            return changeSet.release();
+        }
+
     };
 };

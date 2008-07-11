@@ -64,6 +64,7 @@ namespace Ollie {
                 int mPrevBlock( Page::Iterator& );
                 const ByteArray& PageBuffer::mByteArray( const Page::Iterator&, int );
                 void mPrintPageBuffer( void );
+                void mUpdatePageOffSets( const boost::ptr_list<Page>::iterator& );
 
                 boost::ptr_list<Page> pageList;
                 OffSet _offTargetPageSize;

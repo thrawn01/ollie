@@ -146,14 +146,27 @@ namespace Ollie {
             // If we didn't get passed an invalid iterator
             if( i != parent->pageList.end() ) {
                 if( boolFirst ) {
+                    // Set our block iterator to the beginning of the page
                     itBlock = i->mFirst();
+                    // Update our page position to the beginning of the page
+                    offPagePosition = 0;
                 } else {
+                    // Set our block iterator to the end of the page
                     itBlock = i->mLast();
+                    // Update our page position to the end of the page
+                    offPagePosition = i->mSize();
                 }
             }
         }
 
+        OffSet PageIterator::mPosition( void ) const { 
+            return it->mOffSet() + offPagePosition;
+        }
 
+        bool PageIterator::mMoveToPosition( OffSet offset ) {
+            return false;
+        }
+ 
         // ---------- Page Methods ----------
 
         /********************************************/
@@ -477,9 +490,9 @@ namespace Ollie {
             PPtrIterator<Block> it;
 
             for( it = blockContainer.mFirst() ; it != blockContainer.mLast() ; ++it ) {
-                std::cout << it.mPage() << " Block " << &(*it) <<  " - " << it->mBytes() << std::endl;
+                std::cout << it.mPage() << " Block " << it->mAttributes().mTestValue() << " - " << &(*it) <<  " - " << it->mBytes() << std::endl;
             }
-            std::cout << it.mPage() << " Block " << &(*it) <<  " - " << it->mBytes() << std::endl;
+            std::cout << it.mPage() << " Block " << it->mAttributes().mTestValue() << " - " << &(*it) <<  " - " << it->mBytes() << std::endl;
         }
 
         const ByteArray& Page::mByteArray( const Block::Iterator& itBlock, int intCount ) { 

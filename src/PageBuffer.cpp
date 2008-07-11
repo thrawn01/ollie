@@ -32,10 +32,15 @@ namespace Ollie {
             if( mIsEmpty() ) {
                 // Replace the current page with the new page
                 pageList.replace( pageList.begin(), page );
-                // Update the iterator
+                // Update the Offset
+                page->mSetOffSet( 0 );
 
                 return page->mSize();
             }
+
+            // Get the size of the previous page
+            Page::Iterator it = mLast();
+            page->mSetOffSet( it.it->mOffSet() + it.it->mSize() );
 
             // Force new pages to have the same page size as the container
             page->mSetTargetSize( _offTargetPageSize );
@@ -53,18 +58,27 @@ namespace Ollie {
                 if( it->mSize() == 0 ) {
                     // Replace the current page with the new page
                     pageList.replace( it.it , page );
-                    // Update the iterator
+                    // Update the offset
+                    page->mSetOffSet( 0 );
 
                     return page->mSize();
                 }
             }
 
+            // If this is the first page in the buffer
+            if( it.it == mFirst().it ) {
+                // Tell our page we are the first page in the buffer
+                page->mSetOffSet( 0 );
+            } 
+
             // Force new pages to have the same page size as the container
             page->mSetTargetSize( _offTargetPageSize );
-
             // Insert the page where it is needed, and update the iterator
             it.it = pageList.insert( it.it, page );
 
+            // Update all the page offsets from this page on
+            mUpdatePageOffSets( it.it );
+                
             return page->mSize();
         }
 
@@ -75,7 +89,7 @@ namespace Ollie {
             if( it.it == mFirst().it and it.it == mLast().it ) {
                 // Replace the current page with an empty one, and push the page into the change set
                 changeSet->mPushPage( pageList.replace( pageList.begin() , new Page( _offTargetPageSize ) ).release() );
-                
+
                 return changeSet.release();
             }
 
@@ -88,6 +102,9 @@ namespace Ollie {
             // If we erased the last page in the buffer
             if( it.it == pageList.end() ) {
                 it = mLast();
+            } else {
+                // Update all the page offsets from this page on
+                mUpdatePageOffSets( it.it );
             }
 
             return changeSet.release();
@@ -155,17 +172,72 @@ namespace Ollie {
                     return -1;
                 }
                 // Recall the current block size
-                int intLen = itPage.itBlock->mSize();
+                int intLen = itPage.itBlock->mSize() - itPage.itBlock.mPos();
                 // Move to the next page, This should also update our 
                 // block iterator to the first block in the new page
                 ++itPage;
-
                 return intLen;
             }
 
             // Move to the next block
             return itPage.it->mNextBlock( itPage.itBlock );
 
+        }
+
+        int PageBuffer::mNext( Page::Iterator& itPage, int intCount ) {
+
+            // OK, lol
+            if( intCount == 0 ) return 0;
+
+            // Move the iterator, and record how many pos we moved
+            int intMoved = itPage.it->mNext( itPage.itBlock, intCount );
+            // If we didn't move enough pos
+            while( intCount > intMoved ) {
+
+                // Move to the next page if we can
+                int intLen = mNextBlock( itPage );
+                // If we couldn't forward anymore
+                if( intLen == -1 ) {
+                    return intMoved;
+                }
+                intMoved += intLen;
+
+                // Figure out how many more pos we need to move
+                int intPosLeft = ( intCount - intMoved );
+                // Move the iterator
+                intMoved += itPage.it->mNext( itPage.itBlock, intPosLeft );
+            }
+
+            return intMoved;
+        }
+
+        int PageBuffer::mPrev( Page::Iterator& itPage, int intCount ) {
+
+            // OK, lol
+            if( intCount == 0 ) return 0;
+
+            // Move the iterator, and record how many pos we moved
+            int intMoved = itPage.it->mPrev( itPage.itBlock, intCount );
+
+            // If we didn't move enough pos
+            while( intCount > intMoved ) {
+
+                // Move to the next page if we can
+                int intLen = mPrevBlock( itPage );
+                // If we couldn't forward anymore
+                if( intLen == -1 ) {
+                    return intMoved;
+                }
+                intMoved += intLen;
+
+                // Figure out how many more pos we need to move
+                int intPosLeft = ( intCount - intMoved );
+
+                // Move the iterator
+                intMoved += itPage.it->mPrev( itPage.itBlock, intPosLeft );
+            }
+
+            return intMoved;
         }
 
         const ByteArray& PageBuffer::mByteArray( const Page::Iterator& itPage, int intCount ) { 
@@ -213,13 +285,32 @@ namespace Ollie {
             boost::ptr_list<Page>::iterator it;
     
             int intCount = 1;
-            for( it = pageList.begin() ; it != pageList.end() ; it++ ) {
-                std::cout << "Page: " << intCount << " - " << &(*it) << std::endl;
+            for( it = pageList.begin() ; it != pageList.end() ; ++it ) {
+                std::cout << "Page: " << intCount << " - " << &(*it) << " OffSet: " << it->mOffSet() << std::endl;
                 it->mPrintPage();
                 ++intCount;
             }
+        }
 
+        void PageBuffer::mUpdatePageOffSets( const boost::ptr_list<Page>::iterator& itConst ) {
 
+            boost::ptr_list<Page>::iterator it = itConst;
+
+            // If this is not the beginning of the page buffer
+            if( it != pageList.begin() ) {
+                // Then move to the previous page
+                --it;
+            }
+
+            // Get the offset + size, that will make up our next page's offset
+            OffSet offSize = ( it->mOffSet() + it->mSize() );
+
+            for( ++it ; it != pageList.end() ; ++it ) {
+                // Set the new offset
+                it->mSetOffSet( offSize );
+                // figure the offset of the next page
+                offSize += it->mSize();
+            }
         }
 
     };

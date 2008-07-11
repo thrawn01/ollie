@@ -192,11 +192,11 @@ namespace Ollie {
 
             public:
                 PageIterator( const PageBuffer* p, const boost::ptr_list<Page>::iterator& i, const Block::Iterator& b ) 
-                            : parent(p), it(i), itBlock( b ) {}
+                            : parent(p), it(i), itBlock( b ), offPagePosition(0) {}
                 PageIterator( boost::ptr_list<Page>::iterator& i, Block::Iterator& b ) 
-                            : parent(0), it(i), itBlock( b ) {}
+                            : parent(0), it(i), itBlock( b ), offPagePosition(0) {}
                 ~PageIterator() { }
-                PageIterator( const PageIterator& i ) : it(i.it), itBlock( i.itBlock ), parent(i.parent) { }
+                PageIterator( const PageIterator& i ) : it(i.it), itBlock( i.itBlock ), parent(i.parent), offPagePosition(0) { }
 
                 void mUpdate( const boost::ptr_list<Page>::iterator &i, bool boolFirst = true );
 
@@ -210,6 +210,7 @@ namespace Ollie {
                     it = i.it;
                     itBlock = i.itBlock;
                     parent = i.parent;
+                    offPagePosition = i.offPagePosition;
                 }
 
                 PageIterator& operator=( const PageIterator& i ) {
@@ -238,9 +239,17 @@ namespace Ollie {
                     return *this;
                 }
 
+                // Return the absolute position in the file we are pointing to
+                OffSet mPosition( void ) const;
+
+                // Move the iterator to the absolute position in the file
+                // returns false if it can not
+                bool mMoveToPosition( OffSet );
+
                 boost::ptr_list<Page>::iterator it;
                 const PageBuffer* parent;
                 Block::Iterator itBlock;
+                OffSet offPagePosition;
 
         };
 
@@ -254,7 +263,7 @@ namespace Ollie {
 
             public:
                 Page( OffSet offTargetPageSize = DEFAULT_PAGE_SIZE ) : _offTargetPageSize( offTargetPageSize ),
-                                                                       _offPageSize( 0 ), _offFileStart( -1 ) {
+                                                                       _offPageSize( 0 ), _offFileOffSet( -1 ), _offOffSet( -1 ) {
                     blockContainer.mPushBack( new Block() ); 
                 }
                 ~Page( void ) { }
@@ -282,11 +291,17 @@ namespace Ollie {
                 OffSet mTargetSize( void ) const { 
                     return _offTargetPageSize; 
                 }
+                void mSetOffSet( OffSet const offset ) { 
+                    _offOffSet = offset; 
+                }
+                OffSet mOffSet( void ) const {
+                    return _offOffSet; 
+                }
                 void mSetFileOffSet( OffSet const offset ) { 
-                    _offFileStart = offset; 
+                    _offFileOffSet = offset; 
                 }
                 OffSet mFileOffSet( void ) const {
-                    return _offFileStart; 
+                    return _offFileOffSet; 
                 }
                 void mSetSize( OffSet offSize ) {
                     _offPageSize = offSize;
@@ -326,7 +341,8 @@ namespace Ollie {
                 void mPrintPage( void );
 
                 PPtrList<Block> blockContainer;
-                OffSet _offFileStart;
+                OffSet _offFileOffSet;
+                OffSet _offOffSet;
                 OffSet _offTargetPageSize;
                 OffSet _offPageSize;
                 ByteArray _arrTemp;

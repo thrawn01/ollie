@@ -93,12 +93,16 @@ class PageBufferTests : public CxxTest::TestSuite
             // Insert an empty page into an empty Page Buffer
             TS_ASSERT_EQUALS( pageBuffer.mInsertPage( itPage, new Page() ), 0 );
 
+            // The offset should be the first page
+            TS_ASSERT_EQUALS( itPage->mOffSet(), 0 );
+
             // The insert should have replaced the previous page because it was empty
             TS_ASSERT_EQUALS( pageBuffer.mCount(), 1 );
 
             // Insert a page with 100 bytes of data
             TS_ASSERT_EQUALS( pageBuffer.mInsertPage( itPage, createDataPage( 'A' ) ), 100 );
 
+            TS_ASSERT_EQUALS( itPage->mOffSet(), 0 );
             TS_ASSERT_EQUALS( itPage->mSize(), 100 );
             // Should be the only page in the buffer
             TS_ASSERT( itPage.it == pageBuffer.mFirst().it );
@@ -132,6 +136,12 @@ class PageBufferTests : public CxxTest::TestSuite
             TS_ASSERT( itPage.it == pageBuffer.mFirst().it );
             TS_ASSERT( itPage.it != pageBuffer.mLast().it );
 
+            // The first page should be at offset 0
+            TS_ASSERT_EQUALS( itPage->mOffSet(), 0 );
+            ++itPage;
+            // The second page should be at offset 100
+            TS_ASSERT_EQUALS( itPage->mOffSet(), 100 );
+
             // Append a page to the end of the buffer
             TS_ASSERT_EQUALS( pageBuffer.mAppendPage( createDataPage( 'C' ) ), 100 );
 
@@ -139,6 +149,9 @@ class PageBufferTests : public CxxTest::TestSuite
            
             // Iterator to the last page
             itPage = pageBuffer.mLast();
+            // Offset should be 200
+            TS_ASSERT_EQUALS( itPage->mOffSet(), 200 );
+
             Block::Iterator itBlock = itPage->mFirst();
 
             // Move the iterator near the center of the page
@@ -174,12 +187,16 @@ class PageBufferTests : public CxxTest::TestSuite
             // The page iterator should point to the same page, but smaller
             itBlock = itPage->mFirst();
             TS_ASSERT_EQUALS( itPage->mByteArray( itBlock, 15 ), "CCCCCCCCCCCCCCC" );
-            
+           
+            // Offset of the page should have updated
+            TS_ASSERT_EQUALS( itPage->mOffSet(), 300 );
+
+            // Should now be 5 pages in the buffer
             TS_ASSERT_EQUALS( pageBuffer.mCount(), 5 );
             
         }
 
-        void testPageIterator( void ) {
+        void testPageBlockIterator( void ) {
             PageBuffer pageBuffer( 50 );
 
             // Add some pages of data
@@ -200,6 +217,7 @@ class PageBufferTests : public CxxTest::TestSuite
             // Moving backward at the beginning of the pagebuffer is ignored
             TS_ASSERT_EQUALS( pageBuffer.mPrevBlock( it ), -1 );
             TS_ASSERT( it == pageBuffer.mFirst() );
+            TS_ASSERT_EQUALS( it->mOffSet(), 0 );
             // Moving forward 1 block should have moved forward 10 bytes
             TS_ASSERT_EQUALS( pageBuffer.mNextBlock( it ), 10 );
             // Should be pointing to the next block
@@ -212,7 +230,8 @@ class PageBufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( pageBuffer.mPrevBlock( it ), 0 );
             TS_ASSERT_EQUALS( it.itBlock->mAttributes().mTestValue(), 1 );
             TS_ASSERT_EQUALS( it.itBlock.mPos(), 10 );
-            //TS_ASSERT_EQUALS( pageBuffer.mByteArray( it, 10 ), "1234567890" );
+            // This is the data from the next block, because our pos is pointing to the end of the first block
+            TS_ASSERT_EQUALS( pageBuffer.mByteArray( it, 10 ), "1234567890" );
 
             // mNextBlock() should allow us to iterate thru all the blocks
             int intCount = 0;
@@ -220,6 +239,7 @@ class PageBufferTests : public CxxTest::TestSuite
                 intCount++;
             }
             TS_ASSERT_EQUALS( intCount, 39 );
+            TS_ASSERT_EQUALS( it->mOffSet(), 300 );
 
             // Iterator should be a the end of the pagebuffer
             TS_ASSERT_EQUALS( pageBuffer.mByteArray( it, 10 ), "1234567890" );
@@ -234,14 +254,55 @@ class PageBufferTests : public CxxTest::TestSuite
                 intCount++;
             }
             TS_ASSERT_EQUALS( intCount, 39 );
+            TS_ASSERT_EQUALS( it->mOffSet(), 0 );
 
-            // Move the iterator forward 150 bytes
-            //pageBuffer.mNext( 150 );
+        }
+
+        void testPageIterator( void ) {
+            PageBuffer pageBuffer( 50 );
+
+            // Add some pages of data
+            TS_ASSERT_EQUALS( pageBuffer.mAppendPage( createDataPage( 0 ) ), 100 );
+            TS_ASSERT_EQUALS( pageBuffer.mAppendPage( createDataPage( 0 ) ), 100 );
+            TS_ASSERT_EQUALS( pageBuffer.mAppendPage( createDataPage( 0 ) ), 100 );
+            TS_ASSERT_EQUALS( pageBuffer.mAppendPage( createDataPage( 0 ) ), 100 );
+            //pageBuffer.mPrintPageBuffer();
+
+            // Get our page iterator
+            Page::Iterator it = pageBuffer.mFirst();
+            TS_ASSERT( it == pageBuffer.mFirst() );
+            TS_ASSERT( it != pageBuffer.mLast() );
+
+            // Move the iterator forward
+            pageBuffer.mNext( it, 155 );
+
+            // Are we in the correct position? ( Should be on the 6th block in the page )
+            TS_ASSERT_EQUALS( it->mOffSet(), 100 );
+            TS_ASSERT_EQUALS( it.itBlock->mBytes(), "1234567890" );
+            TS_ASSERT_EQUALS( pageBuffer.mByteArray( it, 10 ), "6789012345" );
+            TS_ASSERT_EQUALS( it.itBlock->mAttributes().mTestValue(), 6 );
+
+            // Move the iterator back 
+            pageBuffer.mPrev( it, 155 );
+            TS_ASSERT( it == pageBuffer.mFirst() );
+            TS_ASSERT( it != pageBuffer.mLast() );
+
+            // Should be pointing to the first block in the first page
+            TS_ASSERT_EQUALS( it->mOffSet(), 0 );
+            TS_ASSERT_EQUALS( it.itBlock->mBytes(), "1234567890" );
+            TS_ASSERT_EQUALS( pageBuffer.mByteArray( it, 10 ), "1234567890" );
+            TS_ASSERT_EQUALS( it.itBlock->mAttributes().mTestValue(), 1 );
+
+            // Move the iterator to the end of the buffer
+            pageBuffer.mNext( it, 400 );
+            TS_ASSERT( it == pageBuffer.mLast() );
+            TS_ASSERT( it != pageBuffer.mFirst() );
+
+            TS_ASSERT_EQUALS( it->mOffSet(), 300 );
+            TS_ASSERT_EQUALS( it.itBlock->mBytes(), "1234567890" );
+            TS_ASSERT_EQUALS( pageBuffer.mByteArray( it, 10 ), "" );
+            TS_ASSERT_EQUALS( it.itBlock->mAttributes().mTestValue(), 10 );
+
         }
 };
-
-// TODO 
-// Add Tests for Page offset with multiple pages 
-// Add tests for deleting thru pages 
-// Add test for inserting thru multiple pages
 

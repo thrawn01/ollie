@@ -486,6 +486,14 @@ class PageTests : public CxxTest::TestSuite
 
             it = page.mFirst();
 
+            // Now move to the end of the page
+            TS_ASSERT_EQUALS( page.mNext( it, 115 ), 115 );
+            TS_ASSERT_EQUALS( page.mByteArray( it, 10 ), "" );
+            TS_ASSERT( it == page.mLast() );
+
+            // Reset to the beginning of the page
+            it = page.mFirst();
+
             // Move 10 bytes into the first block
             TS_ASSERT_EQUALS( page.mNext( it, 10 ), 10 ); 
             TS_ASSERT_EQUALS( page.mByteArray( it, 10 ), "CCCCCDDDDD" );

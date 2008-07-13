@@ -139,6 +139,11 @@ namespace Ollie {
                     if( itPage == right.itPage ) return 1;
                     return 0;
                 }
+
+                int operator!=( const BufferIterator& right ) const {
+                    if( *this == right ) return 0;
+                    return 1;
+                }
 /*
                 BufferIterator operator++( int ) { 
                     BufferIterator itTemp = *this;

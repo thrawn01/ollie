@@ -86,47 +86,48 @@ class PageBufferTests : public CxxTest::TestSuite
         // --------------------------------
         void testChangeSet( void ) {
 
-            ChangeSetPtr1 changeSet( new ChangeSet() );
-            ChangeSetPtr2 changeSet( new ChangeSet() );
+            ChangeSetPtr changeSet1( new ChangeSet() );
+            ChangeSetPtr changeSet2( new ChangeSet() );
 
             // Push a deleted block into the change set
             changeSet1->mPush( new Block( STR("AAAAABBBBBCCCCC") ) );
             changeSet1->mPush( new Block( STR("EEEEEFFFFFGGGGG") ) );
 
-            changeSet2->mPush( new Block( STR("ZZZZZXXXXXVVVVV") ) );
-            changeSet2->mPush( new Block( STR("HHHHHJJJJJKKKKK") ) );
+            // Push an entire page
+            changeSet2->mPush( createDataPage( 'A' ) );
 
             // Append changeSet2 onto changeset1
-            changeSet1->mPush( changeSet2 );
+            // mPush Takes ownership. So changeSet2 was deleted
+            changeSet1->mPush( changeSet2.release() );
 
-            TS_ASSERT_EQUALS( changeSet->mSize(), 60 );
-            TS_ASSERT_EQUALS( changeSet->mCount(), 4 );
+            TS_ASSERT_EQUALS( changeSet1->mSize(), 130 );
+            TS_ASSERT_EQUALS( changeSet1->mCount(), 14 );
 
             // Pop off the last block in the change set
-            BlockPtr block( changeSet->mPop() );
+            BlockPtr block( changeSet1->mPop() );
 
             // Change size decrements
-            TS_ASSERT_EQUALS( changeSet->mSize(), 15 );
-            TS_ASSERT_EQUALS( changeSet->mCount(), 1 );
+            TS_ASSERT_EQUALS( changeSet1->mSize(), 115 );
+            TS_ASSERT_EQUALS( changeSet1->mCount(), 13 );
 
             TS_ASSERT_EQUALS( block->mBytes(), "EEEEEFFFFFGGGGG" );
 
-            BlockPtr firstBlock( changeSet->mPop() );
+            BlockPtr firstBlock( changeSet1->mPop() );
             TS_ASSERT_EQUALS( firstBlock->mBytes(), "AAAAABBBBBCCCCC" );
 
-            TS_ASSERT_EQUALS( changeSet->mSize(), 0 );
-            TS_ASSERT_EQUALS( changeSet->mCount(), 0 );
+            TS_ASSERT_EQUALS( changeSet1->mSize(), 0 );
+            TS_ASSERT_EQUALS( changeSet1->mCount(), 0 );
 
             // Trying to pop an empty changeset returns null
-            TS_ASSERT( changeSet->mPop() == 0 );
+            TS_ASSERT( changeSet1->mPop() == 0 );
 
             // The change set represents a insert range
-            changeSet->mSetInsert( 50000, 50 );
+            changeSet1->mSetInsert( 50000, 50 );
 
-            TS_ASSERT_EQUALS( changeSet->mSize(), 50 );
-            TS_ASSERT_EQUALS( changeSet->mOffSet(), 50000 );
-            TS_ASSERT_EQUALS( changeSet->mCount(), 0 );
-            TS_ASSERT_EQUALS( changeSet->mIsInsert(), true );
+            TS_ASSERT_EQUALS( changeSet1->mSize(), 50 );
+            TS_ASSERT_EQUALS( changeSet1->mOffSet(), 50000 );
+            TS_ASSERT_EQUALS( changeSet1->mCount(), 0 );
+            TS_ASSERT_EQUALS( changeSet1->mIsInsert(), true );
 
         }
     
@@ -387,7 +388,7 @@ class PageBufferTests : public CxxTest::TestSuite
             it = pageBuffer.mFirst();
 
             // Delete all the buffer contents
-            ChangeStrPtr changeSet( pageBuffer.mDeleteBytes( it, itLast ) );
+            ChangeSetPtr changeSet( pageBuffer.mDeleteBytes( it, itLast ) );
           
             // The change set now contains all the blocks and pages of this deletion
             TS_ASSERT_EQUALS( changeSet->mSize(), 20 );

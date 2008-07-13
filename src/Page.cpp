@@ -87,7 +87,7 @@ namespace Ollie {
 
         /********************************************/
 
-        void ChangeSet::mPushPage( Page* page ) {
+        void ChangeSet::mPush( Page* page ) {
             Block::Iterator it = page->mFirst();
             assert( it.mIsValid() == true );
 
@@ -99,17 +99,28 @@ namespace Ollie {
             page = 0;
         }
 
+        void ChangeSet::mPush( ChangeSet* changeSet ) {
+
+            while( changeSet->mCount() != 0 ) {
+                mPush( changeSet->mPop() );
+            }
+            // We take ownership
+            delete changeSet;
+            changeSet = 0;
+        }
+
         void ChangeSet::mPush( Block* block ) { 
-            _boolIsInsert = false;
-            _intSize += block->mSize();
+            boolIsInsert = false;
+            intSize += block->mSize();
             blockContainer.push_front( block ); 
         }
+
         Block* ChangeSet::mPop( void ) { 
             try{ 
                 if( mCount() == 0 ) return 0;
-                _boolIsInsert = false;
+                boolIsInsert = false;
                 Block* block = blockContainer.release( blockContainer.begin() ).release(); 
-                _intSize -= block->mSize();
+                intSize -= block->mSize();
                 return block;
             }
             catch(...){ return 0; } 

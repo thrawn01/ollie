@@ -55,18 +55,17 @@ namespace Ollie {
                     Buffer::Iterator itEnd( itStart );
     
                     // Move the iterator up intLen of positions
-                    pageBuffer.mNext( itEnd.it, intLen );
+                    pageBuffer.mNext( itEnd.itPage, intLen );
 
                     // Preform the deletion
                     return deleteBytes( itStart, itEnd );
 
                 }
-                        
 
                 int Buffer::deleteBytes( Buffer::Iterator& itStart, Buffer::Iterator& itEnd ) {
 
                     // Preform the delete
-                    ChangeSetPtr changeSet( pageBuffer.mDeleteBytes( itStart.it, itEnd.it ) );    
+                    ChangeSetPtr changeSet( pageBuffer.mDeleteBytes( itStart.itPage, itEnd.itPage ) );    
 
                     // Update our buffer size
                     offSize -= changeSet->mSize();
@@ -74,7 +73,7 @@ namespace Ollie {
                     // Notify the buffer we were modified
                     boolModified = true;
 
-                    return intLen;
+                    return changeSet->mSize();
                 }
     };
 };

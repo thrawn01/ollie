@@ -88,13 +88,13 @@ namespace Ollie {
             // If we are trying to delete the only page in the list
             if( it.it == mFirst().it and it.it == mLast().it ) {
                 // Replace the current page with an empty one, and push the page into the change set
-                changeSet->mPushPage( pageList.replace( pageList.begin() , new Page( _offTargetPageSize ) ).release() );
+                changeSet->mPush( pageList.replace( pageList.begin() , new Page( _offTargetPageSize ) ).release() );
 
                 return changeSet.release();
             }
 
             // Replace the current page with an empty one, and push the page into the change set
-            changeSet->mPushPage( pageList.replace( it.it , new Page( _offTargetPageSize ) ).release() );
+            changeSet->mPush( pageList.replace( it.it , new Page( _offTargetPageSize ) ).release() );
 
             // Erase the replaced page
             pageList.erase( it.it );
@@ -327,20 +327,20 @@ namespace Ollie {
             return intLen;
         }
 
-        ChangeSet* mDeleteBytes( Page::Iterator& itBlock, Page::Iterator& itEnd ) {
+        ChangeSet* PageBuffer::mDeleteBytes( Page::Iterator& itPage, Page::Iterator& itEnd ) {
             bool boolUpdateIterator = false;
 
             // If the start and end are on the same page
-            if( itBlock.it == itEnd.it ) {
+            if( itPage.it == itEnd.it ) {
                 // Delete the bytes at the page level
-                return itStart->mDeleteBytes( itBlock.itBlock, itEnd.itBlock );
+                return itPage->mDeleteBytes( itPage.itBlock, itEnd.itBlock );
             }
 
             // Make a copy of the start block/page
-            Page::Iterator itStart( itBlock );
+            Page::Iterator itStart( itPage );
 
             // Delete all the blocks till the end of the current page
-            ChangeSet changeSet( itStart->mDeleteBytes( itStart.itBlock, itStart->mLast() ) );
+            ChangeSetPtr changeSet( itStart->mDeleteBytes( itStart.itBlock, itStart->mLast() ) );
 
             // If the page we were on, is now completely empty
             if( itStart->mSize() == 0 ) {
@@ -349,9 +349,10 @@ namespace Ollie {
                 boolUpdateIterator = true;
             }else {
                 // Move to the next page
-                ++itStart.it
+                ++itStart.it;
             }
 
+            // Delete pages until we hit the correct page
             while( itEnd.it != itStart.it or itStart.it == mLast().it ) {
                 // Delete the entire Page
                 changeSet->mPush( mDeletePage( itStart ) );
@@ -362,7 +363,7 @@ namespace Ollie {
 
             // If our original page was deleted, we need to restore our iterator here
             if( boolUpdateIterator == true ) {
-                itBlock = itStart;
+                itPage = itStart;
             }
 
             return changeSet.release();

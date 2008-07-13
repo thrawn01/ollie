@@ -70,32 +70,46 @@ namespace Ollie {
         class ChangeSet {
 
             public:
-                ChangeSet( void ) : _intSize(0), _offSet(0), _boolIsInsert(true) { };
-                ChangeSet( OffSet offset, int intLen ) : _intSize(intLen), _offSet(offset), _boolIsInsert(true) { };
-                 ~ChangeSet( void ) { };
+                ChangeSet( void ) : intSize(0), offSet(0), boolIsInsert(true) { }
+                ChangeSet( OffSet offset, int intLen ) : intSize(intLen), offSet(offset), boolIsInsert(true) { }
+                // This is NOT a copy constructor, this transfers ownership of the changeset data to this instance
+                ChangeSet( ChangeSet* c ) : intSize(0), offSet(c->offSet), boolIsInsert(c->boolIsInsert) { 
+                    // If the changeset has blocks
+                    if( c->mCount() ) {
+                        // Transfer them to us
+                        mPush( c );
+                    }else {
+                        // Else, delete the changeset 
+                        // as we have ownership of it's data
+                        delete c;
+                    }
+                }
+                 ~ChangeSet( void ) { }
         
                  typedef boost::ptr_list<Block>::iterator  Iterator;
 
-                 int        mSetSize( int intSize ) { _intSize = intSize; }
-                 int        mSize( void ) { return _intSize; }
+                 int        mSetSize( int intSize ) { intSize = intSize; }
+                 int        mSize( void ) { return intSize; }
                  int        mCount( void ) { return blockContainer.size(); }
-                 void       mPushPage( Page* page );
-                 void       mPush( Block* block );
+                 void       mPush( Page* );
+                 void       mPush( ChangeSet* );
+                 void       mPush( Block* );
                  Block*     mPop( void );
                  Iterator   mPeek( void ) { return blockContainer.begin(); }
-                 void       mSetOffSet( OffSet offset ) { _offSet = offset; }
-                 OffSet     mOffSet( void ) { return _offSet; }
-                 bool       mIsInsert( void ) { return _boolIsInsert; }
+                 void       mSetOffSet( OffSet offset ) { offSet = offset; }
+                 OffSet     mOffSet( void ) { return offSet; }
+                 bool       mIsInsert( void ) { return boolIsInsert; }
                  bool       mSetInsert( OffSet offset, int intLen ) { 
-                                _offSet = offset; 
-                                _intSize = intLen; 
-                                _boolIsInsert = true; 
+                                offSet = offset; 
+                                intSize = intLen; 
+                                boolIsInsert = true; 
                             }
 
+            protected:
                  boost::ptr_list<Block> blockContainer;
-                 int                    _intSize;
-                 bool                   _boolIsInsert;
-                 OffSet                 _offSet;
+                 int                    intSize;
+                 bool                   boolIsInsert;
+                 OffSet                 offSet;
         };
         typedef std::auto_ptr<ChangeSet> ChangeSetPtr;
 

@@ -89,6 +89,8 @@ class PageBufferTests : public CxxTest::TestSuite
             ChangeSetPtr changeSet1( new ChangeSet() );
             ChangeSetPtr changeSet2( new ChangeSet() );
 
+            TS_ASSERT( changeSet1->mPop() == 0 );
+
             // Push a deleted block into the change set
             changeSet1->mPush( new Block( STR("AAAAABBBBBCCCCC") ) );
             changeSet1->mPush( new Block( STR("EEEEEFFFFFGGGGG") ) );
@@ -101,33 +103,16 @@ class PageBufferTests : public CxxTest::TestSuite
             changeSet1->mPush( changeSet2.release() );
 
             TS_ASSERT_EQUALS( changeSet1->mSize(), 130 );
-            TS_ASSERT_EQUALS( changeSet1->mCount(), 14 );
+            TS_ASSERT_EQUALS( changeSet1->mCount(), 12 );
 
-            // Pop off the last block in the change set
+            // Pop off the first block in the change set
             BlockPtr block( changeSet1->mPop() );
 
             // Change size decrements
             TS_ASSERT_EQUALS( changeSet1->mSize(), 115 );
-            TS_ASSERT_EQUALS( changeSet1->mCount(), 13 );
+            TS_ASSERT_EQUALS( changeSet1->mCount(), 11 );
 
-            TS_ASSERT_EQUALS( block->mBytes(), "EEEEEFFFFFGGGGG" );
-
-            BlockPtr firstBlock( changeSet1->mPop() );
-            TS_ASSERT_EQUALS( firstBlock->mBytes(), "AAAAABBBBBCCCCC" );
-
-            TS_ASSERT_EQUALS( changeSet1->mSize(), 0 );
-            TS_ASSERT_EQUALS( changeSet1->mCount(), 0 );
-
-            // Trying to pop an empty changeset returns null
-            TS_ASSERT( changeSet1->mPop() == 0 );
-
-            // The change set represents a insert range
-            changeSet1->mSetInsert( 50000, 50 );
-
-            TS_ASSERT_EQUALS( changeSet1->mSize(), 50 );
-            TS_ASSERT_EQUALS( changeSet1->mOffSet(), 50000 );
-            TS_ASSERT_EQUALS( changeSet1->mCount(), 0 );
-            TS_ASSERT_EQUALS( changeSet1->mIsInsert(), true );
+            TS_ASSERT_EQUALS( block->mBytes(), "AAAAABBBBBCCCCC" );
 
         }
     

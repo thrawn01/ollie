@@ -199,10 +199,10 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( changeSet->mSize(), 15 );
             TS_ASSERT_EQUALS( changeSet->mCount(), 1 );
 
-            TS_ASSERT_EQUALS( block->mBytes(), "EEEEEFFFFFGGGGG" );
+            TS_ASSERT_EQUALS( block->mBytes(), "AAAAABBBBBCCCCC" );
 
             BlockPtr firstBlock( changeSet->mPop() );
-            TS_ASSERT_EQUALS( firstBlock->mBytes(), "AAAAABBBBBCCCCC" );
+            TS_ASSERT_EQUALS( firstBlock->mBytes(), "EEEEEFFFFFGGGGG" );
 
             TS_ASSERT_EQUALS( changeSet->mSize(), 0 );
             TS_ASSERT_EQUALS( changeSet->mCount(), 0 );

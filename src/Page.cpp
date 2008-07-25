@@ -119,7 +119,7 @@ namespace Ollie {
             try{ 
                 if( mCount() == 0 ) return 0;
                 boolIsInsert = false;
-                Block* block = blockContainer.release( blockContainer.begin() ).release(); 
+                Block* block = blockContainer.release( (--blockContainer.end()) ).release(); 
                 intSize -= block->mSize();
                 return block;
             }

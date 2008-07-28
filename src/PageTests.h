@@ -587,6 +587,50 @@ class PageTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( page.mByteArray( it, 40 ), "2222233333TTTTTYYYYY44444555556666677777" );
 
         }
+        // --------------------------------
+        // Test Split Blocks
+        // --------------------------------
+        void testmSplitBlocks( void ) {
+            Page page;
+
+            // Get an iterator to the begining of the page
+            Block::Iterator it = page.mFirst();
+
+            // First and last should point to the same block
+            TS_ASSERT( it == page.mFirst() );
+            TS_ASSERT( it == page.mLast() );
+
+            // Insert some text
+            TS_ASSERT_EQUALS( page.mInsertBytes( it, STR("EEEEEFFFFFGGGGGHHHHH"), Attributes(1) ), 20 );
+            TS_ASSERT_EQUALS( page.mCount() , 1 );
+            TS_ASSERT_EQUALS( page.mSize() , 20 );
+
+            TS_ASSERT( it != page.mFirst() );
+            TS_ASSERT( it == page.mLast() );
+
+            it = page.mFirst();
+
+            TS_ASSERT_EQUALS( page.mByteArray( it, 20 ), "EEEEEFFFFFGGGGGHHHHH" );
+
+            // Move the iterator to the split point
+            TS_ASSERT_EQUALS( page.mNext( it, 10 ), 10 );
+
+            // Split the block
+            page.mSplitBlock( it );
+
+            TS_ASSERT_EQUALS( page.mSize(), 20 );
+
+            // The iterator should point to the same spot
+            // ( It points to the new block, but the last pos in the block )
+            TS_ASSERT_EQUALS( it->mBytes(), "EEEEEFFFFF" );
+            TS_ASSERT_EQUALS( it.mPos(), 10 );
+            TS_ASSERT_EQUALS( page.mByteArray( it, 10 ), "GGGGGHHHHH" );
+
+            TS_ASSERT_EQUALS( page.mPrev( it, 10 ), 10 );
+            TS_ASSERT_EQUALS( it->mBytes(), "EEEEEFFFFF" );
+
+        }
+
 
         // --------------------------------
         // Test Moving Blocks Between Pages

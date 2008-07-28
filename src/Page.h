@@ -255,6 +255,9 @@ namespace Ollie {
                     mUpdate( --it, false );
                     return *this;
                 }
+                
+                void mNextPage( void );
+                void mPrevPage( void );
 
                 // Return the absolute position in the file we are pointing to
                 OffSet mPosition( void ) const;

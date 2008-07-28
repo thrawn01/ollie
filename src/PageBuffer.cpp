@@ -97,7 +97,7 @@ namespace Ollie {
             changeSet->mPush( pageList.replace( it.it , new Page( _offTargetPageSize ) ).release() );
 
             // Erase the replaced page
-            pageList.erase( it.it );
+            it.it = pageList.erase( it.it );
 
             // If we erased the last page in the buffer
             if( it.it == pageList.end() ) {
@@ -106,6 +106,9 @@ namespace Ollie {
                 // Update all the page offsets from this page on
                 mUpdatePageOffSets( it.it );
             }
+
+            // Update the block pointer 
+            it.itBlock = it->mFirst();
 
             return changeSet.release();
         }
@@ -293,8 +296,14 @@ namespace Ollie {
         }
 
         void PageBuffer::mUpdatePageOffSets( const boost::ptr_list<Page>::iterator& itConst ) {
+            assert( itConst != pageList.end() );
 
             boost::ptr_list<Page>::iterator it = itConst;
+
+            // If we are starting on the first page
+            if( it == pageList.begin() ) {
+                it->mSetOffSet( 0 );
+            }
 
             // If this is not the beginning of the page buffer
             if( it != pageList.begin() ) {
@@ -349,11 +358,11 @@ namespace Ollie {
                 boolUpdateIterator = true;
             }else {
                 // Move to the next page
-                ++itStart.it;
+                itStart.mNextPage();
             }
 
             // Delete pages until we hit the correct page
-            while( itEnd.it != itStart.it or itStart.it == mLast().it ) {
+            while( itEnd.it != itStart.it ) {
                 // Delete the entire Page
                 changeSet->mPush( mDeletePage( itStart ) );
             }
@@ -365,6 +374,8 @@ namespace Ollie {
             if( boolUpdateIterator == true ) {
                 itPage = itStart;
             }
+
+            mUpdatePageOffSets( itPage.it );
 
             return changeSet.release();
         }

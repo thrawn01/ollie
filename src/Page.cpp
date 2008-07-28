@@ -173,7 +173,21 @@ namespace Ollie {
         bool PageIterator::mMoveToPosition( OffSet offset ) {
             return false;
         }
- 
+
+        void PageIterator::mNextPage( void ) { 
+            assert( it != (--parent->pageList.end()) );
+
+            ++it;
+            itBlock = it->mFirst();
+        }
+
+        void PageIterator::mPrevPage( void ) { 
+            assert( it != parent->pageList.begin() );
+
+            --it;
+            itBlock = it->mLast();
+        }
+
         // ---------- Page Methods ----------
 
         /********************************************/
@@ -301,6 +315,8 @@ namespace Ollie {
             BlockPtr newBlock( itBlock->mDeleteBytes( 0 , itBlock.mPos() ) );
             // Reset the pos here, so the InsertBlock can correct it
             itBlock.mSetPos( 0 );
+            // Back out the size of the new block, the insert will update the size
+            _offPageSize -= newBlock->mSize();
             // Insert the block just before the current block
             mInsertBlock( itBlock, newBlock.release() );
             // Tell all iterators pointing to this item, that we split the block
@@ -392,7 +408,6 @@ namespace Ollie {
                 // Insert the new block with our data and attributes
                 // We want the iterator to point to the new block
                 mInsertBlock( itBlock, new Block( arrBytes, attr ) );
-
                 return arrBytes.mSize();
             }
 

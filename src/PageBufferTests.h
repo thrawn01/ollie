@@ -194,13 +194,16 @@ class PageBufferTests : public CxxTest::TestSuite
             TS_ASSERT_EQUALS( itPage->mByteArray( itBlock, 55 ), "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC" );
 
             // Insert some stuff
+            TS_ASSERT_EQUALS( itPage->mSize(), 100 );
             TS_ASSERT_EQUALS( itPage->mInsertBytes( itBlock, STR("111112222233333"), Attributes(60) ), 15 );
+            TS_ASSERT_EQUALS( itPage->mSize(), 115 );
 
             // Move back to the start of the insert
             TS_ASSERT_EQUALS( itBlock.mPrev( 15 ), 15 );
 
             // The insert plus the original data should be there
             TS_ASSERT_EQUALS( itPage->mByteArray( itBlock, 70 ), "111112222233333CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC" );
+
             //pageBuffer.mPrintPageBuffer();
 
             TS_ASSERT_EQUALS( itBlock.mIsValid(), true );
@@ -226,8 +229,21 @@ class PageBufferTests : public CxxTest::TestSuite
             // Offset of the page should have updated
             TS_ASSERT_EQUALS( itPage->mOffSet(), 300 );
 
+            // Page should have the correct length
+            TS_ASSERT_EQUALS( itPage->mSize(), 15 );
+
             // Should now be 5 pages in the buffer
             TS_ASSERT_EQUALS( pageBuffer.mCount(), 5 );
+            
+            // Delete the page
+            changeSet = pageBuffer.mDeletePage( itPage );
+            delete changeSet;
+
+            // itPage should point to the last page in the buffer
+            TS_ASSERT( itPage.it == pageBuffer.mLast().it );
+
+            // The block iterator should have been updated, the iterator should be valid
+            TS_ASSERT( itPage.itBlock == itPage->mFirst() );
             
         }
 

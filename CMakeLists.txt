@@ -3,7 +3,7 @@
 #
 # Derrick Wippler 2007 (thrawn01@gmail.com) 
 # ----------------------------------------------------------------
-CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 PROJECT(OLLIE)
 
@@ -68,3 +68,4 @@ MESSAGE(STATUS "Boost Found.. ${Boost_INCLUDE_DIRS}" )
 # Add projects to the build system here.
 # --------------------------------------------
 ADD_SUBDIRECTORY(src)
+ADD_SUBDIRECTORY(kde)

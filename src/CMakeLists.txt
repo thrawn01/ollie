@@ -27,6 +27,6 @@ TARGET_LINK_LIBRARIES(PageTests ollie )
 ADD_CXXTEST(PageBufferTests PageBufferTests.h )
 TARGET_LINK_LIBRARIES(PageBufferTests ollie )
 
-ADD_CXXTEST(BufferTests BufferTests.h )
-TARGET_LINK_LIBRARIES(BufferTests ollie )
+#ADD_CXXTEST(BufferTests BufferTests.h )
+#TARGET_LINK_LIBRARIES(BufferTests ollie )
 

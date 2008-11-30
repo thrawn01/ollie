@@ -62,7 +62,7 @@ namespace Ollie {
                 int mPrev( Page::Iterator&, int intCount = 1 );
                 int mNextBlock( Page::Iterator& );
                 int mPrevBlock( Page::Iterator& );
-                const ByteArray& PageBuffer::mByteArray( const Page::Iterator&, int );
+                const ByteArray& mByteArray( const Page::Iterator&, int );
                 void mPrintPageBuffer( void );
                 void mUpdatePageOffSets( const boost::ptr_list<Page>::iterator& );
                 int mInsertBytes( Page::Iterator&, const ByteArray&, const Attributes& );

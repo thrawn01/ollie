@@ -24,7 +24,7 @@
 namespace Ollie {
     namespace OllieBuffer {
 
-        static const int nPos = std::string::npos;
+        static const size_t nPos = std::string::npos;
 
         class ByteArray {
 

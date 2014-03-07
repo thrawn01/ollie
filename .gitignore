@@ -1,0 +1,8 @@
+CMakeFiles/
+Makefile
+*.cmake
+CMakeCache.txt
+*.tcl
+bin/
+lib/
+Testing/

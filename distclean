@@ -23,7 +23,7 @@ MAIN: {
     }
 
 
-    open(INPUT, "git-ls-files -o --directory |") or die("Couldn't run git-ls-files, Do you have the latest git version?");
+    open(INPUT, "git ls-files -o --directory |") or die("Couldn't run git ls-files, Do you have the latest git version?");
 
     if( $opt{a} ) { print "Cleaning all files not under git control...\n"; }
     else{ print "Cleaning only CMake files...\n"; }
